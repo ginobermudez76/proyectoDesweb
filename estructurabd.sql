@@ -3,20 +3,20 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE rol(
     id SERIAL NOT NULL PRIMARY KEY,
     uuid UUID NOT NULL UNIQUE DEFAULT uuid_generate_v4(),
-    codigo character varying(50) UNIQUE NOT NULL,
-    nombre_rol character varying(50) UNIQUE NOT NULL,
+    codigo character varying(50) UNIQUE NOT NULL CHECK (trim(codigo) <> ''),
+    nombre_rol character varying(50) UNIQUE NOT NULL CHECK (trim(nombre_rol) <> ''),
     descripcion character varying(255),
     created_at timestamp with time zone NOT NULL DEFAULT now(),
     updated_at timestamp with time zone,
     deleted boolean NOT NULL DEFAULT false,
-    deleted_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 CREATE TABLE usuario(
     id SERIAL NOT NULL PRIMARY KEY,
     uuid UUID NOT NULL UNIQUE DEFAULT uuid_generate_v4(),
-    nombre_usuario varchar(50) NOT NULL,
-    correo_electronico varchar(100) NOT NULL,
+    nombre_usuario varchar(50) NOT NULL CHECK (trim(nombre_usuario) <> ''),
+    correo_electronico varchar(255) NOT NULL,
     password_hash varchar(255) NOT NULL,
     nombres varchar(50) NOT NULL,
     apellidos varchar(50) NOT NULL,
@@ -24,7 +24,7 @@ CREATE TABLE usuario(
     created_at timestamp with time zone NOT NULL DEFAULT now(),
     updated_at timestamp with time zone,
     deleted boolean NOT NULL DEFAULT false,
-    deleted_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 CREATE TABLE opcion(
@@ -35,19 +35,21 @@ CREATE TABLE opcion(
     created_at timestamp with time zone NOT NULL DEFAULT now(),
     updated_at timestamp with time zone,
     deleted boolean NOT NULL DEFAULT false,
-    deleted_at timestamp with time zone,
+    deleted_at timestamp with time zone
 );
 
 CREATE TABLE endpoint(
     id SERIAL NOT NULL PRIMARY KEY,
     uuid UUID NOT NULL UNIQUE DEFAULT uuid_generate_v4(),
     nombre_endpoint varchar(50) NOT NULL UNIQUE,
-    url varchar(255) NOT NULL UNIQUE,
+    metodo varchar(10) NOT NULL,
+    url varchar(255) NOT NULL,
     created_at timestamp with time zone NOT NULL DEFAULT now(),
     updated_at timestamp with time zone,
     deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamp with time zone,
-    rbac_enabled boolean NOT NULL DEFAULT false
+    rbac_enabled boolean NOT NULL DEFAULT false,
+    CONSTRAINT uq_endpoint_url_metodo UNIQUE (url, metodo)
 );
 
 CREATE TABLE rol_opcion(
@@ -59,8 +61,8 @@ CREATE TABLE rol_opcion(
     updated_at timestamp with time zone,
     deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamp with time zone,
-    FOREIGN KEY (id_rol) REFERENCES rol(id),
-    FOREIGN KEY (id_opcion) REFERENCES opcion(id),
+    FOREIGN KEY (id_rol) REFERENCES rol(id) ON DELETE RESTRICT,
+    FOREIGN KEY (id_opcion) REFERENCES opcion(id) ON DELETE RESTRICT,
 
     CONSTRAINT uq_rol_opcion UNIQUE(id_rol, id_opcion)
 );
@@ -70,8 +72,8 @@ CREATE TABLE opcion_endpoint(
     uuid UUID NOT NULL UNIQUE DEFAULT uuid_generate_v4(),
     id_opcion integer NOT NULL,
     id_endpoint integer NOT NULL,
-    FOREIGN KEY (id_opcion) REFERENCES opcion(id),
-    FOREIGN KEY (id_endpoint) REFERENCES endpoint(id),
+    FOREIGN KEY (id_opcion) REFERENCES opcion(id) ON DELETE RESTRICT,
+    FOREIGN KEY (id_endpoint) REFERENCES endpoint(id) ON DELETE RESTRICT,
     created_at timestamp with time zone NOT NULL DEFAULT now(),
     updated_at timestamp with time zone,
     deleted boolean NOT NULL DEFAULT false,
@@ -85,8 +87,8 @@ CREATE TABLE rol_usuario(
     uuid UUID NOT NULL UNIQUE DEFAULT uuid_generate_v4(),
     id_rol integer NOT NULL,
     id_usuario integer NOT NULL,
-    FOREIGN KEY (id_rol) REFERENCES rol(id),
-    FOREIGN KEY (id_usuario) REFERENCES usuario(id),
+    FOREIGN KEY (id_rol) REFERENCES rol(id) ON DELETE RESTRICT,
+    FOREIGN KEY (id_usuario) REFERENCES usuario(id) ON DELETE RESTRICT,
     created_at timestamp with time zone NOT NULL DEFAULT now(),
     updated_at timestamp with time zone,
     deleted boolean NOT NULL DEFAULT false,
@@ -97,7 +99,7 @@ CREATE TABLE rol_usuario(
 
 CREATE TABLE auditoria (
     id BIGSERIAL PRIMARY KEY,
-    uuid UUID NOT NULL DEFAULT uuid_generate_v4(),
+    uuid UUID NOT NULL UNIQUE DEFAULT uuid_generate_v4(),
     entidad VARCHAR(50) NOT NULL,
     id_entidad INTEGER,
     accion VARCHAR(50) NOT NULL,
@@ -189,6 +191,26 @@ BEGIN
                 CURRENT_USER
             );
 
+        ELSIF OLD.deleted = true
+              AND NEW.deleted = false THEN
+
+            INSERT INTO auditoria(
+                entidad,
+                id_entidad,
+                accion,
+                datos_anteriores,
+                datos_nuevos,
+                usuario
+            )
+            VALUES(
+                TG_TABLE_NAME,
+                NEW.id,
+                'RESTORE_LOGICO',
+                to_jsonb(OLD),
+                to_jsonb(NEW),
+                CURRENT_USER
+            );
+
         ELSE
 
             INSERT INTO auditoria(
@@ -241,13 +263,30 @@ BEGIN
 END;
 $$;
 
-CREATE UNIQUE INDEX uq_usuario_nombre_activo
-ON usuario(nombre_usuario)
-WHERE activo = true;
+-- Trigger genérico para updated_at
+CREATE OR REPLACE FUNCTION fn_update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
-CREATE UNIQUE INDEX uq_usuario_correo_activo
+CREATE TRIGGER trg_update_updated_at_rol BEFORE UPDATE ON rol FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+CREATE TRIGGER trg_update_updated_at_usuario BEFORE UPDATE ON usuario FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+CREATE TRIGGER trg_update_updated_at_opcion BEFORE UPDATE ON opcion FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+CREATE TRIGGER trg_update_updated_at_endpoint BEFORE UPDATE ON endpoint FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+CREATE TRIGGER trg_update_updated_at_rol_opcion BEFORE UPDATE ON rol_opcion FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+CREATE TRIGGER trg_update_updated_at_opcion_endpoint BEFORE UPDATE ON opcion_endpoint FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+CREATE TRIGGER trg_update_updated_at_rol_usuario BEFORE UPDATE ON rol_usuario FOR EACH ROW EXECUTE FUNCTION fn_update_updated_at();
+
+CREATE UNIQUE INDEX uq_usuario_nombre_deleted
+ON usuario(nombre_usuario)
+WHERE deleted = false;
+
+CREATE UNIQUE INDEX uq_usuario_correo_deleted
 ON usuario(correo_electronico)
-WHERE activo = true;
+WHERE deleted = false;
 
 CREATE TRIGGER trg_auditoria_rol
 AFTER INSERT OR UPDATE OR DELETE
