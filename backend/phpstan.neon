@@ -1,0 +1,17 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - app/
+
+    # Level 5 is a good standard level that checks basic types, method calls, etc.
+    level: 5
+
+    # If we need to ignore specific MongoDB or framework-related errors, we can add them here
+    ignoreErrors:
+        # Example: Ignore some dynamic Laravel magic if needed
+        # - '#Access to an undefined property#'
+
+    excludePaths:
+        # Exclude any temporary or compiled files if needed
