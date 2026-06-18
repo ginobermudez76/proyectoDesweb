@@ -1,9 +1,11 @@
 <?php
 
+use App\Modules\Auth\Providers\AuthServiceProvider;
 use App\Modules\Incidence\Providers\IncidenceServiceProvider;
 use App\Providers\AppServiceProvider;
 
 return [
     AppServiceProvider::class,
+    AuthServiceProvider::class,
     IncidenceServiceProvider::class,
 ];
