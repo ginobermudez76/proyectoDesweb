@@ -32,6 +32,7 @@ class MakeModuleCommand extends Command
 
         if (File::exists($modulePath)) {
             $this->error("El módulo {$name} ya existe.");
+
             return;
         }
 

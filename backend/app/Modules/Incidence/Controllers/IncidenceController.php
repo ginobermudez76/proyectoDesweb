@@ -12,7 +12,7 @@ class IncidenceController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'El módulo de Incidencias con Arquitectura Modular está funcionando correctamente.',
-            'data' => []
+            'data' => [],
         ]);
     }
 }

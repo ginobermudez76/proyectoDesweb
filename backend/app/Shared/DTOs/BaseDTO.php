@@ -6,8 +6,6 @@ abstract class BaseDTO
 {
     /**
      * Convierte el DTO a un array asociativo.
-     * 
-     * @return array
      */
     public function toArray(): array
     {

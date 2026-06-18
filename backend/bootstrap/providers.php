@@ -1,8 +1,9 @@
 <?php
 
+use App\Modules\Incidence\Providers\IncidenceServiceProvider;
 use App\Providers\AppServiceProvider;
 
 return [
     AppServiceProvider::class,
-    App\Modules\Incidence\Providers\IncidenceServiceProvider::class,
+    IncidenceServiceProvider::class,
 ];

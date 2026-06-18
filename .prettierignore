@@ -1,0 +1,21 @@
+# Git and OS metadata
+.git/
+.idea/
+.vscode/
+node_modules/
+
+# Backend (Laravel) ignore
+backend/vendor/
+backend/storage/
+backend/bootstrap/cache/
+backend/public/
+backend/database/
+backend/tests/
+backend/composer.lock
+backend/package-lock.json
+
+# Local env files
+.env
+.env.*
+*.log
+*.lock

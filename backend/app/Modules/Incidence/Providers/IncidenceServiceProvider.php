@@ -2,8 +2,8 @@
 
 namespace App\Modules\Incidence\Providers;
 
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\ServiceProvider;
 
 class IncidenceServiceProvider extends ServiceProvider
 {
@@ -31,6 +31,6 @@ class IncidenceServiceProvider extends ServiceProvider
     {
         Route::prefix('api')
             ->middleware('api')
-            ->group(__DIR__ . '/../Routes/api.php');
+            ->group(__DIR__.'/../Routes/api.php');
     }
 }
