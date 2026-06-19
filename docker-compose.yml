@@ -39,6 +39,10 @@ services:
       dockerfile: Dockerfile
     container_name: laravel_app
     restart: unless-stopped
+    environment:
+      - DB_HOST=postgres
+      - REDIS_HOST=redis
+      - MONGO_DB_HOST=mongodb
     volumes:
       - ./backend:/var/www/html
     depends_on:
