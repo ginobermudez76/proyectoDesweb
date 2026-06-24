@@ -76,4 +76,15 @@ class Rol extends Model
             'id_usuario'
         )->wherePivot('deleted', false)->withTimestamps();
     }
+
+
+    public function opciones()
+    {
+        return $this->belongsToMany(
+            Opcion::class,
+            'rol_opcion',
+            'id_rol',
+            'id_opcion'
+        )->wherePivot('deleted', false)->withTimestamps();
+    }
 }
