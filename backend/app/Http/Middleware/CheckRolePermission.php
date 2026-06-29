@@ -4,55 +4,74 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Auth;
+use App\Modules\Auth\Entities\Usuario;
 use Symfony\Component\HttpFoundation\Response;
 
 class CheckRolePermission
 {
     public function handle(Request $request, Closure $next): Response
     {
-        // 1. Obtenemos al usuario autenticado por Sanctum
-        $usuario = $request->user();
-
-        if (!$usuario) {
-            return response()->json(['message' => 'No autorizado. Token inválido o ausente.'], 401);
+        
+        $token = $request->bearerToken();
+        
+        if (!$token) {
+            return response()->json(['message' => 'No autorizado. Token ausente.'], 401);
         }
 
-        // 2. Cargamos sus roles y las opciones de esos roles de golpe (Eager Loading)
-        // Esto evita hacer múltiples consultas a la base de datos (problema N+1)
-        $usuario->load('roles.opciones');
+       
+        $userId = Cache::store('redis')->get('auth_token:' . $token);
+        
+        if (!$userId) {
+            return response()->json(['message' => 'Sesión expirada o inválida.'], 401);
+        }
 
-        $metodoActual = $request->method(); // GET, POST, PUT, DELETE, etc.
+        $usuario = Usuario::find($userId);
+        
+        if (!$usuario) {
+            return response()->json(['message' => 'Usuario no encontrado en la base de datos.'], 401);
+        }
+
+        
+        Auth::login($usuario);
+
+       
+        if ($request->is('api/logout') || $request->is('api/user')) {
+            return $next($request);
+        }
+
+        
+        $usuario->load('roles.opciones.endpoints');
+        $metodoActual = $request->method();
         $tienePermiso = false;
 
-        // 3. Recorremos los roles y opciones buscando un match
         foreach ($usuario->roles as $rol) {
-            foreach ($rol->opciones as $opcion) {
-                // Comparamos el método HTTP (ignorando mayúsculas/minúsculas)
-                $metodoCoincide = strtoupper($opcion->metodo_http) === strtoupper($metodoActual) || strtoupper($opcion->metodo_http) === 'ANY';
-                
-                // Comparamos la ruta. El método $request->is() entiende comodines '*' 
-                // Por lo que si en BD guardas 'api/incidencias/*', validará 'api/incidencias/1'
-                $rutaCoincide = $request->is($opcion->ruta_enlace);
+            if ($rol->deleted) continue;
 
-                if ($metodoCoincide && $rutaCoincide) {
-                    $tienePermiso = true;
-                    break 2; // Si encuentra un permiso válido, rompe los dos bucles por eficiencia
+            foreach ($rol->opciones as $opcion) {
+                if ($opcion->deleted) continue;
+
+                foreach ($opcion->endpoints as $endpoint) {
+                    if ($endpoint->deleted || !$endpoint->rbac_enabled) continue;
+
+                    $metodoCoincide = strtoupper($endpoint->metodo) === strtoupper($metodoActual) || strtoupper($endpoint->metodo) === 'ANY';
+                    $rutaCoincide = $request->is($endpoint->url);
+
+                    if ($metodoCoincide && $rutaCoincide) {
+                        $tienePermiso = true;
+                        break 3; 
+                    }
                 }
             }
         }
 
-        // 4. Si después de revisar todo no hay permiso, rebotamos la petición
         if (!$tienePermiso) {
             return response()->json([
-                'message' => 'Acceso denegado. Tu rol no tiene permisos para esta acción.',
-                'debug_info' => [ // Puedes quitar este debug en producción
-                    'ruta_solicitada' => $request->path(),
-                    'metodo_solicitado' => $metodoActual
-                ]
+                'message' => 'Acceso denegado. Tu rol no tiene permisos para este endpoint.'
             ], 403);
         }
 
-        // 5. Si tiene permiso, dejamos que la petición continúe hacia el Controlador
         return $next($request);
     }
 }

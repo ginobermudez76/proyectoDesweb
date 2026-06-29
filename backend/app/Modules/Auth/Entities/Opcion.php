@@ -9,17 +9,15 @@ class Opcion extends Model
     protected $table = 'opcion';
     protected $primaryKey = 'id';
 
+    
     protected $fillable = [
+        'uuid',
         'nombre_opcion',
-        'codigo_unico', // Ej: 'INCIDENCIAS_CREAR'
-        'ruta_enlace',  // Ej: '/api/incidencias'
-        'metodo_http',  // Ej: 'POST'
-        'activo',
+        'descripcion',
         'deleted'
     ];
 
     protected $casts = [
-        'activo' => 'boolean',
         'deleted' => 'boolean',
     ];
 
@@ -27,15 +25,13 @@ class Opcion extends Model
     {
         parent::boot();
 
-        // Scope global para ignorar opciones eliminadas lógicamente
+        
         static::addGlobalScope('active', function ($builder) {
             $builder->where('opcion.deleted', false);
         });
     }
 
-    /**
-     * Relación inversa con Rol.
-     */
+  
     public function roles()
     {
         return $this->belongsToMany(
@@ -43,6 +39,17 @@ class Opcion extends Model
             'rol_opcion',
             'id_opcion',
             'id_rol'
+        )->wherePivot('deleted', false)->withTimestamps();
+    }
+
+   
+    public function endpoints()
+    {
+        return $this->belongsToMany(
+            Endpoint::class,
+            'opcion_endpoint',
+            'id_opcion',
+            'id_endpoint'
         )->wherePivot('deleted', false)->withTimestamps();
     }
 }
