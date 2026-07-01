@@ -17,7 +17,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    'default' => env('DB_CONNECTION', 'pgsql'),
 
     /*
     |--------------------------------------------------------------------------
@@ -87,17 +87,19 @@ return [
         'pgsql' => [
             'driver' => 'pgsql',
             'url' => env('DB_URL'),
-            'host' => env('DB_HOST', '127.0.0.1'),
+            'host' => env('DB_HOST', 'postgres'),
             'port' => env('DB_PORT', '5432'),
-            'database' => env('DB_DATABASE', 'laravel'),
-            'username' => env('DB_USERNAME', 'root'),
-            'password' => env('DB_PASSWORD', ''),
-            'charset' => env('DB_CHARSET', 'utf8'),
+            'database' => env('DB_DATABASE', 'sistema_db'),
+            'username' => env('DB_USERNAME', 'admin'),
+            'password' => env('DB_PASSWORD', 'admin123'),
+            'charset' => 'utf8',
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
-            'sslmode' => env('DB_SSLMODE', 'prefer'),
+            'sslmode' => 'prefer',
         ],
+
+
 
         'sqlsrv' => [
             'driver' => 'sqlsrv',
@@ -116,11 +118,11 @@ return [
 
         'mongodb' => [
             'driver' => 'mongodb',
-            'host' => env('MONGO_DB_HOST', '127.0.0.1'),
+            'host' => env('MONGO_DB_HOST', 'mongodb'),
             'port' => env('MONGO_DB_PORT', 27017),
-            'database' => env('MONGO_DB_DATABASE', 'homestead'),
-            'username' => env('MONGO_DB_USERNAME', 'homestead'),
-            'password' => env('MONGO_DB_PASSWORD', 'secret'),
+            'database' => env('MONGO_DB_DATABASE', 'sistema_db'),
+            'username' => env('MONGO_DB_USERNAME', 'admin'),
+            'password' => env('MONGO_DB_PASSWORD', 'admin123'),
             'options' => [
                 'database' => env('MONGO_DB_AUTHENTICATION_DATABASE', 'admin'),
             ],

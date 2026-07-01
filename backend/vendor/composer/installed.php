@@ -394,7 +394,7 @@
         'jenssegers/mongodb' => array(
             'dev_requirement' => false,
             'replaced' => array(
-                0 => '5.8.1',
+                0 => '5.8.2',
             ),
         ),
         'kodova/hamcrest-php' => array(
@@ -465,6 +465,15 @@
             'install_path' => __DIR__ . '/../laravel/sail',
             'aliases' => array(),
             'dev_requirement' => true,
+        ),
+        'laravel/sanctum' => array(
+            'pretty_version' => 'v4.3.2',
+            'version' => '4.3.2.0',
+            'reference' => '2a9bccc18e9907808e0018dd15fa643937886b1e',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../laravel/sanctum',
+            'aliases' => array(),
+            'dev_requirement' => false,
         ),
         'laravel/serializable-closure' => array(
             'pretty_version' => 'v2.0.13',
@@ -563,9 +572,9 @@
             ),
         ),
         'mongodb/laravel-mongodb' => array(
-            'pretty_version' => '5.8.1',
-            'version' => '5.8.1.0',
-            'reference' => 'c372bc42529c51845fdccf89be8e1f6e39597ca0',
+            'pretty_version' => '5.8.2',
+            'version' => '5.8.2.0',
+            'reference' => '179946ce5ee892c0c9227a12cc3c09db204c8e82',
             'type' => 'library',
             'install_path' => __DIR__ . '/../mongodb/laravel-mongodb',
             'aliases' => array(),

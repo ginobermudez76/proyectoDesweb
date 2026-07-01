@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -13,30 +12,10 @@ class DatabaseSeeder extends Seeder
     {
         // 1. Poblar Roles
         $roles = [
-            [
-                'codigo' => 'ADMIN',
-                'nombre_rol' => 'Administrador',
-                'descripcion' => 'Administrador del sistema con acceso total.',
-                'deleted' => false,
-            ],
-            [
-                'codigo' => 'SUPERVISOR',
-                'nombre_rol' => 'Supervisor',
-                'descripcion' => 'Supervisor de incidencias y asignaciones.',
-                'deleted' => false,
-            ],
-            [
-                'codigo' => 'TECNICO',
-                'nombre_rol' => 'Técnico Resolutor',
-                'descripcion' => 'Personal encargado de solventar las incidencias.',
-                'deleted' => false,
-            ],
-            [
-                'codigo' => 'CIUDADANO',
-                'nombre_rol' => 'Ciudadano',
-                'descripcion' => 'Usuario que reporta incidencias georreferenciadas.',
-                'deleted' => false,
-            ],
+            ['codigo' => 'ADMIN', 'nombre_rol' => 'Administrador', 'descripcion' => 'Acceso total.'],
+            ['codigo' => 'SUPERVISOR', 'nombre_rol' => 'Supervisor', 'descripcion' => 'Supervisor de incidencias.'],
+            ['codigo' => 'TECNICO', 'nombre_rol' => 'Técnico', 'descripcion' => 'Resolutor de incidencias.'],
+            ['codigo' => 'CIUDADANO', 'nombre_rol' => 'Ciudadano', 'descripcion' => 'Reporta incidencias.'],
         ];
 
         foreach ($roles as $rol) {
@@ -46,19 +25,16 @@ class DatabaseSeeder extends Seeder
                     'uuid' => DB::raw('uuid_generate_v4()'),
                     'nombre_rol' => $rol['nombre_rol'],
                     'descripcion' => $rol['descripcion'],
-                    'deleted' => $rol['deleted'],
+                    'deleted' => false,
                     'created_at' => now(),
                 ]
             );
         }
 
-        // 2. Poblar Opciones
+        // 2. Poblar Opciones (Menús Visuales)
         $opciones = [
-            ['nombre_opcion' => 'Dashboard', 'descripcion' => 'Panel de control principal.'],
-            ['nombre_opcion' => 'Incidencias - Listado', 'descripcion' => 'Visualización y búsqueda de incidencias.'],
-            ['nombre_opcion' => 'Incidencias - Reportar', 'descripcion' => 'Formulario para reportar nuevas incidencias.'],
-            ['nombre_opcion' => 'Incidencias - Asignar', 'descripcion' => 'Asignación de técnicos a reportes.'],
-            ['nombre_opcion' => 'Seguridad - Usuarios', 'descripcion' => 'Gestión de usuarios y asignación de roles.'],
+            ['nombre_opcion' => 'Incidencias - Gestión Total', 'descripcion' => 'Acceso completo al módulo de incidencias.'],
+            ['nombre_opcion' => 'Perfil de Usuario', 'descripcion' => 'Acceso a la información personal del usuario logueado.'],
         ];
 
         foreach ($opciones as $opcion) {
@@ -73,15 +49,15 @@ class DatabaseSeeder extends Seeder
             );
         }
 
-        // 3. Crear Usuario Administrador de Prueba
+        // 3. Crear Usuario Administrador (Tus credenciales)
         DB::table('usuario')->updateOrInsert(
-            ['nombre_usuario' => 'admin'],
+            ['correo_electronico' => 'said@admin.com'],
             [
                 'uuid' => DB::raw('uuid_generate_v4()'),
-                'correo_electronico' => 'admin@sistema.com',
-                'password_hash' => Hash::make('admin123'),
-                'nombres' => 'Administrador',
-                'apellidos' => 'del Sistema',
+                'nombre_usuario' => 'said.pinto',
+                'password_hash' => Hash::make('password123'),
+                'nombres' => 'Said',
+                'apellidos' => 'Pinto',
                 'activo' => true,
                 'deleted' => false,
                 'created_at' => now(),
@@ -90,35 +66,66 @@ class DatabaseSeeder extends Seeder
 
         // 4. Mapear Usuario a Rol Administrador
         $adminRolId = DB::table('rol')->where('codigo', 'ADMIN')->value('id');
-        $adminUsuarioId = DB::table('usuario')->where('nombre_usuario', 'admin')->value('id');
+        $usuarioId = DB::table('usuario')->where('correo_electronico', 'said@admin.com')->value('id');
 
-        if ($adminRolId && $adminUsuarioId) {
+        if ($adminRolId && $usuarioId) {
             DB::table('rol_usuario')->updateOrInsert(
-                [
-                    'id_rol' => $adminRolId,
-                    'id_usuario' => $adminUsuarioId,
-                ],
+                ['id_rol' => $adminRolId, 'id_usuario' => $usuarioId],
+                ['uuid' => DB::raw('uuid_generate_v4()'), 'deleted' => false, 'created_at' => now()]
+            );
+        }
+
+        // 5. Mapear Opciones a Rol Administrador (El Admin tiene acceso a todo)
+        $opcionIds = DB::table('opcion')->pluck('id');
+        foreach ($opcionIds as $opcionId) {
+            DB::table('rol_opcion')->updateOrInsert(
+                ['id_rol' => $adminRolId, 'id_opcion' => $opcionId],
+                ['uuid' => DB::raw('uuid_generate_v4()'), 'deleted' => false, 'created_at' => now()]
+            );
+        }
+
+        // 6. Poblar Endpoints Físicos de la API (Separados por método para respetar el CHECK de Postgres)
+        $endpoints = [
+            ['nombre' => 'Listar Incidencias', 'metodo' => 'GET', 'url' => 'api/incidencias*'],
+            ['nombre' => 'Crear Incidencia', 'metodo' => 'POST', 'url' => 'api/incidencias*'],
+            ['nombre' => 'Actualizar Incidencia', 'metodo' => 'PUT', 'url' => 'api/incidencias*'],
+            ['nombre' => 'Eliminar Incidencia', 'metodo' => 'DELETE', 'url' => 'api/incidencias*'],
+            ['nombre' => 'Ver Perfil', 'metodo' => 'GET', 'url' => 'api/user'],
+        ];
+
+        foreach ($endpoints as $endpoint) {
+            DB::table('endpoint')->updateOrInsert(
+                // Buscamos por URL y Método para no duplicar
+                ['url' => $endpoint['url'], 'metodo' => $endpoint['metodo']],
                 [
                     'uuid' => DB::raw('uuid_generate_v4()'),
+                    'nombre_endpoint' => $endpoint['nombre'],
+                    'rbac_enabled' => true,
                     'deleted' => false,
                     'created_at' => now(),
                 ]
             );
         }
 
-        // 5. Mapear Opciones a Rol Administrador (Todas las opciones para Admin)
-        $opcionIds = DB::table('opcion')->pluck('id');
-        foreach ($opcionIds as $opcionId) {
-            DB::table('rol_opcion')->updateOrInsert(
-                [
-                    'id_rol' => $adminRolId,
-                    'id_opcion' => $opcionId,
-                ],
-                [
-                    'uuid' => DB::raw('uuid_generate_v4()'),
-                    'deleted' => false,
-                    'created_at' => now(),
-                ]
+        // 7. Conectar Opciones con Endpoints
+        $idOpcionIncidencias = DB::table('opcion')->where('nombre_opcion', 'Incidencias - Gestión Total')->value('id');
+        $idOpcionPerfil = DB::table('opcion')->where('nombre_opcion', 'Perfil de Usuario')->value('id');
+
+        // Mapeamos TODOS los endpoints de incidencias a su opción
+        $incidenciaEndpoints = DB::table('endpoint')->where('url', 'api/incidencias*')->pluck('id');
+        foreach ($incidenciaEndpoints as $idEndpoint) {
+            DB::table('opcion_endpoint')->updateOrInsert(
+                ['id_opcion' => $idOpcionIncidencias, 'id_endpoint' => $idEndpoint],
+                ['uuid' => DB::raw('uuid_generate_v4()'), 'deleted' => false, 'created_at' => now()]
+            );
+        }
+
+        // Mapeamos el endpoint del perfil a su opción
+        $idEndpointPerfil = DB::table('endpoint')->where('url', 'api/user')->value('id');
+        if ($idOpcionPerfil && $idEndpointPerfil) {
+            DB::table('opcion_endpoint')->updateOrInsert(
+                ['id_opcion' => $idOpcionPerfil, 'id_endpoint' => $idEndpointPerfil],
+                ['uuid' => DB::raw('uuid_generate_v4()'), 'deleted' => false, 'created_at' => now()]
             );
         }
     }

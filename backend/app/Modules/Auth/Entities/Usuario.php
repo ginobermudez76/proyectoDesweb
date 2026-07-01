@@ -4,9 +4,11 @@ namespace App\Modules\Auth\Entities;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Str;
+use Laravel\Sanctum\HasApiTokens;
 
 class Usuario extends Authenticatable
 {
+    use HasApiTokens;
     // Nombre de la tabla
     protected $table = 'usuario';
 
