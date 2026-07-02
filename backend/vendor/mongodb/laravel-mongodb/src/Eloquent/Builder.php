@@ -223,9 +223,9 @@ class Builder extends EloquentBuilder
     }
 
     /**
-     * @param (Closure():T)|Expression|null $value
+     * @param (Closure(\MongoDB\Collection):T)|Expression|null $value
      *
-     * @return ($value is Closure ? T : ($value is null ? Collection : Expression))
+     * @return ($value is Closure ? (T is CursorInterface ? Collection<int, TModel> : T|TModel|Collection<int, TModel>) : ($value is null ? \MongoDB\Collection : \Illuminate\Contracts\Database\Query\Expression))
      *
      * @template T
      */
