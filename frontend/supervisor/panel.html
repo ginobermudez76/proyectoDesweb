@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Panel — Supervisor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+</head>
+<body>
+<div class="app-container">
+
+    <div class="greeting-header">
+        <div>
+            <div class="greeting-text">Supervisor de incidencias</div>
+            <div class="greeting-name" id="userName">…</div>
+        </div>
+        <i class="bi bi-bell" style="font-size:22px;color:var(--gray-400)"></i>
+    </div>
+
+    <!-- Resumen rápido -->
+    <div class="section" style="padding-bottom:0">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:4px">
+            <div class="card-white" style="padding:12px;text-align:center;margin-bottom:0">
+                <div style="font-size:22px;font-weight:700;color:var(--orange)" id="totalEl">—</div>
+                <div class="text-muted-sm">Total</div>
+            </div>
+            <div class="card-white" style="padding:12px;text-align:center;margin-bottom:0">
+                <div style="font-size:22px;font-weight:700;color:#EF4444" id="urgentesEl">—</div>
+                <div class="text-muted-sm">Urgentes</div>
+            </div>
+            <div class="card-white" style="padding:12px;text-align:center;margin-bottom:0">
+                <div style="font-size:22px;font-weight:700;color:var(--green)" id="resueltasEl">—</div>
+                <div class="text-muted-sm">Resueltas</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert -->
+    <div class="alert-banner" id="alertBanner" style="display:none">
+        <i class="bi bi-exclamation-triangle"></i>
+        <span id="alertText"></span>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="todas"    onclick="setFiltro(this)">Todas</button>
+        <button class="filter-tab"        data-filter="urgente"  onclick="setFiltro(this)">Urgentes</button>
+        <button class="filter-tab"        data-filter="sin-asig" onclick="setFiltro(this)">Sin asignar</button>
+        <button class="filter-tab"        data-filter="proceso"  onclick="setFiltro(this)">En proceso</button>
+    </div>
+
+    <div class="section">
+        <div class="section-title" id="countLabel">Todas las incidencias</div>
+        <div id="lista"><div class="text-muted-sm text-center py-3">Cargando…</div></div>
+    </div>
+
+</div>
+
+<nav class="bottom-nav">
+    <a href="panel.html" class="active"><i class="bi bi-house-fill"></i>Inicio</a>
+    <a href="mapa.html"><i class="bi bi-map"></i>Mapa</a>
+    <a href="#"><i class="bi bi-bell"></i>Alertas</a>
+    <a href="perfil.html"><i class="bi bi-person"></i>Perfil</a>
+</nav>
+
+<script src="../js/app.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+if (!requireSupervisor()) throw new Error('Redirigiendo');
+document.getElementById('userName').textContent = getUserName();
+
+let todas = [];
+let filtroActual = 'todas';
+
+async function cargar() {
+    try {
+        todas = await apiFetch('/incidencias');
+        const urgentes = todas.filter(i => i.prioridad === 'Urgente');
+        document.getElementById('totalEl').textContent    = todas.length;
+        document.getElementById('urgentesEl').textContent = urgentes.length;
+        document.getElementById('resueltasEl').textContent = todas.filter(i => i.estado === 'Resuelta').length;
+        if (urgentes.length) {
+            document.getElementById('alertBanner').style.display = 'flex';
+            document.getElementById('alertText').textContent =
+                `${urgentes.length} incidencia${urgentes.length > 1 ? 's urgentes' : ' urgente'} sin resolver`;
+        }
+        renderLista();
+    } catch {
+        document.getElementById('lista').innerHTML = '<div class="text-muted-sm text-center py-3">Error al cargar.</div>';
+    }
+}
+
+function filtrar(lista) {
+    switch (filtroActual) {
+        case 'urgente':  return lista.filter(i => i.prioridad === 'Urgente');
+        case 'sin-asig': return lista.filter(i => !i.asignado_a);
+        case 'proceso':  return lista.filter(i => i.estado === 'En Proceso');
+        default: return lista;
+    }
+}
+
+function setFiltro(btn) {
+    document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filtroActual = btn.dataset.filter;
+    renderLista();
+}
+
+function renderLista() {
+    const lista = filtrar(todas);
+    document.getElementById('countLabel').textContent = `Incidencias (${lista.length})`;
+    document.getElementById('lista').innerHTML = lista.length
+        ? lista.map(i => incidentCardHTML(i, `detalle.html?id=${i._id}`)).join('')
+        : '<div class="text-muted-sm text-center py-3">Sin incidencias en este filtro.</div>';
+}
+
+cargar();
+</script>
+</body>
+</html>

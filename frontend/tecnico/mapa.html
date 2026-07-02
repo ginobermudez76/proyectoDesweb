@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mapa — Técnico</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link href="../css/style.css" rel="stylesheet">
+    <style>
+        body { padding-bottom: 0; }
+        .map-wrap { position: relative; height: calc(100vh - 62px); }
+        #map { width: 100%; height: 100%; }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="map-wrap">
+        <div id="map"></div>
+        <div class="map-legend">
+            <div style="font-weight:600;font-size:11px;margin-bottom:4px">Prioridad</div>
+            <div><span class="legend-dot" style="background:#EF4444"></span>Urgente</div>
+            <div><span class="legend-dot" style="background:#F97316"></span>Media</div>
+            <div><span class="legend-dot" style="background:#3B82F6"></span>Baja</div>
+        </div>
+        <div class="map-bottom-card" id="nearestCard" style="display:none">
+            <div class="text-muted-sm" style="margin-bottom:4px">MÁS CERCANA ASIGNADA A MÍ</div>
+            <div style="display:flex;align-items:center;gap:6px">
+                <span class="legend-dot" id="nearestDot" style="width:12px;height:12px;border-radius:50%;display:inline-block"></span>
+                <span style="font-size:14px;font-weight:600" id="nearestTitle">—</span>
+                <span class="text-muted-sm" id="nearestDist"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<nav class="bottom-nav">
+    <a href="panel.html"><i class="bi bi-house"></i>Inicio</a>
+    <a href="mapa.html" class="active"><i class="bi bi-map-fill"></i>Mapa</a>
+    <a href="#"><i class="bi bi-bell"></i>Alertas</a>
+    <a href="perfil.html"><i class="bi bi-person"></i>Perfil</a>
+</nav>
+
+<script src="../js/app.js"></script>
+<script src="../js/auth.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+if (!requireTecnico()) throw new Error('Redirigiendo');
+
+const user = getUser();
+const PRIORIDAD_COLOR = { 'Urgente':'#EF4444', 'Alta':'#EF4444', 'Media':'#F97316', 'Normal':'#F97316', 'Baja':'#3B82F6' };
+
+const map = L.map('map').setView([19.4326, -99.1332], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OpenStreetMap' }).addTo(map);
+
+function haversine([lat1,lng1],[lat2,lng2]) {
+    const R=6371000, dLat=(lat2-lat1)*Math.PI/180, dLng=(lng2-lng1)*Math.PI/180;
+    const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+let userPos = null;
+if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(pos => {
+        userPos = [pos.coords.latitude, pos.coords.longitude];
+        map.setView(userPos, 14);
+        L.circleMarker(userPos, { radius:8, color:'#fff', fillColor:'#6366F1', fillOpacity:1, weight:2 })
+            .addTo(map).bindPopup('Tu ubicación');
+    });
+}
+
+async function cargar() {
+    try {
+        const data = await apiFetch('/incidencias');
+        const mias = data.filter(i => String(i.asignado_a) === String(user.id));
+        let nearest = null, minDist = Infinity;
+
+        mias.forEach(inc => {
+            if (!inc.ubicacion?.coordinates) return;
+            const [lng, lat] = inc.ubicacion.coordinates;
+            const color = PRIORIDAD_COLOR[inc.prioridad] || '#9CA3AF';
+            L.circleMarker([lat,lng], { radius:11, color:'#fff', fillColor:color, fillOpacity:0.9, weight:2 })
+                .addTo(map)
+                .bindPopup(`<b>${inc.titulo}</b><br>${inc.prioridad||'Media'}<br><a href="detalle.html?id=${inc._id}">Ver →</a>`);
+            if (userPos) {
+                const d = haversine(userPos,[lat,lng]);
+                if (d < minDist) { minDist=d; nearest={inc,color}; }
+            }
+        });
+
+        if (nearest) {
+            document.getElementById('nearestCard').style.display = 'block';
+            document.getElementById('nearestDot').style.background = nearest.color;
+            document.getElementById('nearestTitle').textContent = nearest.inc.titulo;
+            const m = Math.round(minDist);
+            document.getElementById('nearestDist').textContent = m>=1000?`${(m/1000).toFixed(1)} km`:`${m} m`;
+            document.getElementById('nearestCard').onclick = () =>
+                window.location.href = `detalle.html?id=${nearest.inc._id}`;
+            document.getElementById('nearestCard').style.cursor = 'pointer';
+        }
+    } catch {}
+}
+
+cargar();
+</script>
+</body>
+</html>
