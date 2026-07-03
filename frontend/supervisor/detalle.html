@@ -52,110 +52,114 @@ function render({ incidencia: inc, historial_seguimiento, comentarios }) {
     const hasCoords = inc.ubicacion?.coordinates;
 
     document.getElementById('content').innerHTML = `
-        ${hasCoords ? `<div class="section" style="padding-bottom:8px">
-            <div class="map-mini" id="detalleMap"></div>
-        </div>` : ''}
+    <div class="detail-layout">
 
-        <div class="section" style="padding-bottom:8px">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-                <span style="font-size:18px;font-weight:700;color:var(--gray-900)">${inc.titulo}</span>
-                <span class="badge-status ${p.badgeCls}">${inc.prioridad || 'Media'}</span>
+        <!-- COLUMNA IZQUIERDA: mapa + ubicación + asignación -->
+        <div class="detail-left">
+            ${hasCoords ? `
+            <div class="section" style="padding-bottom:8px">
+                <div class="map-mini" id="detalleMap"></div>
             </div>
-            <div class="text-muted-sm">Reportado ${timeAgo(inc.fecha_creacion)}</div>
-        </div>
-
-        <div class="divider"></div>
-
-        <!-- Estado: interactivo según condiciones -->
-        <div class="section">
-            ${!inc.asignado_a ? `
-                <!-- Sin técnico: supervisor puede cambiar cualquier estado -->
-                <div class="section-title">Estado actual
-                    <span style="font-size:11px;color:var(--orange);font-weight:400;margin-left:6px">
-                        — sin técnico asignado, puedes actuar directamente
-                    </span>
-                </div>
-                <div class="status-selector">
-                    <button class="status-btn ${inc.estado === 'Pendiente'  ? 'active-recibido' : ''}" onclick="selEstado('Pendiente')">Recibido</button>
-                    <button class="status-btn ${inc.estado === 'En Proceso' ? 'active-proceso'  : ''}" onclick="selEstado('En Proceso')">En proceso</button>
-                    <button class="status-btn ${inc.estado === 'Resuelta'   ? 'active-resuelto' : ''}" onclick="selEstado('Resuelta')">Resuelto</button>
-                </div>
-                <button class="btn-orange mt-2" onclick="guardarEstado()">
-                    <i class="bi bi-check-circle"></i> Actualizar estado
-                </button>
-            ` : `
-                <!-- Con técnico: solo lectura, excepto rechazar si ya está Resuelta -->
-                <div class="section-title">Estado actual
-                    <span style="font-size:11px;color:var(--gray-400);font-weight:400;margin-left:6px">
-                        — gestionado por el técnico asignado
-                    </span>
-                </div>
-                <div class="readonly-estado">
-                    <div class="status-btn ${inc.estado === 'Pendiente'  ? 'active-recibido' : ''}">Recibido</div>
-                    <div class="status-btn ${inc.estado === 'En Proceso' ? 'active-proceso'  : ''}">En proceso</div>
-                    <div class="status-btn ${inc.estado === 'Resuelta'   ? 'active-resuelto' : ''}">Resuelto</div>
-                </div>
-                ${inc.estado === 'Resuelta' ? `
-                <button onclick="rechazarResolucion()"
-                    style="margin-top:10px;width:100%;padding:11px;border-radius:12px;
-                           border:1.5px solid #EF4444;background:#FEF2F2;color:#B91C1C;
-                           font-weight:600;font-size:13px;cursor:pointer">
-                    <i class="bi bi-x-circle"></i> Rechazar resolución — devolver a En proceso
-                </button>` : ''}
-            `}
-        </div>
-
-        <div class="divider"></div>
-
-        <!-- Asignación de técnico -->
-        <div class="section">
-            <div class="section-title">Técnico asignado</div>
-            <div class="assigned-row">
-                <div style="display:flex;align-items:center">
-                    ${inc.asignado_a
-                        ? `<div class="assigned-avatar">T</div>
-                           <span style="font-size:14px;font-weight:500">ID: ${inc.asignado_a}</span>`
-                        : `<span class="text-muted-sm">Sin asignar</span>`}
-                </div>
-                <button class="btn-cambiar" onclick="reasignar()">
-                    <i class="bi bi-person-plus"></i> ${inc.asignado_a ? 'Reasignar' : 'Asignar'}
-                </button>
-            </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <!-- Descripción -->
-        <div class="section">
-            <div class="section-title">Descripción del ciudadano</div>
-            <p style="font-size:14px;color:#4B5563;line-height:1.6">${inc.descripcion || '—'}</p>
-            ${hasCoords ? `<div class="location-row" style="margin-top:8px">
-                <div class="loc-text">
-                    <i class="bi bi-geo-alt-fill" style="color:var(--orange)"></i>
-                    ${inc.ubicacion.coordinates[1].toFixed(5)}, ${inc.ubicacion.coordinates[0].toFixed(5)}
+            <div class="section" style="padding-top:0;padding-bottom:8px">
+                <div class="location-row">
+                    <div class="loc-text">
+                        <i class="bi bi-geo-alt-fill" style="color:var(--orange)"></i>
+                        ${inc.ubicacion.coordinates[1].toFixed(5)}, ${inc.ubicacion.coordinates[0].toFixed(5)}
+                    </div>
                 </div>
             </div>` : ''}
+
+            <div class="section">
+                <div class="section-title">Técnico asignado</div>
+                <div class="assigned-row">
+                    <div style="display:flex;align-items:center">
+                        ${inc.asignado_a
+                            ? `<div class="assigned-avatar">T</div>
+                               <span style="font-size:14px;font-weight:500">ID: ${inc.asignado_a}</span>`
+                            : `<span class="text-muted-sm">Sin asignar</span>`}
+                    </div>
+                    <button class="btn-cambiar" onclick="reasignar()">
+                        <i class="bi bi-person-plus"></i> ${inc.asignado_a ? 'Reasignar' : 'Asignar'}
+                    </button>
+                </div>
+            </div>
         </div>
 
-        <div class="divider"></div>
+        <!-- COLUMNA DERECHA: info + estado + historial + notas -->
+        <div class="detail-right">
+            <div class="section" style="padding-bottom:8px">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+                    <span style="font-size:18px;font-weight:700;color:var(--gray-900)">${inc.titulo}</span>
+                    <span class="badge-status ${p.badgeCls}">${inc.prioridad || 'Media'}</span>
+                </div>
+                <div class="text-muted-sm">Reportado ${timeAgo(inc.fecha_creacion)}</div>
+            </div>
 
-        <!-- Historial de seguimiento -->
-        <div class="section">
-            <div class="section-title">Historial de cambios</div>
-            ${buildHistorial(historial_seguimiento)}
+            <div class="divider"></div>
+
+            <div class="section">
+                ${!inc.asignado_a ? `
+                    <div class="section-title">Estado actual
+                        <span style="font-size:11px;color:var(--orange);font-weight:400;margin-left:6px">
+                            — sin técnico asignado
+                        </span>
+                    </div>
+                    <div class="status-selector">
+                        <button class="status-btn ${inc.estado === 'Pendiente'  ? 'active-recibido' : ''}" onclick="selEstado('Pendiente')">Recibido</button>
+                        <button class="status-btn ${inc.estado === 'En Proceso' ? 'active-proceso'  : ''}" onclick="selEstado('En Proceso')">En proceso</button>
+                        <button class="status-btn ${inc.estado === 'Resuelta'   ? 'active-resuelto' : ''}" onclick="selEstado('Resuelta')">Resuelto</button>
+                    </div>
+                    <button class="btn-orange mt-2" onclick="guardarEstado()">
+                        <i class="bi bi-check-circle"></i> Actualizar estado
+                    </button>
+                ` : `
+                    <div class="section-title">Estado actual
+                        <span style="font-size:11px;color:var(--gray-400);font-weight:400;margin-left:6px">
+                            — gestionado por el técnico
+                        </span>
+                    </div>
+                    <div class="readonly-estado">
+                        <div class="status-btn ${inc.estado === 'Pendiente'  ? 'active-recibido' : ''}">Recibido</div>
+                        <div class="status-btn ${inc.estado === 'En Proceso' ? 'active-proceso'  : ''}">En proceso</div>
+                        <div class="status-btn ${inc.estado === 'Resuelta'   ? 'active-resuelto' : ''}">Resuelto</div>
+                    </div>
+                    ${inc.estado === 'Resuelta' ? `
+                    <button onclick="rechazarResolucion()"
+                        style="margin-top:10px;width:100%;padding:11px;border-radius:12px;
+                               border:1.5px solid #EF4444;background:#FEF2F2;color:#B91C1C;
+                               font-weight:600;font-size:13px;cursor:pointer">
+                        <i class="bi bi-x-circle"></i> Rechazar resolución — devolver a En proceso
+                    </button>` : ''}
+                `}
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+                <div class="section-title">Descripción del ciudadano</div>
+                <p style="font-size:14px;color:#4B5563;line-height:1.6">${inc.descripcion || '—'}</p>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+                <div class="section-title">Historial de cambios</div>
+                ${buildHistorial(historial_seguimiento)}
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+                <div class="section-title">Notas del equipo</div>
+                ${buildComentarios(comentarios)}
+                <textarea class="form-input mt-2" id="notaInput" placeholder="Agregar observación de supervisión…"></textarea>
+                <button class="btn-orange mt-2" onclick="agregarNota()">
+                    <i class="bi bi-chat-left-text"></i> Agregar nota
+                </button>
+            </div>
         </div>
 
-        <div class="divider"></div>
-
-        <!-- Notas / comentarios -->
-        <div class="section">
-            <div class="section-title">Notas del equipo</div>
-            ${buildComentarios(comentarios)}
-            <textarea class="form-input mt-2" id="notaInput" placeholder="Agregar observación de supervisión…"></textarea>
-            <button class="btn-orange mt-2" onclick="agregarNota()">
-                <i class="bi bi-chat-left-text"></i> Agregar nota
-            </button>
-        </div>
+    </div>
     `;
 
     if (hasCoords) initMap(inc.ubicacion.coordinates);

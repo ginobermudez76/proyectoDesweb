@@ -131,3 +131,100 @@ function incidentCardHTML(inc, href) {
         <span class="badge-status ${e.cls}">${e.label}</span>
     </div>`;
 }
+
+/* ===== DESKTOP SIDEBAR INJECTION ===== */
+
+const NAV_LINKS = {
+    CIUDADANO: [
+        { href: 'home.html',    icon: 'bi-house-fill', label: 'Inicio'   },
+        { href: 'mapa.html',    icon: 'bi-map',        label: 'Mapa'     },
+        { href: 'perfil.html',  icon: 'bi-person',     label: 'Perfil'   },
+    ],
+    TECNICO: [
+        { href: 'panel.html',   icon: 'bi-house-fill', label: 'Inicio'   },
+        { href: 'mapa.html',    icon: 'bi-map',        label: 'Mapa'     },
+        { href: 'perfil.html',  icon: 'bi-person',     label: 'Perfil'   },
+    ],
+    SUPERVISOR: [
+        { href: 'panel.html',   icon: 'bi-house-fill', label: 'Inicio'   },
+        { href: 'mapa.html',    icon: 'bi-map',        label: 'Mapa'     },
+        { href: 'perfil.html',  icon: 'bi-person',     label: 'Perfil'   },
+    ],
+    ADMIN: [
+        { href: 'panel.html',    icon: 'bi-house-fill', label: 'Inicio'  },
+        { href: 'usuarios.html', icon: 'bi-people',     label: 'Usuarios'},
+        { href: 'perfil.html',   icon: 'bi-person',     label: 'Perfil'  },
+    ],
+};
+
+function _navPrefix() {
+    const p = window.location.pathname;
+    return ['/ciudadano/', '/tecnico/', '/supervisor/', '/admin/'].some(s => p.includes(s))
+        ? '../' : '';
+}
+
+function _roleFolder() {
+    const p = window.location.pathname;
+    for (const f of ['ciudadano','tecnico','supervisor','admin']) {
+        if (p.includes(`/${f}/`)) return f;
+    }
+    return { CIUDADANO:'ciudadano', TECNICO:'tecnico', SUPERVISOR:'supervisor', ADMIN:'admin' }[getRole()] || '';
+}
+
+function _decorateExistingNav(nav) {
+    if (!nav.querySelector('.nav-brand')) {
+        const brand = document.createElement('div');
+        brand.className = 'nav-brand';
+        brand.innerHTML = '<span class="nav-brand-icon">📍</span> Incidencias';
+        nav.prepend(brand);
+    }
+    if (!nav.querySelector('.nav-logout-link')) {
+        const spacer = document.createElement('div');
+        spacer.className = 'nav-divider';
+        const btn = document.createElement('a');
+        btn.href = '#';
+        btn.className = 'nav-logout-link';
+        btn.innerHTML = '<i class="bi bi-box-arrow-right"></i><span>Cerrar sesión</span>';
+        btn.addEventListener('click', e => { e.preventDefault(); logout(); });
+        nav.appendChild(spacer);
+        nav.appendChild(btn);
+    }
+}
+
+function _injectSidebarForPage() {
+    const role  = getRole();
+    const links = NAV_LINKS[role];
+    if (!links) return;
+
+    const prefix = _navPrefix();
+    const folder = _roleFolder();
+
+    const nav = document.createElement('nav');
+    nav.className = 'bottom-nav';
+    nav.innerHTML = `
+        <div class="nav-brand"><span class="nav-brand-icon">📍</span> Incidencias</div>
+        ${links.map(l =>
+            `<a href="${prefix}${folder}/${l.href}"><i class="bi ${l.icon}"></i><span>${l.label}</span></a>`
+        ).join('')}
+        <div class="nav-divider"></div>
+        <a href="#" class="nav-logout-link" id="_sidebarLogout">
+            <i class="bi bi-box-arrow-right"></i><span>Cerrar sesión</span>
+        </a>`;
+
+    document.body.appendChild(nav);
+    nav.querySelector('#_sidebarLogout').addEventListener('click', e => {
+        e.preventDefault(); logout();
+    });
+
+    document.body.style.paddingLeft  = '240px';
+    document.body.style.paddingBottom = '0';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const existingNav = document.querySelector('.bottom-nav');
+    if (existingNav) {
+        _decorateExistingNav(existingNav);
+    } else if (window.innerWidth >= 768 && getToken()) {
+        _injectSidebarForPage();
+    }
+});

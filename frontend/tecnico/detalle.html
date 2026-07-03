@@ -21,11 +21,6 @@
 
 </div>
 
-<div class="action-bar">
-    <button onclick="llamar()"><i class="bi bi-telephone"></i> Llamar</button>
-    <button onclick="window.open('https://www.google.com/maps','_blank')"><i class="bi bi-send"></i> Cómo llegar</button>
-</div>
-
 <script src="../js/app.js"></script>
 <script src="../js/auth.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -53,58 +48,74 @@ function render({ incidencia: inc, comentarios }) {
     const hasCoords = inc.ubicacion?.coordinates;
 
     document.getElementById('content').innerHTML = `
-        ${hasCoords ? `<div class="section" style="padding-bottom:8px">
-            <div class="map-mini" id="detalleMap"></div>
-        </div>` : ''}
+    <div class="detail-layout">
 
-        <div class="section" style="padding-bottom:8px">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-                <span style="font-size:18px;font-weight:700;color:var(--gray-900)">${inc.titulo}</span>
-                <span class="badge-status ${p.badgeCls}">${inc.prioridad || 'Media'}</span>
+        <!-- COLUMNA IZQUIERDA: mapa + ubicación -->
+        <div class="detail-left">
+            ${hasCoords ? `
+            <div class="section" style="padding-bottom:8px">
+                <div class="map-mini" id="detalleMap" style="cursor:pointer" title="Abrir en Google Maps"></div>
             </div>
-            <div class="text-muted-sm">Reportado ${timeAgo(inc.fecha_creacion)}</div>
-        </div>
-
-        <div class="divider"></div>
-
-        <!-- Estado: técnico puede cambiar -->
-        <div class="section">
-            <div class="section-title">Actualizar estado</div>
-            <div class="status-selector">
-                <button class="status-btn" id="btnPendiente" onclick="selEstado('Pendiente')">Recibido</button>
-                <button class="status-btn" id="btnProceso"   onclick="selEstado('En Proceso')">En proceso</button>
-                <button class="status-btn" id="btnResuelta"  onclick="selEstado('Resuelta')">Resuelto</button>
-            </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <!-- Descripción ciudadano -->
-        <div class="section">
-            <div class="section-title">Descripción del ciudadano</div>
-            <p style="font-size:14px;color:#4B5563;line-height:1.6">${inc.descripcion || '—'}</p>
-            ${hasCoords ? `<div class="location-row" style="margin-top:8px">
-                <div class="loc-text">
-                    <i class="bi bi-geo-alt-fill" style="color:var(--orange)"></i>
-                    ${inc.ubicacion.coordinates[1].toFixed(5)}, ${inc.ubicacion.coordinates[0].toFixed(5)}
+            <div class="section" style="padding-top:0;padding-bottom:8px">
+                <div class="location-row">
+                    <div class="loc-text">
+                        <i class="bi bi-geo-alt-fill" style="color:var(--orange)"></i>
+                        ${inc.ubicacion.coordinates[1].toFixed(5)}, ${inc.ubicacion.coordinates[0].toFixed(5)}
+                    </div>
                 </div>
             </div>` : ''}
+            <div class="action-bar">
+                <button onclick="llamar()"><i class="bi bi-telephone"></i> Llamar</button>
+                <button onclick="window.open('https://www.google.com/maps','_blank')">
+                    <i class="bi bi-send"></i> Cómo llegar
+                </button>
+            </div>
         </div>
 
-        <div class="divider"></div>
+        <!-- COLUMNA DERECHA: info + estado + notas -->
+        <div class="detail-right">
+            <div class="section" style="padding-bottom:8px">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+                    <span style="font-size:18px;font-weight:700;color:var(--gray-900)">${inc.titulo}</span>
+                    <span class="badge-status ${p.badgeCls}">${inc.prioridad || 'Media'}</span>
+                </div>
+                <div class="text-muted-sm">Reportado ${timeAgo(inc.fecha_creacion)}</div>
+            </div>
 
-        <!-- Notas del técnico -->
-        <div class="section">
-            <div class="section-title">Notas del técnico</div>
-            ${buildComentarios(comentarios)}
-            <textarea class="form-input mt-2" id="notaInput" placeholder="Agrega notas sobre la atención…"></textarea>
+            <div class="divider"></div>
+
+            <div class="section">
+                <div class="section-title">Actualizar estado</div>
+                <div class="status-selector">
+                    <button class="status-btn" id="btnPendiente" onclick="selEstado('Pendiente')">Recibido</button>
+                    <button class="status-btn" id="btnProceso"   onclick="selEstado('En Proceso')">En proceso</button>
+                    <button class="status-btn" id="btnResuelta"  onclick="selEstado('Resuelta')">Resuelto</button>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+                <div class="section-title">Descripción del ciudadano</div>
+                <p style="font-size:14px;color:#4B5563;line-height:1.6">${inc.descripcion || '—'}</p>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+                <div class="section-title">Notas del técnico</div>
+                ${buildComentarios(comentarios)}
+                <textarea class="form-input mt-2" id="notaInput" placeholder="Agrega notas sobre la atención…"></textarea>
+            </div>
+
+            <div class="section" style="padding-top:0">
+                <button class="btn-orange" onclick="guardar()">
+                    <i class="bi bi-check-circle"></i> Actualizar estado
+                </button>
+            </div>
         </div>
 
-        <div class="section" style="padding-top:0">
-            <button class="btn-orange" onclick="guardar()">
-                <i class="bi bi-check-circle"></i> Actualizar estado
-            </button>
-        </div>
+    </div>
     `;
 
     marcaBotonesEstado(estadoActual);

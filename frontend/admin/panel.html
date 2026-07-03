@@ -35,8 +35,7 @@
     <!-- Stats del sistema -->
     <div class="section">
         <div class="section-title">Resumen del sistema</div>
-        <div style="display:flex;flex-direction:column;gap:10px">
-
+        <div class="admin-stats-wrap">
             <div class="stat-card">
                 <div class="icon-circle" style="background:#FFF7ED">
                     <i class="bi bi-exclamation-circle" style="color:var(--orange)"></i>
@@ -46,32 +45,29 @@
                     <div class="lbl">Total de incidencias</div>
                 </div>
             </div>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-                <div class="stat-card">
-                    <div class="icon-circle" style="background:#FEE2E2">
-                        <i class="bi bi-fire" style="color:#EF4444"></i>
-                    </div>
-                    <div><div class="val" id="urgentesEl">—</div><div class="lbl">Urgentes</div></div>
+            <div class="stat-card">
+                <div class="icon-circle" style="background:#FEE2E2">
+                    <i class="bi bi-fire" style="color:#EF4444"></i>
                 </div>
-                <div class="stat-card">
-                    <div class="icon-circle" style="background:#D1FAE5">
-                        <i class="bi bi-check-circle" style="color:var(--green)"></i>
-                    </div>
-                    <div><div class="val" id="resueltasEl">—</div><div class="lbl">Resueltas</div></div>
+                <div><div class="val" id="urgentesEl">—</div><div class="lbl">Urgentes</div></div>
+            </div>
+            <div class="stat-card">
+                <div class="icon-circle" style="background:#D1FAE5">
+                    <i class="bi bi-check-circle" style="color:var(--green)"></i>
                 </div>
-                <div class="stat-card">
-                    <div class="icon-circle" style="background:#DBEAFE">
-                        <i class="bi bi-clock" style="color:var(--blue)"></i>
-                    </div>
-                    <div><div class="val" id="pendientesEl">—</div><div class="lbl">Pendientes</div></div>
+                <div><div class="val" id="resueltasEl">—</div><div class="lbl">Resueltas</div></div>
+            </div>
+            <div class="stat-card">
+                <div class="icon-circle" style="background:#DBEAFE">
+                    <i class="bi bi-clock" style="color:var(--blue)"></i>
                 </div>
-                <div class="stat-card">
-                    <div class="icon-circle" style="background:#FED7AA">
-                        <i class="bi bi-arrow-repeat" style="color:var(--orange)"></i>
-                    </div>
-                    <div><div class="val" id="procesoEl">—</div><div class="lbl">En proceso</div></div>
+                <div><div class="val" id="pendientesEl">—</div><div class="lbl">Pendientes</div></div>
+            </div>
+            <div class="stat-card">
+                <div class="icon-circle" style="background:#FED7AA">
+                    <i class="bi bi-arrow-repeat" style="color:var(--orange)"></i>
                 </div>
+                <div><div class="val" id="procesoEl">—</div><div class="lbl">En proceso</div></div>
             </div>
         </div>
     </div>

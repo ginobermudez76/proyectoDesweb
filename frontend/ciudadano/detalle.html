@@ -53,58 +53,63 @@ function render({ incidencia: inc, historial_seguimiento, comentarios }) {
     const hasCoords = inc.ubicacion && inc.ubicacion.coordinates;
 
     document.getElementById('content').innerHTML = `
-        <!-- Mini mapa -->
-        <div class="section" style="padding-bottom:8px">
-            <div class="map-mini" id="detalleMap" style="${!hasCoords ? 'display:none' : ''}"></div>
-        </div>
+    <div class="detail-layout">
 
-        <!-- Título y estado -->
-        <div class="section" style="padding-top:8px;padding-bottom:8px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-                <span style="font-size:18px;font-weight:700;color:var(--gray-900)">${inc.titulo}</span>
-                <span class="badge-status ${e.cls}">${e.label}</span>
+        <!-- COLUMNA IZQUIERDA: mapa + ubicación + progreso -->
+        <div class="detail-left">
+            <div class="section" style="padding-bottom:8px">
+                <div class="map-mini" id="detalleMap" style="${!hasCoords ? 'display:none' : ''}"></div>
             </div>
-            <div class="text-muted-sm">
-                Reportado el ${formatDate(inc.fecha_creacion)}
-            </div>
-            <div class="progress-3step mt-2" style="margin-top:12px">${progressBars(inc.estado)}</div>
-        </div>
 
-        <div class="divider"></div>
-
-        <!-- Seguimiento / Timeline -->
-        <div class="section">
-            <div class="section-title">Seguimiento</div>
-            <div class="timeline">
-                ${seguimientoHTML}
-            </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <!-- Descripción -->
-        <div class="section">
-            <div class="section-title">Descripción</div>
-            <p style="font-size:14px;color:#4B5563;line-height:1.6">${inc.descripcion || '—'}</p>
-        </div>
-
-        ${hasCoords ? `
-        <div class="section" style="padding-top:0">
-            <div class="location-row">
-                <div class="loc-text">
-                    <i class="bi bi-geo-alt-fill" style="color:var(--orange)"></i>
-                    ${inc.ubicacion.coordinates[1].toFixed(5)}, ${inc.ubicacion.coordinates[0].toFixed(5)}
+            ${hasCoords ? `
+            <div class="section" style="padding-top:0;padding-bottom:8px">
+                <div class="location-row">
+                    <div class="loc-text">
+                        <i class="bi bi-geo-alt-fill" style="color:var(--orange)"></i>
+                        ${inc.ubicacion.coordinates[1].toFixed(5)}, ${inc.ubicacion.coordinates[0].toFixed(5)}
+                    </div>
                 </div>
+            </div>` : ''}
+
+            <div class="section" style="padding-top:8px">
+                <div class="section-title">Progreso</div>
+                <div class="progress-3step" style="margin-top:12px">${progressBars(inc.estado)}</div>
             </div>
-        </div>` : ''}
-
-        <div class="divider"></div>
-
-        <!-- Actualizaciones / Comentarios -->
-        <div class="section">
-            <div class="section-title">Actualizaciones</div>
-            ${comentariosHTML}
         </div>
+
+        <!-- COLUMNA DERECHA: info + seguimiento + descripción + comentarios -->
+        <div class="detail-right">
+            <div class="section" style="padding-bottom:8px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                    <span style="font-size:18px;font-weight:700;color:var(--gray-900)">${inc.titulo}</span>
+                    <span class="badge-status ${e.cls}">${e.label}</span>
+                </div>
+                <div class="text-muted-sm">Reportado el ${formatDate(inc.fecha_creacion)}</div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+                <div class="section-title">Seguimiento</div>
+                <div class="timeline">${seguimientoHTML}</div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+                <div class="section-title">Descripción</div>
+                <p style="font-size:14px;color:#4B5563;line-height:1.6">${inc.descripcion || '—'}</p>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+                <div class="section-title">Actualizaciones</div>
+                ${comentariosHTML}
+            </div>
+        </div>
+
+    </div>
     `;
 
     if (hasCoords) initMap(inc.ubicacion.coordinates);
