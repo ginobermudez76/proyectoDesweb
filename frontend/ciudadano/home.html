@@ -6,6 +6,7 @@
     <title>Inicio — Ciudadano</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="../css/style.css" rel="stylesheet">
 </head>
 <body>
@@ -80,6 +81,7 @@ async function cargarReportes() {
         const data = await apiFetch('/incidencias');
         // Filtrar por usuario actual
         const mis = data.filter(i => String(i.usuario_id) === String(user.id));
+        showNotifBadge(mis.filter(i => i.estado !== 'Pendiente').length);
         renderReportes(mis);
     } catch (e) {
         document.getElementById('reportesList').innerHTML =
@@ -96,7 +98,7 @@ function renderReportes(lista) {
     el.innerHTML = lista.map(i => {
         const e = estadoInfo(i.estado);
         return `
-        <div class="incident-card" onclick="window.location.href='detalle.html?id=${i._id}'">
+        <div class="incident-card" onclick="window.location.href='detalle.html?id=${i.id}'">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
                 <span style="font-size:14px;font-weight:600;color:var(--gray-900)">${i.titulo}</span>
                 <span class="badge-status ${e.cls}">${e.label}</span>

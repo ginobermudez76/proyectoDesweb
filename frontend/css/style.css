@@ -11,6 +11,12 @@ body {
 /* Remove bottom padding when no bottom nav exists (detail/form/login pages) */
 body:not(:has(.bottom-nav)) { padding-bottom: 0; }
 
+/* ===== BOOTSTRAP OVERRIDES ===== */
+/* Neutralize Bootstrap resets that conflict with our custom design */
+a { text-decoration: none; }
+h1,h2,h3,h4,h5,h6 { margin-bottom: 0; }
+p { margin-bottom: 0; }
+
 .app-container {
     max-width: 430px;
     margin: 0 auto;
@@ -552,11 +558,6 @@ body:not(:has(.bottom-nav)) { padding-bottom: 0; }
 
 textarea.form-input { resize: vertical; min-height: 80px; }
 
-.mt-2 { margin-top: 8px; }
-.py-3 { padding-top: 12px; padding-bottom: 12px; }
-.py-5 { padding-top: 20px; padding-bottom: 20px; }
-.text-center { text-align: center; }
-
 /* ===== ADMIN STATS WRAP ===== */
 .admin-stats-wrap {
     display: grid;
@@ -582,7 +583,9 @@ textarea.form-input { resize: vertical; min-height: 80px; }
     text-decoration: none;
 }
 .nav-brand-icon { font-size: 22px; line-height: 1; }
-.nav-divider { flex: 1; min-height: 16px; }
+.nav-divider { display: none; flex: 1; min-height: 16px; }
+/* especificidad mayor que .bottom-nav a para ocultar en mobile */
+.bottom-nav a.nav-logout-link { display: none; }
 .nav-logout-link {
     display: none;
     align-items: center;
@@ -630,8 +633,9 @@ textarea.form-input { resize: vertical; min-height: 80px; }
         gap: 0;
     }
 
-    .nav-brand        { display: flex; }
-    .nav-logout-link  { display: flex; }
+    .nav-brand                    { display: flex; }
+    .nav-divider                  { display: flex; }
+    .bottom-nav a.nav-logout-link { display: flex; }
 
     .bottom-nav a {
         flex-direction: row;

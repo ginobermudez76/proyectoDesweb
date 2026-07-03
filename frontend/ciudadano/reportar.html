@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Reportar incidencia</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="../css/style.css" rel="stylesheet">
 </head>
 <body>
@@ -18,27 +19,13 @@
 
     <div class="section">
 
-        <!-- Categoría -->
-        <div class="section-title">Categoría</div>
-        <div class="category-grid" id="categoryGrid">
-            <div class="category-item" data-cat="Agua" onclick="selectCat(this)">
-                <i class="bi bi-droplet"></i>Agua
-            </div>
-            <div class="category-item" data-cat="Vialidad" onclick="selectCat(this)">
-                <i class="bi bi-cone-striped"></i>Vialidad
-            </div>
-            <div class="category-item" data-cat="Alumbrado" onclick="selectCat(this)">
-                <i class="bi bi-lightbulb"></i>Alumbrado
-            </div>
-            <div class="category-item" data-cat="Basura" onclick="selectCat(this)">
-                <i class="bi bi-trash"></i>Basura
-            </div>
-            <div class="category-item" data-cat="Seguridad" onclick="selectCat(this)">
-                <i class="bi bi-shield"></i>Seguridad
-            </div>
-            <div class="category-item" data-cat="Otro" onclick="selectCat(this)">
-                <i class="bi bi-three-dots"></i>Otro
-            </div>
+        <!-- Tipo de incidencia -->
+        <div class="section-title">Tipo de incidencia</div>
+        <div class="category-grid" id="tipoGrid" style="grid-template-columns:repeat(2,1fr)"></div>
+
+        <div id="subtipoWrap" style="display:none;margin-top:8px">
+            <div class="section-title">Subtipo</div>
+            <div class="category-grid" id="subtipoGrid" style="grid-template-columns:repeat(auto-fit,minmax(80px,1fr))"></div>
         </div>
 
         <!-- Foto -->
@@ -79,16 +66,37 @@
 <script>
 if (!requireCiudadano()) throw new Error('Redirigiendo');
 
-let selectedCat = null;
-let userLat = null;
-let userLng = null;
-let fotoFile = null;
+const TIPOS = {
+    'Infraestructura': { icon: 'bi-building',  subs: ['Alumbrado', 'Vialidad', 'Agua potable', 'Alcantarillado'] },
+    'Seguridad':       { icon: 'bi-shield',    subs: ['Robo', 'Vandalismo', 'Iluminación'] },
+    'Medio ambiente':  { icon: 'bi-tree',      subs: ['Basura', 'Contaminación', 'Áreas verdes'] },
+    'Servicios':       { icon: 'bi-tools',     subs: ['Otro'] },
+};
 
-function selectCat(el) {
-    document.querySelectorAll('.category-item').forEach(e => e.classList.remove('selected'));
-    el.classList.add('selected');
-    selectedCat = el.dataset.cat;
+let selectedTipo = null, selectedSub = null;
+let userLat = null, userLng = null, fotoFile = null;
+
+function selectTipo(tipo) {
+    selectedTipo = tipo; selectedSub = null;
+    document.querySelectorAll('#tipoGrid .category-item')
+        .forEach(el => el.classList.toggle('selected', el.dataset.val === tipo));
+    document.getElementById('subtipoGrid').innerHTML = TIPOS[tipo].subs.map(s =>
+        `<div class="category-item" data-val="${s}" onclick="selectSub(this)">
+            <i class="bi bi-tag"></i>${s}
+        </div>`).join('');
+    document.getElementById('subtipoWrap').style.display = '';
 }
+
+function selectSub(el) {
+    document.querySelectorAll('#subtipoGrid .category-item').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedSub = el.dataset.val;
+}
+
+document.getElementById('tipoGrid').innerHTML = Object.entries(TIPOS).map(([t, { icon }]) =>
+    `<div class="category-item" data-val="${t}" onclick="selectTipo('${t}')">
+        <i class="bi ${icon}"></i>${t}
+    </div>`).join('');
 
 function onFotoChange(input) {
     if (input.files.length) {
@@ -131,7 +139,7 @@ async function enviarReporte() {
     const btn   = document.getElementById('sendBtn');
     errEl.style.display = 'none';
 
-    if (!selectedCat) { errEl.textContent = 'Selecciona una categoría.'; errEl.style.display = 'block'; return; }
+    if (!selectedTipo || !selectedSub) { errEl.textContent = 'Selecciona tipo y subtipo.'; errEl.style.display = 'block'; return; }
     if (!userLat)     { errEl.textContent = 'Necesitamos tu ubicación. Toca "Cambiar".'; errEl.style.display = 'block'; return; }
 
     const desc = document.getElementById('descripcion').value.trim();
@@ -144,15 +152,15 @@ async function enviarReporte() {
         const inc = await apiFetch('/incidencias', {
             method: 'POST',
             body: JSON.stringify({
-                titulo:      selectedCat,
+                titulo:      `${selectedTipo} - ${selectedSub}`,
                 descripcion: desc,
                 prioridad:   'Media',
                 lat:         userLat,
                 lng:         userLng
             })
         });
-        await subirFoto(inc._id);
-        window.location.href = `detalle.html?id=${inc._id}`;
+        await subirFoto(inc.id);
+        window.location.href = `detalle.html?id=${inc.id}`;
     } catch (e) {
         errEl.textContent = e.message || 'Error al enviar el reporte.';
         errEl.style.display = 'block';

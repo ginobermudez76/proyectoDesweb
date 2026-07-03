@@ -132,6 +132,30 @@ function incidentCardHTML(inc, href) {
     </div>`;
 }
 
+function tiempoResolucion(fechaCreacion, historial) {
+    const fin = historial?.find(h => h.estado_nuevo === 'Resuelta')?.fecha_cambio;
+    if (!fin || !fechaCreacion) return null;
+    const mins = Math.round((new Date(fin) - new Date(fechaCreacion)) / 60000);
+    if (mins < 60)   return `${mins} min`;
+    if (mins < 1440) return `${Math.round(mins / 60)} h`;
+    return `${Math.round(mins / 1440)} días`;
+}
+
+function showNotifBadge(count) {
+    if (!count) return;
+    const bell = document.querySelector('.bi-bell');
+    if (!bell) return;
+    const wrap = document.createElement('span');
+    wrap.style.cssText = 'position:relative;display:inline-flex';
+    bell.parentNode.replaceChild(wrap, bell);
+    wrap.appendChild(bell);
+    const badge = document.createElement('span');
+    badge.className = 'badge bg-danger rounded-pill position-absolute';
+    badge.style.cssText = 'font-size:10px;top:-6px;right:-8px;min-width:18px;padding:2px 5px;line-height:1.2';
+    badge.textContent = count > 9 ? '9+' : String(count);
+    wrap.appendChild(badge);
+}
+
 /* ===== DESKTOP SIDEBAR INJECTION ===== */
 
 const NAV_LINKS = {
