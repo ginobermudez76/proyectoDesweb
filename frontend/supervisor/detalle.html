@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Detalle — Supervisor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../css/style.css" rel="stylesheet">
+    <style>
+        .readonly-estado {
+            display:flex; gap:8px;
+        }
+        .readonly-estado .status-btn { cursor:default; pointer-events:none; }
+    </style>
+</head>
+<body>
+<div class="app-container">
+
+    <div class="app-header">
+        <button class="back-btn" onclick="history.back()"><i class="bi bi-chevron-left"></i></button>
+        <h5>Detalle de incidencia</h5>
+        <div></div>
+    </div>
+
+    <div id="content"><div class="text-muted-sm text-center py-5">Cargando…</div></div>
+
+</div>
+
+<script src="../js/app.js"></script>
+<script src="../js/auth.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+if (!requireSupervisor()) throw new Error('Redirigiendo');
+
+const id = new URLSearchParams(window.location.search).get('id');
+if (!id) window.location.href = 'panel.html';
+
+async function cargar() {
+    try {
+        const d = await apiFetch(`/incidencias/${id}`);
+        render(d);
+    } catch {
+        document.getElementById('content').innerHTML =
+            '<div class="section text-muted-sm">No se pudo cargar la incidencia.</div>';
+    }
+}
+
+function render({ incidencia: inc, historial_seguimiento, comentarios }) {
+    const p = prioridadInfo(inc.prioridad);
+    const e = estadoInfo(inc.estado);
+    const tResol = tiempoResolucion(inc.fecha_creacion, historial_seguimiento);
+    const hasCoords = inc.ubicacion?.coordinates;
+
+    document.getElementById('content').innerHTML = `
+    <div class="detail-layout">
+
+        <!-- COLUMNA IZQUIERDA: mapa + ubicación + asignación -->
+        <div class="detail-left">
+            ${hasCoords ? `
+            <div class="section" style="padding-bottom:8px">
+                <div class="map-mini" id="detalleMap"></div>
+            </div>
+            <div class="section" style="padding-top:0;padding-bottom:8px">
+                <div class="location-row">
+                    <div class="loc-text">
+                        <i class="bi bi-geo-alt-fill" style="color:var(--orange)"></i>
+                        ${inc.ubicacion.coordinates[1].toFixed(5)}, ${inc.ubicacion.coordinates[0].toFixed(5)}
+                    </div>
+                </div>
+            </div>` : ''}
+
+            <div class="section">
+                <div class="section-title">Técnico asignado</div>
+                <div class="assigned-row">
+                    <div style="display:flex;align-items:center">
+                        ${inc.asignado_a
+                            ? `<div class="assigned-avatar">T</div>
+                               <span style="font-size:14px;font-weight:500">ID: ${inc.asignado_a}</span>`
+                            : `<span class="text-muted-sm">Sin asignar</span>`}
+                    </div>
+                    <button class="btn-cambiar" onclick="reasignar()">
+                        <i class="bi bi-person-plus"></i> ${inc.asignado_a ? 'Reasignar' : 'Asignar'}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLUMNA DERECHA: info + estado + historial + notas -->
+        <div class="detail-right">
+            <div class="section" style="padding-bottom:8px">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+                    <span style="font-size:18px;font-weight:700;color:var(--gray-900)">${inc.titulo}</span>
+                    <span class="badge-status ${p.badgeCls}">${inc.prioridad || 'Media'}</span>
+                </div>
+                <div class="text-muted-sm">Reportado ${timeAgo(inc.fecha_creacion)}</div>
+                ${tResol ? `<div class="text-muted-sm" style="margin-top:4px"><i class="bi bi-clock-history"></i> Resuelto en ${tResol}</div>` : ''}
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+                ${!inc.asignado_a ? `
+                    <div class="section-title">Estado actual
+                        <span style="font-size:11px;color:var(--orange);font-weight:400;margin-left:6px">
+                            — sin técnico asignado
+                        </span>
+                    </div>
+                    <div class="status-selector">
+                        <button class="status-btn ${inc.estado === 'Pendiente'  ? 'active-recibido' : ''}" onclick="selEstado('Pendiente')">Recibido</button>
+                        <button class="status-btn ${inc.estado === 'En Proceso' ? 'active-proceso'  : ''}" onclick="selEstado('En Proceso')">En proceso</button>
+                        <button class="status-btn ${inc.estado === 'Resuelta'   ? 'active-resuelto' : ''}" onclick="selEstado('Resuelta')">Resuelto</button>
+                    </div>
+                    <button class="btn-orange mt-2" onclick="guardarEstado()">
+                        <i class="bi bi-check-circle"></i> Actualizar estado
+                    </button>
+                ` : `
+                    <div class="section-title">Estado actual
+                        <span style="font-size:11px;color:var(--gray-400);font-weight:400;margin-left:6px">
+                            — gestionado por el técnico
+                        </span>
+                    </div>
+                    <div class="readonly-estado">
+                        <div class="status-btn ${inc.estado === 'Pendiente'  ? 'active-recibido' : ''}">Recibido</div>
+                        <div class="status-btn ${inc.estado === 'En Proceso' ? 'active-proceso'  : ''}">En proceso</div>
+                        <div class="status-btn ${inc.estado === 'Resuelta'   ? 'active-resuelto' : ''}">Resuelto</div>
+                    </div>
+                    ${inc.estado === 'Resuelta' ? `
+                    <button onclick="rechazarResolucion()"
+                        style="margin-top:10px;width:100%;padding:11px;border-radius:12px;
+                               border:1.5px solid #EF4444;background:#FEF2F2;color:#B91C1C;
+                               font-weight:600;font-size:13px;cursor:pointer">
+                        <i class="bi bi-x-circle"></i> Rechazar resolución — devolver a En proceso
+                    </button>` : ''}
+                `}
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+                <div class="section-title">Descripción del ciudadano</div>
+                <p style="font-size:14px;color:#4B5563;line-height:1.6">${inc.descripcion || '—'}</p>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+                <div class="section-title">Historial de cambios</div>
+                ${buildHistorial(historial_seguimiento)}
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section">
+                <div class="section-title">Notas del equipo</div>
+                ${buildComentarios(comentarios)}
+                <textarea class="form-input mt-2" id="notaInput" placeholder="Agregar observación de supervisión…"></textarea>
+                <button class="btn-orange mt-2" onclick="agregarNota()">
+                    <i class="bi bi-chat-left-text"></i> Agregar nota
+                </button>
+            </div>
+
+            <div class="section" style="padding-top:0">
+                <hr style="border-color:var(--gray-200);margin:0 0 16px">
+                <button class="btn btn-danger w-100" onclick="eliminarIncidencia()">
+                    <i class="bi bi-trash-fill"></i> Eliminar incidencia
+                </button>
+            </div>
+        </div>
+
+    </div>
+    `;
+
+    if (hasCoords) initMap(inc.ubicacion.coordinates);
+}
+
+function buildHistorial(historial) {
+    if (!historial?.length) return '<div class="text-muted-sm">Sin cambios de estado aún.</div>';
+    return historial.map(h => `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:10px 12px;background:var(--gray-50);border-radius:10px">
+            <i class="bi bi-arrow-right-circle" style="color:var(--orange);font-size:16px"></i>
+            <div>
+                <div style="font-size:13px;font-weight:600">${h.estado_anterior || '—'} → ${h.estado_nuevo}</div>
+                <div class="text-muted-sm">${formatDate(h.fecha_cambio)} · Técnico ID: ${h.tecnico_id || '—'}</div>
+                ${h.observacion && h.observacion !== 'Sin observaciones.' ? `<div style="font-size:12px;color:#4B5563;margin-top:2px">${h.observacion}</div>` : ''}
+            </div>
+        </div>`).join('');
+}
+
+function buildComentarios(lista) {
+    if (!lista?.length) return '<div class="text-muted-sm">Sin notas aún.</div>';
+    return lista.map(c => `
+        <div style="margin-bottom:8px;padding:10px 12px;background:var(--gray-50);border-radius:10px">
+            <div class="text-muted-sm" style="margin-bottom:2px">${timeAgo(c.fecha_creacion)}</div>
+            <div style="font-size:13px;color:#374151">${c.texto}</div>
+        </div>`).join('');
+}
+
+let estadoActual = null;
+
+function selEstado(e) {
+    estadoActual = e;
+    // Actualiza visualmente los botones
+    ['Pendiente','En Proceso','Resuelta'].forEach(s => {
+        const map = { 'Pendiente':'btnSup0','En Proceso':'btnSup1','Resuelta':'btnSup2' };
+    });
+    cargar(); // re-render con nuevo estado seleccionado — simplificado
+}
+
+async function guardarEstado() {
+    if (!estadoActual) return;
+    const nota = document.getElementById('notaInput')?.value.trim() || '';
+    try {
+        await apiFetch(`/incidencias/${id}/estado`, {
+            method: 'POST',
+            body: JSON.stringify({ estado_nuevo: estadoActual, observacion: nota || 'Actualizado por supervisor (sin técnico asignado).' })
+        });
+        cargar();
+    } catch (e) { alert(e.message || 'Error al actualizar estado.'); }
+}
+
+async function rechazarResolucion() {
+    if (!confirm('¿Rechazar la resolución del técnico y devolver a "En proceso"?')) return;
+    const motivo = prompt('Motivo del rechazo (opcional):') || 'Resolución rechazada por supervisor.';
+    try {
+        await apiFetch(`/incidencias/${id}/estado`, {
+            method: 'POST',
+            body: JSON.stringify({ estado_nuevo: 'En Proceso', observacion: motivo })
+        });
+        await apiFetch(`/incidencias/${id}/comentarios`, {
+            method: 'POST',
+            body: JSON.stringify({ texto: `⚠️ Resolución rechazada por supervisor: ${motivo}` })
+        });
+        cargar();
+    } catch (e) { alert(e.message || 'Error al rechazar.'); }
+}
+
+async function reasignar() {
+    const nuevoId = prompt('ID del técnico a asignar:');
+    if (!nuevoId) return;
+    try {
+        await apiFetch(`/incidencias/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ asignado_a: nuevoId })
+        });
+        cargar();
+    } catch (e) { alert(e.message || 'Error al reasignar.'); }
+}
+
+async function eliminarIncidencia() {
+    if (!confirm('¿Eliminar esta incidencia permanentemente?')) return;
+    try {
+        await apiFetch(`/incidencias/${id}`, { method: 'DELETE' });
+        window.location.href = 'panel.html';
+    } catch (e) { alert(e.message || 'Error al eliminar.'); }
+}
+
+async function agregarNota() {
+    const texto = document.getElementById('notaInput')?.value.trim();
+    if (!texto) return;
+    try {
+        await apiFetch(`/incidencias/${id}/comentarios`, {
+            method: 'POST',
+            body: JSON.stringify({ texto })
+        });
+        cargar();
+    } catch (e) { alert(e.message || 'Error al agregar nota.'); }
+}
+
+function initMap([lng, lat]) {
+    const m = L.map('detalleMap', { zoomControl:false, dragging:false, scrollWheelZoom:false });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OSM' }).addTo(m);
+    m.setView([lat, lng], 15);
+    L.marker([lat, lng]).addTo(m);
+}
+
+cargar();
+</script>
+</body>
+</html>
