@@ -75,16 +75,19 @@ class DatabaseSeeder extends Seeder
             );
         }
 
-        // 5. Mapear Opciones a Rol Administrador (El Admin tiene acceso a todo)
+        // 5. Mapear Opciones a todos los roles (Versión de develop)
         $opcionIds = DB::table('opcion')->pluck('id');
-        foreach ($opcionIds as $opcionId) {
-            DB::table('rol_opcion')->updateOrInsert(
-                ['id_rol' => $adminRolId, 'id_opcion' => $opcionId],
-                ['uuid' => DB::raw('uuid_generate_v4()'), 'deleted' => false, 'created_at' => now()]
-            );
+        $todosLosRoles = DB::table('rol')->pluck('id');
+        foreach ($todosLosRoles as $rolId) {
+            foreach ($opcionIds as $opcionId) {
+                DB::table('rol_opcion')->updateOrInsert(
+                    ['id_rol' => $rolId, 'id_opcion' => $opcionId],
+                    ['uuid' => DB::raw('uuid_generate_v4()'), 'deleted' => false, 'created_at' => now()]
+                );
+            }
         }
 
-        // 6. Poblar Endpoints Físicos de la API (Separados por método para respetar el CHECK de Postgres)
+        // 6. Poblar Endpoints Físicos de la API (Limpios sin duplicados)
         $endpoints = [
             ['nombre' => 'Listar Incidencias', 'metodo' => 'GET', 'url' => 'api/incidencias*'],
             ['nombre' => 'Crear Incidencia', 'metodo' => 'POST', 'url' => 'api/incidencias*'],

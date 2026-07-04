@@ -1,33 +1,38 @@
-// Configuración base de la API
 const API_URL = '/api';
 
-// Interceptor básico de ejemplo
 async function apiFetch(endpoint, options = {}) {
+    const token = localStorage.getItem('auth_token');
+    const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        ...options.headers
+    };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
     try {
-        const response = await fetch(`${API_URL}${endpoint}`, {
-            ...options,
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                ...options.headers
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Error HTTP: ${response.status}`);
+        const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
+
+        if (response.status === 401) {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('auth_user');
+            const isSubpage = ['/ciudadano/', '/tecnico/', '/supervisor/', '/admin/']
+                              .some(p => window.location.pathname.includes(p));
+            window.location.href = isSubpage ? '../login.html' : 'login.html';
+            return;
         }
-        
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.message || `Error HTTP: ${response.status}`);
+        }
+
         return await response.json();
     } catch (error) {
-        console.error("Error en la petición a la API:", error);
+        console.error('Error en la petición a la API:', error);
         throw error;
     }
 }
 
-// Inicialización
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("Frontend cargado y listo para comunicarse con el Backend.");
-    
-    // Ejemplo de cómo haríamos una llamada de prueba:
-    // apiFetch('/test').then(data => console.log(data));
+    console.log('Frontend listo.');
 });

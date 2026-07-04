@@ -27,16 +27,15 @@ class AuthController extends Controller
             return response()->json(['message' => 'Cuenta inactiva. Contacta al administrador.'], 403);
         }
 
-        
         $token = Str::random(60);
 
-        
         Cache::store('redis')->put('auth_token:' . $token, $usuario->id, now()->addMinutes(120));
 
         return response()->json([
             'access_token' => $token,
             'token_type' => 'Bearer',
-            'usuario' => $usuario 
+            // Nos quedamos con la versión de develop que incluye los roles
+            'usuario' => $usuario->load('roles')
         ], 200);
     }
 
@@ -45,7 +44,6 @@ class AuthController extends Controller
         $token = $request->bearerToken();
         
         if ($token) {
-            
             Cache::store('redis')->forget('auth_token:' . $token);
         }
 
