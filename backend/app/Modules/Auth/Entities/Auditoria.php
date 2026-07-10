@@ -6,11 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Auditoria extends Model
 {
-   
-    protected $connection = 'pgsql'; 
+    protected $connection = 'pgsql';
+
     protected $table = 'auditoria';
 
-    
     public $timestamps = false;
 
     protected $fillable = [
@@ -21,13 +20,12 @@ class Auditoria extends Model
         'datos_anteriores',
         'datos_nuevos',
         'usuario',
-        'fecha'
+        'fecha',
     ];
 
-    
     protected $casts = [
         'datos_anteriores' => 'array',
         'datos_nuevos' => 'array',
-        'fecha' => 'datetime'
+        'fecha' => 'datetime',
     ];
 }

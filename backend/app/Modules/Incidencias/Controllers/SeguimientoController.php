@@ -25,7 +25,7 @@ class SeguimientoController extends Controller
 
         $seguimiento = Seguimiento::create([
             'incidencia_id' => $id,
-            'tecnico_id' => $request->user()->id, 
+            'tecnico_id' => $request->user()->id,
             'estado_anterior' => $estadoAnterior,
             'estado_nuevo' => $validated['estado_nuevo'],
             'observacion' => $validated['observacion'] ?? 'Sin observaciones.',
@@ -34,7 +34,7 @@ class SeguimientoController extends Controller
 
         return response()->json([
             'message' => 'Estado de la incidencia actualizado con éxito',
-            'seguimiento' => $seguimiento
+            'seguimiento' => $seguimiento,
         ], 200);
     }
 }

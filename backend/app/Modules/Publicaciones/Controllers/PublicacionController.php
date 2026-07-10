@@ -11,9 +11,9 @@ class PublicacionController extends Controller
     public function index()
     {
         $publicaciones = Publicacion::where('estado', 'Publicado')
-                                    ->orderBy('fecha_publicacion', 'desc')
-                                    ->get();
-                                    
+            ->orderBy('fecha_publicacion', 'desc')
+            ->get();
+
         return response()->json($publicaciones, 200);
     }
 
@@ -28,9 +28,9 @@ class PublicacionController extends Controller
         ]);
 
         $publicacion = new Publicacion($validated);
-        
+
         $publicacion->autor_id = $request->user()->id;
-        
+
         if ($validated['estado'] === 'Publicado') {
             $publicacion->fecha_publicacion = now();
         }
@@ -39,13 +39,14 @@ class PublicacionController extends Controller
 
         return response()->json([
             'message' => 'Publicación creada exitosamente',
-            'data' => $publicacion
+            'data' => $publicacion,
         ], 201);
     }
 
     public function show($id)
     {
         $publicacion = Publicacion::findOrFail($id);
+
         return response()->json($publicacion, 200);
     }
 }

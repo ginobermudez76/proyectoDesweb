@@ -73,25 +73,38 @@
 
 <!-- Modal nuevo usuario -->
 <div id="modalOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:flex-end">
-    <div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:430px;margin:0 auto">
+    <div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:430px;margin:0 auto;max-height:85vh;overflow-y:auto">
         <div style="font-size:16px;font-weight:700;margin-bottom:16px">Nuevo usuario</div>
         <div class="form-group">
-            <label class="form-label">Nombres</label>
+            <label class="form-label">Nombres *</label>
             <input class="form-input" id="newNombres" placeholder="Ej: Carlos">
         </div>
         <div class="form-group">
-            <label class="form-label">Apellidos</label>
+            <label class="form-label">Apellidos *</label>
             <input class="form-input" id="newApellidos" placeholder="Ej: Méndez">
         </div>
         <div class="form-group">
-            <label class="form-label">Correo electrónico</label>
+            <label class="form-label">Correo electrónico *</label>
             <input class="form-input" id="newCorreo" type="email" placeholder="correo@ejemplo.com">
         </div>
         <div class="form-group">
-            <label class="form-label">Contraseña temporal</label>
+            <label class="form-label">Nombre de usuario (opcional)</label>
+            <input class="form-input" id="newUsuario" placeholder="Ej: carlos.mendez">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Contraseña temporal *</label>
             <input class="form-input" id="newPass" type="password" placeholder="Mínimo 8 caracteres">
         </div>
-        <div id="modalError" class="error-msg"></div>
+        <div class="form-group">
+            <label class="form-label">Rol del usuario *</label>
+            <select class="form-input" id="newRol" style="background-color: #fff;">
+                <option value="ADMIN">Administrador</option>
+                <option value="SUPERVISOR">Supervisor</option>
+                <option value="TECNICO">Técnico</option>
+                <option value="CIUDADANO">Ciudadano</option>
+            </select>
+        </div>
+        <div id="modalError" class="error-msg" style="display:none;color:#EF4444;font-size:12px;margin-bottom:10px"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
             <button class="btn-outline-gray" onclick="cerrarModal()">Cancelar</button>
             <button class="btn-orange" style="border-radius:12px" onclick="crearUsuario()">Crear</button>
@@ -112,21 +125,13 @@ const AVATAR_COLORS = { ADMIN:'#5B21B6', SUPERVISOR:'#92400E', TECNICO:'#1D4ED8'
 let usuarios = [];
 let filtroActual = 'todos';
 
-// Datos mock hasta que el backend tenga endpoint GET /api/usuarios
-const MOCK_USUARIOS = [
-    { id:1, nombres:'Said', apellidos:'Pinto', correo_electronico:'said@admin.com', activo:true,
-      roles:[{ codigo:'ADMIN', nombre_rol:'Administrador' }] },
-    { id:2, nombres:'María', apellidos:'Rodríguez', correo_electronico:'maria@tecnico.com', activo:true,
-      roles:[{ codigo:'TECNICO', nombre_rol:'Técnico' }] },
-    { id:3, nombres:'Juan', apellidos:'Pérez', correo_electronico:'juan@supervisor.com', activo:true,
-      roles:[{ codigo:'SUPERVISOR', nombre_rol:'Supervisor' }] },
-    { id:4, nombres:'Carlos', apellidos:'Méndez', correo_electronico:'carlos@ciudadano.com', activo:true,
-      roles:[{ codigo:'CIUDADANO', nombre_rol:'Ciudadano' }] },
-];
-
-function cargar() {
-    usuarios = MOCK_USUARIOS;
-    renderLista();
+async function cargar() {
+    try {
+        usuarios = await apiFetch('/usuarios');
+        renderLista();
+    } catch (err) {
+        document.getElementById('lista').innerHTML = `<div class="text-danger text-center py-3">Error al cargar usuarios: ${err.message}</div>`;
+    }
 }
 
 function setFiltro(btn) {
@@ -167,7 +172,6 @@ function renderLista() {
 }
 
 function toggleActivo(id, activo) {
-    // Requiere endpoint PATCH /api/usuarios/{id}
     alert(`Función pendiente: ${activo ? 'desactivar' : 'activar'} usuario ID ${id}.\nRequiere endpoint backend.`);
 }
 
@@ -180,11 +184,50 @@ function cerrarModal() {
     document.getElementById('modalError').style.display = 'none';
 }
 
-function crearUsuario() {
-    // Requiere endpoint POST /api/usuarios
+async function crearUsuario() {
     const errEl = document.getElementById('modalError');
-    errEl.textContent = 'Función pendiente: requiere endpoint POST /api/usuarios en el backend.';
-    errEl.style.display = 'block';
+    errEl.style.display = 'none';
+
+    const nombres = document.getElementById('newNombres').value.trim();
+    const apellidos = document.getElementById('newApellidos').value.trim();
+    const correo_electronico = document.getElementById('newCorreo').value.trim();
+    const password = document.getElementById('newPass').value;
+    const rol_codigo = document.getElementById('newRol').value;
+    const nombre_usuario = document.getElementById('newUsuario').value.trim();
+
+    if (!nombres || !apellidos || !correo_electronico || !password) {
+        errEl.textContent = 'Por favor, completa todos los campos obligatorios.';
+        errEl.style.display = 'block';
+        return;
+    }
+
+    try {
+        await apiFetch('/usuarios', {
+            method: 'POST',
+            body: JSON.stringify({
+                nombres,
+                apellidos,
+                correo_electronico,
+                password,
+                rol_codigo,
+                nombre_usuario: nombre_usuario || null
+            })
+        });
+
+        // Limpiar inputs
+        document.getElementById('newNombres').value = '';
+        document.getElementById('newApellidos').value = '';
+        document.getElementById('newCorreo').value = '';
+        document.getElementById('newPass').value = '';
+        document.getElementById('newUsuario').value = '';
+        document.getElementById('newRol').value = 'ADMIN';
+
+        cerrarModal();
+        await cargar();
+    } catch (err) {
+        errEl.textContent = err.message || 'Error al crear el usuario.';
+        errEl.style.display = 'block';
+    }
 }
 
 cargar();

@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -14,10 +14,10 @@ return new class extends Migration
             $table->uuid('uuid')->unique()->default(DB::raw('uuid_generate_v4()'));
             $table->unsignedInteger('id_rol');
             $table->unsignedInteger('id_opcion');
-            
+
             $table->timestampTz('created_at')->useCurrent();
             $table->timestampTz('updated_at')->nullable();
-            
+
             $table->boolean('deleted')->default(false);
             $table->timestampTz('deleted_at')->nullable();
 
@@ -28,11 +28,11 @@ return new class extends Migration
             $table->foreign('id_opcion')->references('id')->on('opcion')->onDelete('restrict');
         });
 
-        DB::statement("ALTER TABLE rol_opcion ADD CONSTRAINT check_rol_opcion_deleted CHECK (
+        DB::statement('ALTER TABLE rol_opcion ADD CONSTRAINT check_rol_opcion_deleted CHECK (
             (deleted = false AND deleted_at IS NULL)
             OR
             (deleted = true AND deleted_at IS NOT NULL)
-        );");
+        );');
     }
 
     public function down(): void

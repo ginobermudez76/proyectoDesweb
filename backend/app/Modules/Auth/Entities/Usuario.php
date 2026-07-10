@@ -9,6 +9,7 @@ use Laravel\Sanctum\HasApiTokens;
 class Usuario extends Authenticatable
 {
     use HasApiTokens;
+
     // Nombre de la tabla
     protected $table = 'usuario';
 
@@ -78,19 +79,20 @@ class Usuario extends Authenticatable
     {
         $this->deleted = true;
         $this->deleted_at = now();
+
         return $this->save();
     }
 
     /**
      * Relación de muchos a muchos con Rol.
      */
-    public function roles()
+    public function roles(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
         return $this->belongsToMany(
             Rol::class,
             'rol_usuario',
             'id_usuario',
-            'id_rol'
+            'id_rol',
         )->wherePivot('deleted', false)->withTimestamps();
     }
 }

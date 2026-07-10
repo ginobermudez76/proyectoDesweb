@@ -61,6 +61,7 @@ class Rol extends Model
     {
         $this->deleted = true;
         $this->deleted_at = now();
+
         return $this->save();
     }
 
@@ -73,18 +74,17 @@ class Rol extends Model
             Usuario::class,
             'rol_usuario',
             'id_rol',
-            'id_usuario'
+            'id_usuario',
         )->wherePivot('deleted', false)->withTimestamps();
     }
 
-
-    public function opciones()
+    public function opciones(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
         return $this->belongsToMany(
             Opcion::class,
             'rol_opcion',
             'id_rol',
-            'id_opcion'
+            'id_opcion',
         )->wherePivot('deleted', false)->withTimestamps();
     }
 }
