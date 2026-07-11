@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use App\Modules\Auth\Entities\Usuario; 
+use App\Modules\Auth\Entities\HistorialSesion; 
 
 class AuthController extends Controller
 {
@@ -27,15 +28,24 @@ class AuthController extends Controller
             return response()->json(['message' => 'Cuenta inactiva. Contacta al administrador.'], 403);
         }
 
-        
         $token = Str::random(60);
 
-        
         Cache::store('redis')->put('auth_token:' . $token, $usuario->id, now()->addMinutes(120));
+
+        
+        HistorialSesion::create([
+            'usuario_id' => $usuario->id,
+            'correo_electronico' => $usuario->correo_electronico,
+            'accion' => 'LOGIN',
+            'ip' => $request->ip(),
+            'dispositivo' => $request->userAgent(),
+            'fecha_hora' => now()
+        ]);
 
         return response()->json([
             'access_token' => $token,
             'token_type' => 'Bearer',
+            
             'usuario' => $usuario->load('roles')
         ], 200);
     }
@@ -46,6 +56,23 @@ class AuthController extends Controller
         
         if ($token) {
             
+            $usuarioId = Cache::store('redis')->get('auth_token:' . $token);
+
+            if ($usuarioId) {
+                
+                $usuario = Usuario::find($usuarioId);
+
+                
+                HistorialSesion::create([
+                    'usuario_id' => $usuarioId,
+                    'correo_electronico' => $usuario ? $usuario->correo_electronico : 'Desconocido',
+                    'accion' => 'LOGOUT',
+                    'ip' => $request->ip(),
+                    'dispositivo' => $request->userAgent(),
+                    'fecha_hora' => now()
+                ]);
+            }
+
             Cache::store('redis')->forget('auth_token:' . $token);
         }
 

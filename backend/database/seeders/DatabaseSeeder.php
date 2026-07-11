@@ -75,7 +75,7 @@ class DatabaseSeeder extends Seeder
             );
         }
 
-        // 5. Mapear Opciones a todos los roles
+        // 5. Mapear Opciones a todos los roles (Versión de develop)
         $opcionIds = DB::table('opcion')->pluck('id');
         $todosLosRoles = DB::table('rol')->pluck('id');
         foreach ($todosLosRoles as $rolId) {
@@ -87,7 +87,7 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        // 6. Poblar Endpoints Físicos de la API (Separados por método para respetar el CHECK de Postgres)
+        // 6. Poblar Endpoints Físicos de la API (Limpios sin duplicados)
         $endpoints = [
             ['nombre' => 'Listar Incidencias', 'metodo' => 'GET', 'url' => 'api/incidencias*'],
             ['nombre' => 'Crear Incidencia', 'metodo' => 'POST', 'url' => 'api/incidencias*'],

@@ -5,6 +5,11 @@ namespace App\Modules\Auth\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
 
+use App\Modules\Auth\Entities\Usuario;
+use App\Modules\Auth\Entities\Rol;
+use App\Modules\Auth\Observers\UsuarioObserver;
+use App\Modules\Auth\Observers\RolObserver;
+
 class AuthServiceProvider extends ServiceProvider
 {
     public function register(): void
@@ -15,6 +20,10 @@ class AuthServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->registerRoutes();
+
+
+        Usuario::observe(UsuarioObserver::class);
+        Rol::observe(RolObserver::class);
     }
 
     protected function registerRoutes(): void
