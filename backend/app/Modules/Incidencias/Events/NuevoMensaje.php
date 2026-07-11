@@ -15,21 +15,18 @@ class NuevoMensaje implements ShouldBroadcast
 
     public $mensaje;
 
-
     public function __construct(Mensaje $mensaje)
     {
         $this->mensaje = $mensaje;
     }
 
-
     public function broadcastOn(): array
     {
         return [
-            new Channel('incidencia.' . $this->mensaje->incidencia_id)
+            new Channel('incidencia.'.$this->mensaje->incidencia_id),
         ];
     }
 
- 
     public function broadcastAs(): string
     {
         return 'NotificacionMensaje';

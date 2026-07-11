@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Modules\Auth\Entities\Usuario;
 use App\Modules\Auth\Entities\HistorialSesion;
+use App\Modules\Auth\Entities\Usuario;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
