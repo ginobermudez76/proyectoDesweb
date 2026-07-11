@@ -77,7 +77,7 @@ function render({ incidencia: inc, historial_seguimiento, comentarios }) {
                     <div style="display:flex;align-items:center">
                         ${inc.asignado_a
                             ? `<div class="assigned-avatar">T</div>
-                               <span style="font-size:14px;font-weight:500">ID: ${inc.asignado_a}</span>`
+                               <span style="font-size:14px;font-weight:500;word-break:break-all">Técnico: ${inc.asignado_a}</span>`
                             : `<span class="text-muted-sm">Sin asignar</span>`}
                     </div>
                     <button class="btn-cambiar" onclick="reasignar()">
@@ -237,7 +237,7 @@ async function rechazarResolucion() {
 }
 
 async function reasignar() {
-    const nuevoId = prompt('ID del técnico a asignar:');
+    const nuevoId = prompt('UUID del técnico a asignar:');
     if (!nuevoId) return;
     try {
         await apiFetch(`/incidencias/${id}`, {

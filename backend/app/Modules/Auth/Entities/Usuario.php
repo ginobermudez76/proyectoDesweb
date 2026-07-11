@@ -36,6 +36,7 @@ class Usuario extends Authenticatable
 
     // Ocultar atributos sensibles en serialización
     protected $hidden = [
+        'id',
         'password_hash',
     ];
 

@@ -73,7 +73,7 @@ if (navigator.geolocation) {
 async function cargar() {
     try {
         const data = await apiFetch('/incidencias');
-        const mias = data.filter(i => String(i.asignado_a) === String(user.id));
+        const mias = data.filter(i => String(i.asignado_a) === String(user.uuid));
         let nearest = null, minDist = Infinity;
 
         mias.forEach(inc => {

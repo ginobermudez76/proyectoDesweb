@@ -11,6 +11,11 @@ class SeguimientoController extends Controller
 {
     public function cambiarEstado(Request $request, $id)
     {
+        $rol = $request->user()->roles->first()->codigo ?? 'CIUDADANO';
+        if ($rol === 'CIUDADANO') {
+            return response()->json(['message' => 'Acceso denegado. Los ciudadanos no pueden cambiar el estado de las incidencias.'], 403);
+        }
+
         $validated = $request->validate([
             'estado_nuevo' => 'required|string|in:Pendiente,En Proceso,Resuelta,Rechazada',
             'observacion' => 'nullable|string|max:500',
@@ -25,7 +30,7 @@ class SeguimientoController extends Controller
 
         $seguimiento = Seguimiento::create([
             'incidencia_id' => $id,
-            'tecnico_id' => $request->user()->id,
+            'tecnico_id' => $request->user()->uuid,
             'estado_anterior' => $estadoAnterior,
             'estado_nuevo' => $validated['estado_nuevo'],
             'observacion' => $validated['observacion'] ?? 'Sin observaciones.',

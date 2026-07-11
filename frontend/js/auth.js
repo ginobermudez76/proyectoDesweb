@@ -159,30 +159,47 @@ function showNotifBadge(count) {
     wrap.appendChild(badge);
 }
 
-/* ===== DESKTOP SIDEBAR INJECTION ===== */
+/* ===== DYNAMIC DATABASE-DRIVEN RBAC NAVEGACION ===== */
 
-const NAV_LINKS = {
-    CIUDADANO: [
-        { href: 'home.html',    icon: 'bi-house-fill', label: 'Inicio'   },
-        { href: 'mapa.html',    icon: 'bi-map',        label: 'Mapa'     },
-        { href: 'perfil.html',  icon: 'bi-person',     label: 'Perfil'   },
-    ],
-    TECNICO: [
-        { href: 'panel.html',   icon: 'bi-house-fill', label: 'Inicio'   },
-        { href: 'mapa.html',    icon: 'bi-map',        label: 'Mapa'     },
-        { href: 'perfil.html',  icon: 'bi-person',     label: 'Perfil'   },
-    ],
-    SUPERVISOR: [
-        { href: 'panel.html',   icon: 'bi-house-fill', label: 'Inicio'   },
-        { href: 'mapa.html',    icon: 'bi-map',        label: 'Mapa'     },
-        { href: 'perfil.html',  icon: 'bi-person',     label: 'Perfil'   },
-    ],
-    ADMIN: [
-        { href: 'panel.html',    icon: 'bi-house-fill', label: 'Inicio'  },
-        { href: 'usuarios.html', icon: 'bi-people',     label: 'Usuarios'},
-        { href: 'perfil.html',   icon: 'bi-person',     label: 'Perfil'  },
-    ],
-};
+function getOpciones() {
+    const u = getUser();
+    if (!u || !u.roles) return [];
+    const ops = [];
+    u.roles.forEach(r => {
+        if (r.opciones) {
+            r.opciones.forEach(o => {
+                if (!o.deleted) ops.push(o.nombre_opcion);
+            });
+        }
+    });
+    return ops;
+}
+
+function getNavLinks() {
+    const ops = getOpciones();
+    const role = getRole();
+    const links = [];
+
+    // Si tiene acceso a incidencias
+    const hasIncidencias = ops.some(o => o.includes("Incidencias"));
+    if (hasIncidencias) {
+        const homeHref = role === 'CIUDADANO' ? 'home.html' : 'panel.html';
+        links.push({ href: homeHref, icon: 'bi-house-fill', label: 'Inicio' });
+        links.push({ href: 'mapa.html', icon: 'bi-map', label: 'Mapa' });
+    }
+
+    // Si tiene acceso a gestión de usuarios
+    if (ops.includes('Gestión de Usuarios')) {
+        links.push({ href: 'usuarios.html', icon: 'bi-people', label: 'Usuarios' });
+    }
+
+    // Si tiene acceso a perfil
+    if (ops.includes('Perfil de Usuario')) {
+        links.push({ href: 'perfil.html', icon: 'bi-person', label: 'Perfil' });
+    }
+
+    return links;
+}
 
 function _navPrefix() {
     const p = window.location.pathname;
@@ -198,60 +215,50 @@ function _roleFolder() {
     return { CIUDADANO:'ciudadano', TECNICO:'tecnico', SUPERVISOR:'supervisor', ADMIN:'admin' }[getRole()] || '';
 }
 
-function _decorateExistingNav(nav) {
-    if (!nav.querySelector('.nav-brand')) {
-        const brand = document.createElement('div');
-        brand.className = 'nav-brand';
-        brand.innerHTML = '<span class="nav-brand-icon">📍</span> Incidencias';
-        nav.prepend(brand);
-    }
-    if (!nav.querySelector('.nav-logout-link')) {
-        const spacer = document.createElement('div');
-        spacer.className = 'nav-divider';
-        const btn = document.createElement('a');
-        btn.href = '#';
-        btn.className = 'nav-logout-link';
-        btn.innerHTML = '<i class="bi bi-box-arrow-right"></i><span>Cerrar sesión</span>';
-        btn.addEventListener('click', e => { e.preventDefault(); logout(); });
-        nav.appendChild(spacer);
-        nav.appendChild(btn);
-    }
-}
-
-function _injectSidebarForPage() {
-    const role  = getRole();
-    const links = NAV_LINKS[role];
-    if (!links) return;
-
+function _renderNavLinks(navElement) {
+    const links = getNavLinks();
     const prefix = _navPrefix();
     const folder = _roleFolder();
+    const isDesktop = window.innerWidth >= 768;
 
-    const nav = document.createElement('nav');
-    nav.className = 'bottom-nav';
-    nav.innerHTML = `
-        <div class="nav-brand"><span class="nav-brand-icon">📍</span> Incidencias</div>
-        ${links.map(l =>
-            `<a href="${prefix}${folder}/${l.href}"><i class="bi ${l.icon}"></i><span>${l.label}</span></a>`
-        ).join('')}
-        <div class="nav-divider"></div>
-        <a href="#" class="nav-logout-link" id="_sidebarLogout">
-            <i class="bi bi-box-arrow-right"></i><span>Cerrar sesión</span>
-        </a>`;
+    let html = '';
+    if (isDesktop) {
+        html += '<div class="nav-brand"><span class="nav-brand-icon">📍</span> Incidencias</div>';
+    }
 
-    document.body.appendChild(nav);
-    nav.querySelector('#_sidebarLogout').addEventListener('click', e => {
-        e.preventDefault(); logout();
+    html += links.map(l => {
+        const fullHref = `${prefix}${folder}/${l.href}`;
+        const activeClass = window.location.pathname.includes(l.href) ? 'active' : '';
+        return `<a href="${fullHref}" class="${activeClass}"><i class="bi ${l.icon}"></i><span>${l.label}</span></a>`;
+    }).join('');
+
+    html += '<div class="nav-divider"></div>';
+    html += `<a href="#" class="nav-logout-link" id="_sidebarLogout">
+        <i class="bi bi-box-arrow-right"></i><span>Cerrar sesión</span>
+    </a>`;
+
+    navElement.innerHTML = html;
+    navElement.querySelector('#_sidebarLogout')?.addEventListener('click', e => {
+        e.preventDefault();
+        logout(prefix || '.');
     });
-
-    document.body.style.paddingLeft  = '240px';
-    document.body.style.paddingBottom = '0';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    const existingNav = document.querySelector('.bottom-nav');
-    if (existingNav) {
-        _decorateExistingNav(existingNav);
-    } else if (window.innerWidth >= 768 && getToken()) {
-        _injectSidebarForPage();
+    let nav = document.querySelector('.bottom-nav');
+    
+    if (getToken()) {
+        if (!nav) {
+            nav = document.createElement('nav');
+            nav.className = 'bottom-nav';
+            document.body.appendChild(nav);
+        }
+        
+        _renderNavLinks(nav);
+        
+        if (window.innerWidth >= 768) {
+            document.body.style.paddingLeft  = '240px';
+            document.body.style.paddingBottom = '0';
+        }
     }
 });

@@ -15,11 +15,15 @@ class ComentarioController extends Controller
             'texto' => 'required|string|min:3|max:1000',
         ]);
 
-        Incidencia::findOrFail($id);
+        $incidencia = Incidencia::findOrFail($id);
+        $rol = $request->user()->roles->first()->codigo ?? 'CIUDADANO';
+        if ($rol === 'CIUDADANO' && $incidencia->usuario_id !== $request->user()->uuid) {
+            return response()->json(['message' => 'Acceso denegado. No eres el propietario de esta incidencia.'], 403);
+        }
 
         $comentario = Comentario::create([
             'incidencia_id' => $id,
-            'usuario_id' => $request->user()->id,
+            'usuario_id' => $request->user()->uuid,
             'texto' => $validated['texto'],
             'fecha_creacion' => now(),
         ]);

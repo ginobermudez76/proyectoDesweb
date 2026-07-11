@@ -30,6 +30,11 @@ class Rol extends Model
         'deleted_at',
     ];
 
+    // Ocultar atributos en serialización
+    protected $hidden = [
+        'id',
+    ];
+
     // Casts de tipos
     protected $casts = [
         'deleted' => 'boolean',
