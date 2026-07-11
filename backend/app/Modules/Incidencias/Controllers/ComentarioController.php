@@ -3,8 +3,8 @@
 namespace App\Modules\Incidencias\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\Incidencias\Entities\Comentario;
 use App\Modules\Incidencias\Entities\Incidencia;
+use App\Modules\Incidencias\Entities\Comentario;
 use Illuminate\Http\Request;
 
 class ComentarioController extends Controller
@@ -17,6 +17,7 @@ class ComentarioController extends Controller
 
         Incidencia::findOrFail($id);
 
+        
         $comentario = Comentario::create([
             'incidencia_id' => $id,
             'usuario_id' => $request->user()->id,
@@ -26,7 +27,7 @@ class ComentarioController extends Controller
 
         return response()->json([
             'message' => 'Comentario agregado correctamente',
-            'comentario' => $comentario,
+            'comentario' => $comentario
         ], 201);
     }
 }

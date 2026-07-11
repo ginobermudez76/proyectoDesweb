@@ -2,10 +2,10 @@
 
 namespace App\Modules\Incidencias\Observers;
 
-use App\Models\Auditoria;
 use App\Modules\Incidencias\Entities\Incidencia;
-use Illuminate\Support\Facades\Request;
+use App\Models\Auditoria;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Request;
 
 class IncidenciaObserver
 {
@@ -29,15 +29,15 @@ class IncidenciaObserver
         $usuario = Request::user() ? Request::user()->correo_electronico : 'Sistema';
 
         Auditoria::create([
-            'uuid' => Str::uuid(),
+            'uuid' => Str::uuid(), 
             'entidad' => 'Incidencia',
-            'id_entidad' => 0,
+            'id_entidad' => 0, 
             'accion' => $accion,
-
+            
             'datos_anteriores' => $accion === 'ACTUALIZAR' ? $incidencia->getOriginal() : null,
-
+            
             'datos_nuevos' => $accion === 'ELIMINAR' ? null : $incidencia->getAttributes(),
-
+            
             'usuario' => $usuario,
             'fecha' => now(),
         ]);

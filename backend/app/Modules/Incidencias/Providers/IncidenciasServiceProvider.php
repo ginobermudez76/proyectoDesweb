@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Modules\Incidencias\Providers;
+namespace App\Modules\Incidencias\Providers; 
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
-class IncidenciasServiceProvider extends ServiceProvider
+class IncidenciasServiceProvider extends ServiceProvider 
 {
     public function register(): void
     {
