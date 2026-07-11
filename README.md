@@ -10,7 +10,7 @@ Plataforma empresarial para el reporte, seguimiento y gestión de incidencias ur
 
 ---
 
-## 🏛️ Arquitectura del Sistema
+## Arquitectura del Sistema
 
 El sistema utiliza una arquitectura desacoplada estructurada en contenedores Docker:
 
@@ -31,7 +31,7 @@ graph TD
 
 ---
 
-## 🔒 Capa de Seguridad y Mitigación de Ataques
+## Capa de Seguridad y Mitigación de Ataques
 
 El proyecto ha sido diseñado bajo los estándares OWASP Top 10 e incluye las siguientes directivas de seguridad activas:
 
@@ -57,7 +57,7 @@ El proyecto ha sido diseñado bajo los estándares OWASP Top 10 e incluye las si
 
 ---
 
-## 🛠️ Requisitos Previos
+## Requisitos Previos
 
 Asegúrate de tener instalados los siguientes componentes en tu sistema de desarrollo:
 - **Docker Desktop** (versión 20.10 o superior)
@@ -66,7 +66,7 @@ Asegúrate de tener instalados los siguientes componentes en tu sistema de desar
 
 ---
 
-## 🚀 Instalación y Puesta en Marcha
+## Instalación y Puesta en Marcha
 
 Sigue estos pasos para inicializar el entorno local:
 
@@ -106,7 +106,104 @@ El frontend estará disponible en tu navegador en `http://localhost:8080` (o el 
 
 ---
 
-## 👥 Credenciales de Prueba (Seeders)
+## Despliegue en Producción (Servidor Nativo Nginx y PHP-FPM)
+
+Para entornos de producción reales (como la dirección del servidor `http://192.168.0.144/`), la arquitectura no requiere Docker y corre nativamente sobre el sistema operativo (ej: Ubuntu Linux) para maximizar la velocidad de Entrada/Salida (I/O) de archivos y base de datos.
+
+### Estructura de Directorios en Servidor
+El repositorio se aloja en `/var/www/proyectoDesweb`, teniendo la siguiente estructura física:
+* **Frontend**: `/var/www/proyectoDesweb/frontend`
+* **Backend (Laravel)**: `/var/www/proyectoDesweb/backend`
+
+### Servicios del Sistema en Producción
+Se ejecutan los siguientes servicios locales nativos de Linux:
+* **Base de Datos Relacional**: `postgresql.service` (Puerto 5432)
+* **Base de Datos NoSQL**: `mongod.service` (Puerto 27017)
+* **Gestor de Sesiones/Caché**: `redis-server.service` (Puerto 6379)
+* **Procesador PHP**: `php8.5-fpm.service` (Puerto unix socket `/run/php/php8.5-fpm.sock`)
+* **Servidor Web**: `nginx.service` (Puerto 80)
+
+### Configuración del Bloque de Nginx
+El archivo de configuración de Nginx en `/etc/nginx/sites-available/default` distribuye la carga de la siguiente forma:
+
+```nginx
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+
+    server_name _;
+
+    # Servir Frontend
+    root /var/www/proyectoDesweb/frontend;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Desactivar caché para archivos HTML (Cache-Busting)
+    location ~* \.html$ {
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma "no-cache";
+        expires -1;
+        try_files $uri =404;
+    }
+
+    # Servir Backend Laravel (API)
+    # Redirigir peticiones de /api a backend/public/index.php
+    location /api {
+        root /var/www/proyectoDesweb/backend/public;
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    # Procesar archivos PHP del backend
+    location ~ \.php$ {
+        root /var/www/proyectoDesweb/backend/public;
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/run/php/php8.5-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+}
+```
+
+### Comandos de Puesta en Marcha en Producción
+
+1. **Clonar e instalar dependencias de Composer**:
+   ```bash
+   cd /var/www/proyectoDesweb/backend
+   composer install --no-dev --optimize-autoloader
+   ```
+
+2. **Ejecutar migraciones y semillero (Seeders) en Producción**:
+   Dado que Laravel bloquea comandos destructivos en producción, se requiere usar la directiva `--force`:
+   ```bash
+   php artisan migrate --force
+   php artisan db:seed --force
+   ```
+
+3. **Configurar permisos de almacenamiento**:
+   ```bash
+   sudo chown -R www-data:www-data storage bootstrap/cache
+   sudo chmod -R 775 storage bootstrap/cache
+   ```
+
+4. **Limpiar y cachear configuraciones**:
+   ```bash
+   php artisan config:cache
+   php artisan route:cache
+   php artisan view:cache
+   ```
+
+5. **Reiniciar servicios de servidor**:
+   ```bash
+   sudo systemctl restart php8.5-fpm
+   sudo systemctl restart nginx
+   ```
+
+---
+
+## Credenciales de Prueba (Seeders)
 
 El sistema incluye usuarios pre-cargados para pruebas de permisos en roles (RBAC):
 
@@ -119,7 +216,7 @@ El sistema incluye usuarios pre-cargados para pruebas de permisos en roles (RBAC
 
 ---
 
-## 📂 Estructura de Directorios Clave
+## Estructura de Directorios Clave
 
 ```text
 ├── backend/                       # Backend Laravel 11
@@ -151,6 +248,6 @@ El sistema incluye usuarios pre-cargados para pruebas de permisos en roles (RBAC
 
 ---
 
-## 📝 Licencia
+## Licencia
 
 Este proyecto está bajo la licencia correspondiente del propietario. Todos los derechos reservados.
