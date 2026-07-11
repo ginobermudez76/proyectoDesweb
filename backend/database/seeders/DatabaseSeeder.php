@@ -109,6 +109,8 @@ class DatabaseSeeder extends Seeder
             ['nombre' => 'Ver Perfil', 'metodo' => 'GET', 'url' => 'api/user'],
             ['nombre' => 'Listar Usuarios', 'metodo' => 'GET', 'url' => 'api/usuarios*'],
             ['nombre' => 'Crear Usuario', 'metodo' => 'POST', 'url' => 'api/usuarios*'],
+            ['nombre' => 'Actualizar Usuario', 'metodo' => 'PUT', 'url' => 'api/usuarios*'],
+            ['nombre' => 'Activar/Desactivar Usuario', 'metodo' => 'PATCH', 'url' => 'api/usuarios*'],
         ];
 
         foreach ($endpoints as $endpoint) {
