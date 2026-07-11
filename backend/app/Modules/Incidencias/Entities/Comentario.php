@@ -7,13 +7,14 @@ use MongoDB\Laravel\Eloquent\Model;
 class Comentario extends Model
 {
     protected $connection = 'mongodb';
+
     protected $collection = 'comentarios';
 
     protected $fillable = [
-        'incidencia_id', 
-        'usuario_id',    
+        'incidencia_id',
+        'usuario_id',
         'texto',
-        'fecha_creacion'
+        'fecha_creacion',
     ];
 
     protected $casts = [

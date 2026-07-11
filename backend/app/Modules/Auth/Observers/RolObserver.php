@@ -2,8 +2,8 @@
 
 namespace App\Modules\Auth\Observers;
 
-use App\Modules\Auth\Entities\Rol;
 use App\Modules\Auth\Entities\Auditoria;
+use App\Modules\Auth\Entities\Rol;
 
 class RolObserver
 {
