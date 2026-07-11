@@ -3,6 +3,7 @@
 namespace App\Modules\Auth\Entities;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
 
 class Rol extends Model
@@ -78,7 +79,7 @@ class Rol extends Model
         )->wherePivot('deleted', false)->withTimestamps();
     }
 
-    public function opciones(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    public function opciones(): BelongsToMany
     {
         return $this->belongsToMany(
             Opcion::class,

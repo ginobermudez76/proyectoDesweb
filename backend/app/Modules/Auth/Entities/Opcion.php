@@ -3,6 +3,7 @@
 namespace App\Modules\Auth\Entities;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Opcion extends Model
 {
@@ -40,7 +41,7 @@ class Opcion extends Model
         )->wherePivot('deleted', false)->withTimestamps();
     }
 
-    public function endpoints(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    public function endpoints(): BelongsToMany
     {
         return $this->belongsToMany(
             Endpoint::class,

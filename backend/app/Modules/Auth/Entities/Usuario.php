@@ -2,6 +2,7 @@
 
 namespace App\Modules\Auth\Entities;
 
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
@@ -86,7 +87,7 @@ class Usuario extends Authenticatable
     /**
      * Relación de muchos a muchos con Rol.
      */
-    public function roles(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    public function roles(): BelongsToMany
     {
         return $this->belongsToMany(
             Rol::class,

@@ -2,6 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Modules\Auth\Entities\Endpoint;
+use App\Modules\Auth\Entities\Opcion;
+use App\Modules\Auth\Entities\Rol;
 use App\Modules\Auth\Entities\Usuario;
 use Closure;
 use Illuminate\Http\Request;
@@ -48,19 +51,19 @@ class CheckRolePermission
         $metodoActual = $request->method();
         $tienePermiso = false;
 
-        /** @var \App\Modules\Auth\Entities\Rol $rol */
+        /** @var Rol $rol */
         foreach ($usuario->roles as $rol) {
             if ($rol->deleted) {
                 continue;
             }
 
-            /** @var \App\Modules\Auth\Entities\Opcion $opcion */
+            /** @var Opcion $opcion */
             foreach ($rol->opciones as $opcion) {
                 if ($opcion->deleted) {
                     continue;
                 }
 
-                /** @var \App\Modules\Auth\Entities\Endpoint $endpoint */
+                /** @var Endpoint $endpoint */
                 foreach ($opcion->endpoints as $endpoint) {
                     if ($endpoint->deleted || !$endpoint->rbac_enabled) {
                         continue;
