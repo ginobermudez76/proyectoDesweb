@@ -73,7 +73,7 @@ document.getElementById('nombreEl').textContent = getUserName();
 async function cargarStats() {
     try {
         const data = await apiFetch('/incidencias');
-        const mias = data.filter(i => String(i.asignado_a) === String(user.id));
+        const mias = data.filter(i => String(i.asignado_a) === String(user.uuid));
         document.getElementById('asignadasEl').textContent = mias.length;
         document.getElementById('resueltasEl').textContent = mias.filter(i => i.estado === 'Resuelta').length;
         document.getElementById('procesoEl').textContent   = mias.filter(i => i.estado === 'En Proceso').length;

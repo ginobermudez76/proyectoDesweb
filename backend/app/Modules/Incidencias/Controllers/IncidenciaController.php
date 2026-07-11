@@ -3,6 +3,7 @@
 namespace App\Modules\Incidencias\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Auth\Entities\AccesoNoAutorizado;
 use App\Modules\Incidencias\Entities\Comentario;
 use App\Modules\Incidencias\Entities\Evidencia;
 use App\Modules\Incidencias\Entities\Incidencia;
@@ -11,8 +12,14 @@ use Illuminate\Http\Request;
 
 class IncidenciaController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $rol = $request->user()->roles->first()->codigo ?? 'CIUDADANO';
+
+        if ($rol === 'CIUDADANO') {
+            return response()->json(Incidencia::where('usuario_id', $request->user()->uuid)->get(), 200);
+        }
+
         return response()->json(Incidencia::all(), 200);
     }
 
@@ -31,7 +38,7 @@ class IncidenciaController extends Controller
         $incidencia->descripcion = $validated['descripcion'];
         $incidencia->prioridad = $validated['prioridad'];
         $incidencia->estado = 'Pendiente';
-        $incidencia->usuario_id = $request->user()->id;
+        $incidencia->usuario_id = $request->user()->uuid;
         $incidencia->fecha_creacion = now();
 
         $incidencia->ubicacion = [
@@ -44,9 +51,27 @@ class IncidenciaController extends Controller
         return response()->json($incidencia, 201);
     }
 
-    public function show($id)
+    public function show(Request $request, $id)
     {
         $incidencia = Incidencia::findOrFail($id);
+        $rol = $request->user()->roles->first()->codigo ?? 'CIUDADANO';
+
+        if ($rol === 'CIUDADANO' && $incidencia->usuario_id !== $request->user()->uuid) {
+            AccesoNoAutorizado::create([
+                'usuario_uuid'       => $request->user()->uuid,
+                'correo_electronico' => $request->user()->correo_electronico,
+                'rol'                => $rol,
+                'ip'                 => $request->ip(),
+                'user_agent'         => $request->userAgent(),
+                'metodo'             => $request->method(),
+                'url'                => $request->path(),
+                'tipo_violacion'     => 'IDOR',
+                'detalle'            => 'Intento de lectura en incidencia ajena. ID objetivo: '.$incidencia->_id,
+                'fecha_hora'         => now(),
+            ]);
+            return response()->json(['message' => 'Acceso denegado. No eres el propietario de esta incidencia.'], 403);
+        }
+
         $evidencias = Evidencia::where('incidencia_id', $id)->get();
         $historial_seguimiento = Seguimiento::where('incidencia_id', $id)
             ->orderBy('fecha_cambio', 'desc')
@@ -66,14 +91,95 @@ class IncidenciaController extends Controller
     public function update(Request $request, $id)
     {
         $incidencia = Incidencia::findOrFail($id);
-        $incidencia->update($request->all());
+        $rol = $request->user()->roles->first()->codigo ?? 'CIUDADANO';
+
+        if ($rol === 'CIUDADANO') {
+            if ($incidencia->usuario_id !== $request->user()->uuid) {
+                AccesoNoAutorizado::create([
+                    'usuario_uuid'       => $request->user()->uuid,
+                    'correo_electronico' => $request->user()->correo_electronico,
+                    'rol'                => $rol,
+                    'ip'                 => $request->ip(),
+                    'user_agent'         => $request->userAgent(),
+                    'metodo'             => $request->method(),
+                    'url'                => $request->path(),
+                    'tipo_violacion'     => 'IDOR',
+                    'detalle'            => 'Intento de actualización en incidencia ajena. ID objetivo: '.$incidencia->_id,
+                    'fecha_hora'         => now(),
+                ]);
+                return response()->json(['message' => 'Acceso denegado. No eres el propietario de esta incidencia.'], 403);
+            }
+            if ($incidencia->estado !== 'Pendiente') {
+                return response()->json(['message' => 'Solo se pueden editar incidencias en estado Pendiente.'], 403);
+            }
+
+            $validated = $request->validate([
+                'descripcion' => 'required|string',
+                'prioridad' => 'required|string|in:Baja,Media,Alta,Urgente',
+            ]);
+
+            $incidencia->descripcion = $validated['descripcion'];
+            $incidencia->prioridad = $validated['prioridad'];
+            $incidencia->save();
+
+            return response()->json($incidencia, 200);
+        }
+
+        if ($rol === 'TECNICO') {
+            return response()->json(['message' => 'Los técnicos no pueden modificar los detalles del reporte.'], 403);
+        }
+
+        // Supervisor o Administrador: pueden actualizar asignado_a, prioridad, descripcion
+        $validated = $request->validate([
+            'descripcion' => 'nullable|string',
+            'prioridad' => 'nullable|string|in:Baja,Media,Alta,Urgente',
+            'asignado_a' => 'nullable|string', // UUID del tecnico
+        ]);
+
+        if (array_key_exists('descripcion', $validated) && $validated['descripcion'] !== null) {
+            $incidencia->descripcion = $validated['descripcion'];
+        }
+        if (array_key_exists('prioridad', $validated) && $validated['prioridad'] !== null) {
+            $incidencia->prioridad = $validated['prioridad'];
+        }
+        if (array_key_exists('asignado_a', $validated)) {
+            $incidencia->asignado_a = $validated['asignado_a'];
+        }
+
+        $incidencia->save();
 
         return response()->json($incidencia, 200);
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
-        Incidencia::destroy($id);
+        $incidencia = Incidencia::findOrFail($id);
+        $rol = $request->user()->roles->first()->codigo ?? 'CIUDADANO';
+
+        if ($rol === 'CIUDADANO') {
+            if ($incidencia->usuario_id !== $request->user()->uuid) {
+                AccesoNoAutorizado::create([
+                    'usuario_uuid'       => $request->user()->uuid,
+                    'correo_electronico' => $request->user()->correo_electronico,
+                    'rol'                => $rol,
+                    'ip'                 => $request->ip(),
+                    'user_agent'         => $request->userAgent(),
+                    'metodo'             => $request->method(),
+                    'url'                => $request->path(),
+                    'tipo_violacion'     => 'IDOR',
+                    'detalle'            => 'Intento de eliminación en incidencia ajena. ID objetivo: '.$incidencia->_id,
+                    'fecha_hora'         => now(),
+                ]);
+                return response()->json(['message' => 'Acceso denegado. No eres el propietario de esta incidencia.'], 403);
+            }
+            if ($incidencia->estado !== 'Pendiente') {
+                return response()->json(['message' => 'Solo se pueden eliminar incidencias en estado Pendiente.'], 403);
+            }
+        } elseif ($rol === 'TECNICO') {
+            return response()->json(['message' => 'Los técnicos no tienen permitido eliminar incidencias.'], 403);
+        }
+
+        $incidencia->delete();
 
         return response()->json(['message' => 'Incidencia eliminada correctamente'], 200);
     }

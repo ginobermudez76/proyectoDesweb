@@ -48,7 +48,7 @@ async function cargar() {
 function render({ incidencia: inc, historial_seguimiento, comentarios }) {
     const e = estadoInfo(inc.estado);
     const step = e.step;
-    const esPropio = String(inc.usuario_id) === String(getUser()?.id);
+    const esPropio = String(inc.usuario_id) === String(getUser()?.uuid);
     const tResol = tiempoResolucion(inc.fecha_creacion, historial_seguimiento);
 
     const seguimientoHTML = buildTimeline(historial_seguimiento, inc.estado);

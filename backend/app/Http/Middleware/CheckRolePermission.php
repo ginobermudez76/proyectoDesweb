@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Modules\Auth\Entities\AccesoNoAutorizado;
 use App\Modules\Auth\Entities\Endpoint;
 use App\Modules\Auth\Entities\Opcion;
 use App\Modules\Auth\Entities\Rol;
@@ -81,6 +82,19 @@ class CheckRolePermission
         }
 
         if (!$tienePermiso) {
+            AccesoNoAutorizado::create([
+                'usuario_uuid'       => $usuario->uuid,
+                'correo_electronico' => $usuario->correo_electronico,
+                'rol'                => $usuario->roles->first()?->codigo ?? 'SIN_ROL',
+                'ip'                 => $request->ip(),
+                'user_agent'         => $request->userAgent(),
+                'metodo'             => $request->method(),
+                'url'                => $request->path(),
+                'tipo_violacion'     => 'RBAC',
+                'detalle'            => 'Rol sin permiso para acceder al endpoint.',
+                'fecha_hora'         => now(),
+            ]);
+
             return response()->json([
                 'message' => 'Acceso denegado. Tu rol no tiene permisos para este endpoint.',
             ], 403);

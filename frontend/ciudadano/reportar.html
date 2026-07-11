@@ -125,7 +125,7 @@ function detectarUbicacion() {
 async function subirFoto(incidenciaId) {
     if (!fotoFile) return;
     const fd = new FormData();
-    fd.append('foto', fotoFile);
+    fd.append('archivo', fotoFile);
     const token = localStorage.getItem('auth_token');
     await fetch(`/api/incidencias/${incidenciaId}/evidencias`, {
         method: 'POST',
