@@ -24,7 +24,8 @@ async function apiFetch(endpoint, options = {}) {
 
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
-            const msg = err.message || `Error HTTP: ${response.status}`;
+            const detailMsgs = err.details ? Object.values(err.details).flat() : [];
+            const msg = detailMsgs[0] || err.message || `Error HTTP: ${response.status}`;
 
             // Manejador de redirección a pantalla de error para códigos críticos
             const redirectStatusCodes = [403, 404, 429, 500, 502, 503, 504];

@@ -32,7 +32,7 @@ class UsuarioController extends Controller
         ]);
 
         // Auto-generar nombre_usuario si no se proporciona
-        $nombreUsuario = $validated['nombre_usuario'];
+        $nombreUsuario = $validated['nombre_usuario'] ?? null;
         if (empty($nombreUsuario)) {
             $base = Str::slug($validated['nombres'].'.'.$validated['apellidos'], '.');
             $nombreUsuario = $base;
@@ -67,5 +67,57 @@ class UsuarioController extends Controller
         Cache::store('redis')->forget('user_profile:'.$usuario->id);
 
         return response()->json($usuario->load('roles'), 201);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $usuario = Usuario::findOrFail($id);
+
+        $validated = $request->validate([
+            'nombres' => 'required|string|max:50',
+            'apellidos' => 'required|string|max:50',
+            'correo_electronico' => 'required|email|max:255|unique:usuario,correo_electronico,'.$usuario->id,
+            'nombre_usuario' => 'nullable|string|max:50|unique:usuario,nombre_usuario,'.$usuario->id,
+            'rol_codigo' => 'required|string|exists:rol,codigo',
+            'password' => 'nullable|string|min:8',
+        ]);
+
+        $usuario->nombres = $validated['nombres'];
+        $usuario->apellidos = $validated['apellidos'];
+        $usuario->correo_electronico = $validated['correo_electronico'];
+
+        if (!empty($validated['nombre_usuario'])) {
+            $usuario->nombre_usuario = $validated['nombre_usuario'];
+        }
+
+        if (!empty($validated['password'])) {
+            $usuario->password_hash = Hash::make($validated['password']);
+        }
+
+        $usuario->save();
+
+        $rol = Rol::where('codigo', $validated['rol_codigo'])->firstOrFail();
+        $usuario->roles()->sync([
+            $rol->id => [
+                'uuid' => (string) Str::uuid(),
+                'deleted' => false,
+                'created_at' => now(),
+            ],
+        ]);
+
+        Cache::store('redis')->forget('user_profile:'.$usuario->id);
+
+        return response()->json($usuario->load('roles'), 200);
+    }
+
+    public function toggleActivo($id)
+    {
+        $usuario = Usuario::findOrFail($id);
+        $usuario->activo = !$usuario->activo;
+        $usuario->save();
+
+        Cache::store('redis')->forget('user_profile:'.$usuario->id);
+
+        return response()->json($usuario->load('roles'), 200);
     }
 }
