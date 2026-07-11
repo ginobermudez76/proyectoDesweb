@@ -143,6 +143,14 @@ El sistema incluye usuarios pre-cargados para pruebas de permisos en roles (RBAC
 
 ---
 
+## 👥 Equipo de Desarrollo
+
+* **Gino Maximiliano Bermúdez Santos** — Arquitectura de Software e Infraestructura
+* **Said Fausto Pinto Tamayo** — Desarrollo Backend (API REST, DB Relacional y NoSQL)
+* **Diana Lucia Melena Santander** — Desarrollo Frontend (Interfaz de Usuario e Integraciones)
+
+---
+
 ## 📝 Licencia
 
 Este proyecto está bajo la licencia correspondiente del propietario. Todos los derechos reservados.
