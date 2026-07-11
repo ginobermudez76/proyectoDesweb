@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Modules\Auth\Entities\Usuario;
+use App\Modules\Auth\Entities\HistorialSesion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
@@ -31,6 +32,15 @@ class AuthController extends Controller
 
         Cache::store('redis')->put('auth_token:'.$token, $usuario->id, now()->addMinutes(120));
 
+        HistorialSesion::create([
+            'usuario_id' => $usuario->id,
+            'correo_electronico' => $usuario->correo_electronico,
+            'accion' => 'LOGIN',
+            'ip' => $request->ip(),
+            'dispositivo' => $request->userAgent(),
+            'fecha_hora' => now(),
+        ]);
+
         return response()->json([
             'access_token' => $token,
             'token_type' => 'Bearer',
@@ -43,6 +53,23 @@ class AuthController extends Controller
         $token = $request->bearerToken();
 
         if ($token) {
+            $usuarioId = Cache::store('redis')->get('auth_token:'.$token);
+
+            if ($usuarioId) {
+                $usuario = Usuario::find($usuarioId);
+
+                HistorialSesion::create([
+                    'usuario_id' => $usuarioId,
+                    'correo_electronico' => $usuario ? $usuario->correo_electronico : 'Desconocido',
+                    'accion' => 'LOGOUT',
+                    'ip' => $request->ip(),
+                    'dispositivo' => $request->userAgent(),
+                    'fecha_hora' => now(),
+                ]);
+
+                // Invalidar la caché de permisos de Redis al cerrar sesión
+                Cache::store('redis')->forget('user_profile:'.$usuarioId);
+            }
 
             Cache::store('redis')->forget('auth_token:'.$token);
         }
