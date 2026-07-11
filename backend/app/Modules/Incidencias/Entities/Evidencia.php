@@ -7,6 +7,7 @@ use MongoDB\Laravel\Eloquent\Model;
 class Evidencia extends Model
 {
     protected $connection = 'mongodb';
+
     protected $collection = 'evidencias';
 
     protected $fillable = [
@@ -16,7 +17,7 @@ class Evidencia extends Model
         'ruta',
         'tipo_mime',
         'tamano',
-        'fecha_subida'
+        'fecha_subida',
     ];
 
     protected $casts = [

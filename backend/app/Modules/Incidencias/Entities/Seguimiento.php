@@ -7,6 +7,7 @@ use MongoDB\Laravel\Eloquent\Model;
 class Seguimiento extends Model
 {
     protected $connection = 'mongodb';
+
     protected $collection = 'seguimientos';
 
     protected $fillable = [
@@ -15,7 +16,7 @@ class Seguimiento extends Model
         'estado_anterior',
         'estado_nuevo',
         'observacion',
-        'fecha_cambio'
+        'fecha_cambio',
     ];
 
     protected $casts = [
