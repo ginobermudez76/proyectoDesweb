@@ -17,6 +17,10 @@ class Endpoint extends Model
         'deleted',
     ];
 
+    protected $hidden = [
+        'id',
+    ];
+
     public function opciones()
     {
 

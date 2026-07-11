@@ -65,7 +65,7 @@ let filtroActual = 'mias';
 async function cargar() {
     try {
         todas = await apiFetch('/incidencias');
-        const urgentes = todas.filter(i => i.prioridad === 'Urgente' && i.asignado_a == user.id);
+        const urgentes = todas.filter(i => i.prioridad === 'Urgente' && i.asignado_a == user.uuid);
         if (urgentes.length) {
             document.getElementById('alertBanner').style.display = 'flex';
             document.getElementById('alertText').textContent =
@@ -83,7 +83,7 @@ function filtrar(lista) {
     const tipo = (document.getElementById('tipoSearch')?.value || '').toLowerCase();
     let result;
     switch (filtroActual) {
-        case 'mias':      result = lista.filter(i => String(i.asignado_a) === String(user.id)); break;
+        case 'mias':      result = lista.filter(i => String(i.asignado_a) === String(user.uuid)); break;
         case 'urgente':   result = lista.filter(i => i.prioridad === 'Urgente'); break;
         case 'proceso':   result = lista.filter(i => i.estado === 'En Proceso'); break;
         case 'resueltas': result = lista.filter(i => i.estado === 'Resuelta'); break;

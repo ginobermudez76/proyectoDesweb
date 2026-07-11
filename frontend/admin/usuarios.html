@@ -163,14 +163,26 @@ const AVATAR_COLORS = { ADMIN:'#5B21B6', SUPERVISOR:'#92400E', TECNICO:'#1D4ED8'
 
 let usuarios = [];
 let filtroActual = 'todos';
+let DB_ROLES = [];
 
 async function cargar() {
     try {
         usuarios = await apiFetch('/usuarios');
+        DB_ROLES = await apiFetch('/roles');
+        renderRolesSelects();
         renderLista();
     } catch (err) {
         document.getElementById('lista').innerHTML = `<div class="text-danger text-center py-3">Error al cargar usuarios: ${err.message}</div>`;
     }
+}
+
+function renderRolesSelects() {
+    const selectNew = document.getElementById('newRol');
+    const selectEdit = document.getElementById('editRol');
+    if (!selectNew || !selectEdit) return;
+    const optionsHtml = DB_ROLES.map(r => `<option value="${r.codigo}">${r.nombre_rol}</option>`).join('');
+    selectNew.innerHTML = optionsHtml;
+    selectEdit.innerHTML = optionsHtml;
 }
 
 function setFiltro(btn) {
@@ -204,11 +216,11 @@ function renderLista() {
             </div>
             <div style="display:flex;flex-direction:column;gap:6px">
                 <button class="toggle-btn" style="border-color:#6B7280;color:#6B7280"
-                    onclick="abrirEdicion(${u.id})">
+                    onclick="abrirEdicion('${u.uuid}')">
                     Editar
                 </button>
                 <button class="toggle-btn ${u.activo ? 'toggle-active' : 'toggle-inactive'}"
-                    onclick="toggleActivo(${u.id})">
+                    onclick="toggleActivo('${u.uuid}')">
                     ${u.activo ? 'Desactivar' : 'Activar'}
                 </button>
             </div>
@@ -216,19 +228,19 @@ function renderLista() {
     }).join('') || '<div class="text-muted-sm text-center py-3">Sin usuarios en este filtro.</div>';
 }
 
-async function toggleActivo(id) {
+async function toggleActivo(uuid) {
     try {
-        await apiFetch(`/usuarios/${id}/toggle`, { method: 'PATCH' });
+        await apiFetch(`/usuarios/${uuid}/toggle`, { method: 'PATCH' });
         await cargar();
     } catch (err) {
         alert(err.message || 'Error al cambiar el estado del usuario.');
     }
 }
 
-function abrirEdicion(id) {
-    const u = usuarios.find(x => x.id === id);
+function abrirEdicion(uuid) {
+    const u = usuarios.find(x => x.uuid === uuid);
     if (!u) return;
-    document.getElementById('editId').value = u.id;
+    document.getElementById('editId').value = u.uuid;
     document.getElementById('editNombres').value = u.nombres || '';
     document.getElementById('editApellidos').value = u.apellidos || '';
     document.getElementById('editCorreo').value = u.correo_electronico || '';
@@ -247,7 +259,7 @@ async function guardarEdicion() {
     const errEl = document.getElementById('editModalError');
     errEl.style.display = 'none';
 
-    const id = document.getElementById('editId').value;
+    const uuid = document.getElementById('editId').value;
     const nombres = document.getElementById('editNombres').value.trim();
     const apellidos = document.getElementById('editApellidos').value.trim();
     const correo_electronico = document.getElementById('editCorreo').value.trim();
@@ -262,7 +274,7 @@ async function guardarEdicion() {
     }
 
     try {
-        await apiFetch(`/usuarios/${id}`, {
+        await apiFetch(`/usuarios/${uuid}`, {
             method: 'PUT',
             body: JSON.stringify({
                 nombres,
@@ -287,7 +299,9 @@ function nuevoUsuario() {
     document.getElementById('newCorreo').value = '';
     document.getElementById('newUsuario').value = '';
     document.getElementById('newPass').value = '';
-    document.getElementById('newRol').value = 'ADMIN';
+    if (DB_ROLES.length > 0) {
+        document.getElementById('newRol').value = DB_ROLES[0].codigo;
+    }
     document.getElementById('modalError').style.display = 'none';
     document.getElementById('modalOverlay').style.display = 'flex';
 }
@@ -333,7 +347,9 @@ async function crearUsuario() {
         document.getElementById('newCorreo').value = '';
         document.getElementById('newPass').value = '';
         document.getElementById('newUsuario').value = '';
-        document.getElementById('newRol').value = 'ADMIN';
+        if (DB_ROLES.length > 0) {
+            document.getElementById('newRol').value = DB_ROLES[0].codigo;
+        }
 
         cerrarModal();
         await cargar();

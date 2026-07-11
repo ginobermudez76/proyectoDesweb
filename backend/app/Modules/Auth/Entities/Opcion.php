@@ -18,6 +18,10 @@ class Opcion extends Model
         'deleted',
     ];
 
+    protected $hidden = [
+        'id',
+    ];
+
     protected $casts = [
         'deleted' => 'boolean',
     ];
