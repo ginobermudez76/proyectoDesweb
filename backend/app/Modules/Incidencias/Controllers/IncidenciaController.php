@@ -3,6 +3,7 @@
 namespace App\Modules\Incidencias\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Auth\Entities\AccesoNoAutorizado;
 use App\Modules\Incidencias\Entities\Comentario;
 use App\Modules\Incidencias\Entities\Evidencia;
 use App\Modules\Incidencias\Entities\Incidencia;
@@ -56,6 +57,18 @@ class IncidenciaController extends Controller
         $rol = $request->user()->roles->first()->codigo ?? 'CIUDADANO';
 
         if ($rol === 'CIUDADANO' && $incidencia->usuario_id !== $request->user()->uuid) {
+            AccesoNoAutorizado::create([
+                'usuario_uuid'       => $request->user()->uuid,
+                'correo_electronico' => $request->user()->correo_electronico,
+                'rol'                => $rol,
+                'ip'                 => $request->ip(),
+                'user_agent'         => $request->userAgent(),
+                'metodo'             => $request->method(),
+                'url'                => $request->path(),
+                'tipo_violacion'     => 'IDOR',
+                'detalle'            => 'Intento de lectura en incidencia ajena. ID objetivo: '.$incidencia->_id,
+                'fecha_hora'         => now(),
+            ]);
             return response()->json(['message' => 'Acceso denegado. No eres el propietario de esta incidencia.'], 403);
         }
 
@@ -82,6 +95,18 @@ class IncidenciaController extends Controller
 
         if ($rol === 'CIUDADANO') {
             if ($incidencia->usuario_id !== $request->user()->uuid) {
+                AccesoNoAutorizado::create([
+                    'usuario_uuid'       => $request->user()->uuid,
+                    'correo_electronico' => $request->user()->correo_electronico,
+                    'rol'                => $rol,
+                    'ip'                 => $request->ip(),
+                    'user_agent'         => $request->userAgent(),
+                    'metodo'             => $request->method(),
+                    'url'                => $request->path(),
+                    'tipo_violacion'     => 'IDOR',
+                    'detalle'            => 'Intento de actualización en incidencia ajena. ID objetivo: '.$incidencia->_id,
+                    'fecha_hora'         => now(),
+                ]);
                 return response()->json(['message' => 'Acceso denegado. No eres el propietario de esta incidencia.'], 403);
             }
             if ($incidencia->estado !== 'Pendiente') {
@@ -133,6 +158,18 @@ class IncidenciaController extends Controller
 
         if ($rol === 'CIUDADANO') {
             if ($incidencia->usuario_id !== $request->user()->uuid) {
+                AccesoNoAutorizado::create([
+                    'usuario_uuid'       => $request->user()->uuid,
+                    'correo_electronico' => $request->user()->correo_electronico,
+                    'rol'                => $rol,
+                    'ip'                 => $request->ip(),
+                    'user_agent'         => $request->userAgent(),
+                    'metodo'             => $request->method(),
+                    'url'                => $request->path(),
+                    'tipo_violacion'     => 'IDOR',
+                    'detalle'            => 'Intento de eliminación en incidencia ajena. ID objetivo: '.$incidencia->_id,
+                    'fecha_hora'         => now(),
+                ]);
                 return response()->json(['message' => 'Acceso denegado. No eres el propietario de esta incidencia.'], 403);
             }
             if ($incidencia->estado !== 'Pendiente') {

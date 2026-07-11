@@ -14,15 +14,37 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        RateLimiter::for('api', function (Request $request) {
-            $token = $request->bearerToken();
-            $userId = null;
-            if ($token) {
-                $userId = Cache::store('redis')->get('auth_token:'.$token);
-            }
+        // Login: muy restrictivo — solo 10 req/min por IP
+        RateLimiter::for('login', function (Request $request) {
+            return Limit::perMinute(10)->by($request->ip())
+                ->response(fn () => response()->json([
+                    'message'             => 'Demasiadas peticiones al login. Espera un momento.',
+                    'retry_after_seconds' => 60,
+                ], 429));
+        });
 
-            // Límite de 60 peticiones por minuto por usuario o dirección IP
-            return Limit::perMinute(60)->by($userId ?: $request->ip());
+        // API general: 60 req/min por usuario autenticado o IP
+        RateLimiter::for('api', function (Request $request) {
+            $token  = $request->bearerToken();
+            $userId = $token ? Cache::store('redis')->get('auth_token:'.$token) : null;
+
+            return Limit::perMinute(60)->by($userId ?: $request->ip())
+                ->response(fn () => response()->json([
+                    'message'             => 'Límite de peticiones alcanzado. Espera un momento.',
+                    'retry_after_seconds' => 60,
+                ], 429));
+        });
+
+        // Escritura: 20 req/min — más restrictivo para POST/PUT/DELETE
+        RateLimiter::for('api-write', function (Request $request) {
+            $token  = $request->bearerToken();
+            $userId = $token ? Cache::store('redis')->get('auth_token:'.$token) : null;
+
+            return Limit::perMinute(20)->by($userId ?: $request->ip())
+                ->response(fn () => response()->json([
+                    'message'             => 'Límite de escritura alcanzado. Espera un momento.',
+                    'retry_after_seconds' => 60,
+                ], 429));
         });
     }
 }

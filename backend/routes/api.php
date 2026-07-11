@@ -4,7 +4,7 @@ use App\Http\Controllers\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['throttle:api'])->post('/login', [AuthController::class, 'login']);
+Route::middleware(['throttle:login'])->post('/login', [AuthController::class, 'login']);
 
 Route::middleware(['throttle:api', 'rbac'])->group(function () {
 

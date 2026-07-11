@@ -13,13 +13,20 @@ async function apiFetch(endpoint, options = {}) {
         const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
 
         if (response.status === 401) {
-            localStorage.removeItem('auth_token');
-            localStorage.removeItem('auth_user');
-            alert('Sesión expirada o no autorizada. Redirigiendo al inicio de sesión.');
-            const isSubpage = ['/ciudadano/', '/tecnico/', '/supervisor/', '/admin/']
-                              .some(p => window.location.pathname.includes(p));
-            window.location.href = isSubpage ? '../login.html' : 'login.html';
-            return;
+            // En login.html, dejar que el caller maneje el 401 (credenciales incorrectas)
+            const onLoginPage = window.location.pathname.endsWith('login.html')
+                || window.location.pathname === '/'
+                || window.location.pathname.endsWith('/');
+
+            if (!onLoginPage) {
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('auth_user');
+                alert('Sesión expirada o no autorizada. Redirigiendo al inicio de sesión.');
+                const isSubpage = ['/ciudadano/', '/tecnico/', '/supervisor/', '/admin/']
+                                  .some(p => window.location.pathname.includes(p));
+                window.location.href = isSubpage ? '../login.html' : 'login.html';
+                return;
+            }
         }
 
         if (!response.ok) {
@@ -27,9 +34,14 @@ async function apiFetch(endpoint, options = {}) {
             const detailMsgs = err.details ? Object.values(err.details).flat() : [];
             const msg = detailMsgs[0] || err.message || `Error HTTP: ${response.status}`;
 
+            // En la página de login, no redirigimos — dejamos que el caller maneje 401 y 429
+            const isLoginPage = window.location.pathname.endsWith('login.html')
+                || window.location.pathname === '/'
+                || window.location.pathname.endsWith('/');
+
             // Manejador de redirección a pantalla de error para códigos críticos
             const redirectStatusCodes = [403, 404, 429, 500, 502, 503, 504];
-            if (redirectStatusCodes.includes(response.status)) {
+            if (!isLoginPage && redirectStatusCodes.includes(response.status)) {
                 const isSubpage = ['/ciudadano/', '/tecnico/', '/supervisor/', '/admin/']
                                   .some(p => window.location.pathname.includes(p));
                 const errorPageUrl = isSubpage ? '../error.html' : 'error.html';
@@ -53,7 +65,12 @@ async function apiFetch(endpoint, options = {}) {
                     break;
             }
 
-            throw new Error(msg);
+            // Lanzar error enriquecido con status y datos JSON completos
+            const richError = new Error(msg);
+            richError.status       = response.status;
+            richError.responseJson = err;
+            richError.responseText = JSON.stringify(err);
+            throw richError;
         }
 
         return await response.json();
