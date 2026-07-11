@@ -26,16 +26,20 @@ async function apiFetch(endpoint, options = {}) {
             const err = await response.json().catch(() => ({}));
             const msg = err.message || `Error HTTP: ${response.status}`;
 
-            // Manejador centralizado de errores por Código de Estado HTTP
+            // Manejador de redirección a pantalla de error para códigos críticos
+            const redirectStatusCodes = [403, 404, 429, 500, 502, 503, 504];
+            if (redirectStatusCodes.includes(response.status)) {
+                const isSubpage = ['/ciudadano/', '/tecnico/', '/supervisor/', '/admin/']
+                                  .some(p => window.location.pathname.includes(p));
+                const errorPageUrl = isSubpage ? '../error.html' : 'error.html';
+                window.location.href = `${errorPageUrl}?code=${response.status}&message=${encodeURIComponent(msg)}`;
+                return;
+            }
+
+            // Manejo de alertas en la misma página para códigos no críticos corregibles por el usuario
             switch (response.status) {
                 case 400:
                     console.warn(`400 Bad Request: ${msg}`);
-                    break;
-                case 403:
-                    alert(`Acceso denegado (403):\nNo tienes permisos para acceder a esta sección o recurso.`);
-                    break;
-                case 404:
-                    console.warn(`404 Not Found: ${msg}`);
                     break;
                 case 405:
                     alert(`Método no permitido (405):\nLa acción solicitada no es compatible con el servidor.`);
@@ -45,21 +49,6 @@ async function apiFetch(endpoint, options = {}) {
                     break;
                 case 415:
                     alert(`Tipo de contenido no soportado (415):\nEl servidor esperaba un formato diferente.`);
-                    break;
-                case 429:
-                    alert(`Demasiadas solicitudes (429):\nSe ha excedido el límite de peticiones. Por favor, espera un momento e intenta de nuevo.`);
-                    break;
-                case 500:
-                    alert(`Error interno del servidor (500):\nOcurrió un fallo inesperado en el sistema. Inténtalo de nuevo más tarde.`);
-                    break;
-                case 502:
-                    alert(`Puerta de enlace incorrecta (502):\nEl servidor recibió una respuesta inválida de un servicio externo (GPS o Mapas).`);
-                    break;
-                case 503:
-                    alert(`Servicio no disponible (503):\nEl servidor se encuentra temporalmente en mantenimiento o sobrecargado.`);
-                    break;
-                case 504:
-                    alert(`Tiempo de espera agotado (504):\nUn servicio externo tardó demasiado tiempo en responder.`);
                     break;
             }
 

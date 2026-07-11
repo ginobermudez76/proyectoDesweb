@@ -48,7 +48,10 @@ function requireAuth(basePath = '..') {
 function requireRole(allowed) {
     if (!requireAuth()) return false;
     if (!allowed.includes(getRole())) {
-        window.location.href = dashboardUrl('..');
+        const isSubpage = ['/ciudadano/', '/tecnico/', '/supervisor/', '/admin/']
+                          .some(p => window.location.pathname.includes(p));
+        const errorPageUrl = isSubpage ? '../error.html' : 'error.html';
+        window.location.href = `${errorPageUrl}?code=403&message=${encodeURIComponent('Acceso denegado (403)')}`;
         return false;
     }
     return true;
