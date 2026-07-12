@@ -242,8 +242,8 @@ El sistema incluye usuarios pre-cargados para pruebas de permisos en roles (RBAC
 
 ## 👥 Equipo de Desarrollo
 
-* **Gino Maximiliano Bermúdez Santos** — Arquitectura de Software e Infraestructura
-* **Said Fausto Pinto Tamayo** — Desarrollo Backend (API REST, DB Relacional y NoSQL)
+* **Gino Maximiliano Bermúdez Santos** — Arquitectura de Software, Diseño e Implementación de Bases de Datos (PostgreSQL/MongoDB/Redis) e Infraestructura
+* **Said Fausto Pinto Tamayo** — Desarrollo Backend (API REST y Lógica de Negocio)
 * **Diana Lucia Melena Santander** — Desarrollo Frontend (Interfaz de Usuario e Integraciones)
 
 ---
