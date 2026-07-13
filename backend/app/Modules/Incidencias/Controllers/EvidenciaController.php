@@ -20,7 +20,7 @@ class EvidenciaController extends Controller
     public function store(Request $request, $id)
     {
         $request->validate([
-            'archivo' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120',
+            'archivo' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:51200',
             'url' => 'nullable|url',
         ]);
 
