@@ -47,7 +47,7 @@ async function cargar() {
     }
 }
 
-function render({ incidencia: inc, historial_seguimiento, comentarios }) {
+function render({ incidencia: inc, evidencias, historial_seguimiento, comentarios }) {
     const p = prioridadInfo(inc.prioridad);
     const e = estadoInfo(inc.estado);
     const tResol = tiempoResolucion(inc.fecha_creacion, historial_seguimiento);
@@ -102,6 +102,8 @@ function render({ incidencia: inc, historial_seguimiento, comentarios }) {
                 <div class="section-title">Descripción</div>
                 <p style="font-size:14px;color:var(--gray-600);margin:0;line-height:1.5">${inc.descripcion || 'Sin descripción.'}</p>
             </div>
+
+            ${buildEvidencias(evidencias)}
 
             <!-- Botones de Cambio de Estado (Supervisor / Admin) -->
             <div class="section">
@@ -232,6 +234,22 @@ function initMap([lng, lat]) {
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OSM' }).addTo(m);
     m.setView([lat, lng], 15);
     L.marker([lat, lng]).addTo(m);
+}
+
+function buildEvidencias(evidencias) {
+    if (!evidencias || !evidencias.length) return '';
+    return `
+    <div class="divider"></div>
+    <div class="section">
+        <div class="section-title">Evidencia adjunta</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+            ${evidencias.map(e => `
+                <a href="${e.ruta}" target="_blank" style="border:1.5px solid var(--gray-200);border-radius:10px;overflow:hidden;width:100px;height:100px;display:inline-block">
+                    <img src="${e.ruta}" alt="${e.nombre_archivo}" style="width:100%;height:100%;object-fit:cover">
+                </a>
+            `).join('')}
+        </div>
+    </div>`;
 }
 
 cargar();

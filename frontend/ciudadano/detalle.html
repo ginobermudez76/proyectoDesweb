@@ -45,7 +45,7 @@ async function cargar() {
     }
 }
 
-function render({ incidencia: inc, historial_seguimiento, comentarios }) {
+function render({ incidencia: inc, evidencias, historial_seguimiento, comentarios }) {
     const e = estadoInfo(inc.estado);
     const step = e.step;
     const esPropio = String(inc.usuario_id) === String(getUser()?.uuid);
@@ -124,6 +124,8 @@ function render({ incidencia: inc, historial_seguimiento, comentarios }) {
                 <div class="section-title">Descripción</div>
                 <p style="font-size:14px;color:#4B5563;line-height:1.6">${inc.descripcion || '—'}</p>
             </div>
+
+            ${buildEvidencias(evidencias)}
 
             <div class="divider"></div>
 
@@ -229,6 +231,22 @@ async function eliminarReporte() {
         await apiFetch(`/incidencias/${id}`, { method: 'DELETE' });
         window.location.href = 'home.html';
     } catch (e) { alert(e.message || 'Error al eliminar el reporte.'); }
+}
+
+function buildEvidencias(evidencias) {
+    if (!evidencias || !evidencias.length) return '';
+    return `
+    <div class="divider"></div>
+    <div class="section">
+        <div class="section-title">Evidencia adjunta</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+            ${evidencias.map(e => `
+                <a href="${e.ruta}" target="_blank" style="border:1.5px solid var(--gray-200);border-radius:10px;overflow:hidden;width:100px;height:100px;display:inline-block">
+                    <img src="${e.ruta}" alt="${e.nombre_archivo}" style="width:100%;height:100%;object-fit:cover">
+                </a>
+            `).join('')}
+        </div>
+    </div>`;
 }
 
 cargar();
