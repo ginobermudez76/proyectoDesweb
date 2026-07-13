@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'firebase' => [
+        'project_id' => env('FIREBASE_PROJECT_ID'),
+        'storage_bucket' => env('FIREBASE_STORAGE_BUCKET'),
+        'credentials_path' => env('FIREBASE_CREDENTIALS_PATH'),
+    ],
+
+
 ];

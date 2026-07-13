@@ -13,9 +13,9 @@ class FirebaseStorageService
 
     public function __construct()
     {
-        $projectId = env('FIREBASE_PROJECT_ID');
-        $bucketName = env('FIREBASE_STORAGE_BUCKET');
-        $credentialsPath = base_path(env('FIREBASE_CREDENTIALS_PATH', 'storage/firebase-credentials.json'));
+        $projectId = config('services.firebase.project_id');
+        $bucketName = config('services.firebase.storage_bucket');
+        $credentialsPath = base_path(config('services.firebase.credentials_path', 'storage/firebase-credentials.json'));
 
         if ($projectId && $bucketName && file_exists($credentialsPath)) {
             try {
@@ -30,7 +30,7 @@ class FirebaseStorageService
                 $this->isConfigured = false;
             }
         } else {
-            Log::info('Firebase Storage no configurado en .env (faltan Project ID, Bucket o archivo JSON). Usando almacenamiento local.');
+            Log::info('Firebase Storage no configurado en config/services.php (faltan Project ID, Bucket o archivo JSON). Usando almacenamiento local.');
             $this->isConfigured = false;
         }
     }
@@ -63,7 +63,7 @@ class FirebaseStorageService
             );
 
             // Firebase Storage utiliza este formato de URL para acceso de lectura pública sin firma
-            $bucketName = env('FIREBASE_STORAGE_BUCKET');
+            $bucketName = config('services.firebase.storage_bucket');
             $encodedName = urlencode($fileName);
 
             return "https://firebasestorage.googleapis.com/v0/b/{$bucketName}/o/{$encodedName}?alt=media";

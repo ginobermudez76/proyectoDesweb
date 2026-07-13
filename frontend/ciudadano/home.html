@@ -80,7 +80,7 @@ async function cargarReportes() {
     try {
         const data = await apiFetch('/incidencias');
         // Filtrar por usuario actual
-        const mis = data.filter(i => String(i.usuario_id) === String(user.id));
+        const mis = data.filter(i => String(i.usuario_id) === String(user.uuid));
         showNotifBadge(mis.filter(i => i.estado !== 'Pendiente').length);
         renderReportes(mis);
     } catch (e) {
