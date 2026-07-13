@@ -5,10 +5,18 @@ namespace App\Modules\Incidencias\Controllers;
 use App\Http\Controllers\Controller;
 use App\Modules\Incidencias\Entities\Evidencia;
 use App\Modules\Incidencias\Entities\Incidencia;
+use App\Services\FirebaseStorageService;
 use Illuminate\Http\Request;
 
 class EvidenciaController extends Controller
 {
+    protected $firebaseStorage;
+
+    public function __construct(FirebaseStorageService $firebaseStorage)
+    {
+        $this->firebaseStorage = $firebaseStorage;
+    }
+
     public function store(Request $request, $id)
     {
         $request->validate([
@@ -23,7 +31,8 @@ class EvidenciaController extends Controller
 
         $file = $request->file('archivo');
 
-        $path = $file->store('evidencias', 'public');
+        // Subir a Firebase Storage (o fallback a local)
+        $path = $this->firebaseStorage->upload($file, 'evidencias');
 
         $evidencia = Evidencia::create([
             'incidencia_id' => $id,
