@@ -20,7 +20,8 @@ class EvidenciaController extends Controller
     public function store(Request $request, $id)
     {
         $request->validate([
-            'archivo' => 'required|file|mimes:jpeg,png,jpg,pdf|max:5120',
+            'archivo' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120',
+            'url' => 'nullable|url',
         ]);
 
         $incidencia = Incidencia::findOrFail($id);
@@ -29,18 +30,30 @@ class EvidenciaController extends Controller
             return response()->json(['message' => 'Acceso denegado. No eres el propietario de esta incidencia.'], 403);
         }
 
-        $file = $request->file('archivo');
-
-        // Subir a Firebase Storage (o fallback a local)
-        $path = $this->firebaseStorage->upload($file, 'evidencias');
+        if ($request->has('url') && !empty($request->input('url'))) {
+            $path = $request->input('url');
+            $fileName = basename(parse_url($path, PHP_URL_PATH) ?: 'archivo.jpg');
+            $mimeType = 'image/jpeg';
+            $size = 0;
+        } else {
+            if (!$request->hasFile('archivo')) {
+                return response()->json(['message' => 'No se ha enviado ningún archivo o URL.'], 400);
+            }
+            $file = $request->file('archivo');
+            // Subir a Firebase Storage (o fallback a local)
+            $path = $this->firebaseStorage->upload($file, 'evidencias');
+            $fileName = $file->getClientOriginalName();
+            $mimeType = $file->getClientMimeType();
+            $size = $file->getSize();
+        }
 
         $evidencia = Evidencia::create([
             'incidencia_id' => $id,
             'usuario_id' => $request->user()->uuid,
-            'nombre_archivo' => $file->getClientOriginalName(),
+            'nombre_archivo' => $fileName,
             'ruta' => $path,
-            'tipo_mime' => $file->getClientMimeType(),
-            'tamano' => $file->getSize(),
+            'tipo_mime' => $mimeType,
+            'tamano' => $size,
             'fecha_subida' => now(),
         ]);
 

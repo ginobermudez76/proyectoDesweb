@@ -61,6 +61,33 @@
     </div>
 </div>
 
+<!-- Firebase App and Storage SDKs from CDN -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDWWj_a7hPs7iDW8kdepZmu1nJ0AINlSK8",
+    authDomain: "georeferencedocuments.firebaseapp.com",
+    projectId: "georeferencedocuments",
+    storageBucket: "georeferencedocuments.firebasestorage.app",
+    messagingSenderId: "1077575077759",
+    appId: "1:1077575077759:web:4c76afe406d7c5f197144a"
+  };
+
+  try {
+      const app = initializeApp(firebaseConfig);
+      const storage = getStorage(app);
+      
+      window.firebaseStorage = storage;
+      window.firebaseRef = ref;
+      window.firebaseUploadBytes = uploadBytes;
+      window.firebaseGetDownloadURL = getDownloadURL;
+  } catch (e) {
+      console.warn("Error al inicializar Firebase SDK:", e);
+  }
+</script>
+
 <script src="../js/app.js"></script>
 <script src="../js/auth.js"></script>
 <script>
@@ -124,8 +151,29 @@ function detectarUbicacion() {
 
 async function subirFoto(incidenciaId) {
     if (!fotoFile) return;
+    
+    let fileUrl = null;
+    
+    // Subir desde el cliente si Firebase está cargado y listo
+    if (window.firebaseStorage) {
+        try {
+            const extension = fotoFile.name.split('.').pop();
+            const fileName = `evidencias/ev_${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${extension}`;
+            const storageRef = window.firebaseRef(window.firebaseStorage, fileName);
+            const snapshot = await window.firebaseUploadBytes(storageRef, fotoFile);
+            fileUrl = await window.firebaseGetDownloadURL(snapshot.ref);
+        } catch (e) {
+            console.warn('Error al subir a Firebase desde el cliente (usando fallback del servidor):', e);
+        }
+    }
+    
     const fd = new FormData();
-    fd.append('archivo', fotoFile);
+    if (fileUrl) {
+        fd.append('url', fileUrl);
+    } else {
+        fd.append('archivo', fotoFile);
+    }
+    
     const token = localStorage.getItem('auth_token');
     await fetch(`/api/incidencias/${incidenciaId}/evidencias`, {
         method: 'POST',
