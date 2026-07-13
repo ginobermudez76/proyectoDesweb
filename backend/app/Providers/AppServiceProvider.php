@@ -23,24 +23,24 @@ class AppServiceProvider extends ServiceProvider
                 ], 429));
         });
 
-        // API general: 60 req/min por usuario autenticado o IP
+        // API general: 180 req/min por usuario autenticado o IP
         RateLimiter::for('api', function (Request $request) {
             $token  = $request->bearerToken();
             $userId = $token ? Cache::store('redis')->get('auth_token:'.$token) : null;
 
-            return Limit::perMinute(60)->by($userId ?: $request->ip())
+            return Limit::perMinute(180)->by($userId ?: $request->ip())
                 ->response(fn () => response()->json([
                     'message'             => 'Límite de peticiones alcanzado. Espera un momento.',
                     'retry_after_seconds' => 60,
                 ], 429));
         });
 
-        // Escritura: 20 req/min — más restrictivo para POST/PUT/DELETE
+        // Escritura: 60 req/min — más restrictivo para POST/PUT/DELETE
         RateLimiter::for('api-write', function (Request $request) {
             $token  = $request->bearerToken();
             $userId = $token ? Cache::store('redis')->get('auth_token:'.$token) : null;
 
-            return Limit::perMinute(20)->by($userId ?: $request->ip())
+            return Limit::perMinute(60)->by($userId ?: $request->ip())
                 ->response(fn () => response()->json([
                     'message'             => 'Límite de escritura alcanzado. Espera un momento.',
                     'retry_after_seconds' => 60,

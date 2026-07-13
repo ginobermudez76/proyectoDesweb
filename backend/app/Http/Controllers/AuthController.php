@@ -93,7 +93,7 @@ class AuthController extends Controller
         Cache::store('redis')->forget($keyEmail);
 
         $token = Str::random(60);
-        Cache::store('redis')->put('auth_token:'.$token, $usuario->id, now()->addMinutes(120));
+        Cache::store('redis')->put('auth_token:'.$token, $usuario->id, now()->addDays(7));
 
         HistorialSesion::create([
             'usuario_id'         => $usuario->uuid,
