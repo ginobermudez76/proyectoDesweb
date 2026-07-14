@@ -44,17 +44,22 @@ async function logout(basePath = '..') {
     window.location.href = `${basePath}${sep}login.html`;
 }
 
-function requireAuth(basePath = '..') {
-    if (!getToken()) { window.location.href = `${basePath}/login.html`; return false; }
+function requireAuth(basePath = null) {
+    const prefix = basePath !== null ? basePath : _navPrefix();
+    const sep = (prefix && prefix.endsWith('/')) ? '' : '/';
+    if (!getToken()) {
+        window.location.href = `${prefix}${sep}login.html`;
+        return false;
+    }
     return true;
 }
 
 function requireRole(allowed) {
-    if (!requireAuth()) return false;
+    const prefix = _navPrefix();
+    if (!requireAuth(prefix)) return false;
     if (!allowed.includes(getRole())) {
-        const isSubpage = ['/ciudadano/', '/tecnico/', '/supervisor/', '/admin/']
-                          .some(p => window.location.pathname.includes(p));
-        const errorPageUrl = isSubpage ? '../error.html' : 'error.html';
+        const sep = (prefix && prefix.endsWith('/')) ? '' : '/';
+        const errorPageUrl = `${prefix}${sep}error.html`;
         window.location.href = `${errorPageUrl}?code=403&message=${encodeURIComponent('Acceso denegado (403)')}`;
         return false;
     }
