@@ -1,38 +1,41 @@
 @echo off
 :: Script de ayuda para base de datos y migraciones local (Nativo)
 
+set PHP_CMD=php
+if exist C:\xampp\php\php.exe set PHP_CMD=C:\xampp\php\php.exe
+
 if "%1"=="create" (
     if "%2"=="" (
         echo Error: Debes especificar el nombre de la migracion.
         echo Ejemplo: db create create_logins_table
         exit /b 1
     )
-    php backend/artisan make:migration %2
+    %PHP_CMD% backend/artisan make:migration %2
     exit /b 0
 )
 
 if "%1"=="migrate" (
-    php backend/artisan migrate
+    %PHP_CMD% backend/artisan migrate
     exit /b 0
 )
 
 if "%1"=="fresh" (
-    php backend/artisan migrate:fresh --seed
+    %PHP_CMD% backend/artisan migrate:fresh --seed
     exit /b 0
 )
 
 if "%1"=="rollback" (
-    php backend/artisan migrate:rollback
+    %PHP_CMD% backend/artisan migrate:rollback
     exit /b 0
 )
 
 if "%1"=="status" (
-    php backend/artisan migrate:status
+    %PHP_CMD% backend/artisan migrate:status
     exit /b 0
 )
 
 if "%1"=="seed" (
-    php backend/artisan db:seed
+    %PHP_CMD% backend/artisan db:seed
     exit /b 0
 )
 
