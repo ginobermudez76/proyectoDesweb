@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script de ayuda para base de datos y migraciones en Linux / macOS
+# Script de ayuda para base de datos y migraciones local (Nativo)
 
 COMMAND=$1
 ARG=$2
@@ -10,37 +10,37 @@ if [ "$COMMAND" = "create" ]; then
         echo "Ejemplo: ./db.sh create create_logins_table"
         exit 1
     fi
-    docker compose exec app php artisan make:migration "$ARG"
+    php backend/artisan make:migration "$ARG"
     exit 0
 fi
 
 if [ "$COMMAND" = "migrate" ]; then
-    docker compose exec app php artisan migrate
+    php backend/artisan migrate
     exit 0
 fi
 
 if [ "$COMMAND" = "fresh" ]; then
-    docker compose exec app php artisan migrate:fresh --seed
+    php backend/artisan migrate:fresh --seed
     exit 0
 fi
 
 if [ "$COMMAND" = "rollback" ]; then
-    docker compose exec app php artisan migrate:rollback
+    php backend/artisan migrate:rollback
     exit 0
 fi
 
 if [ "$COMMAND" = "status" ]; then
-    docker compose exec app php artisan migrate:status
+    php backend/artisan migrate:status
     exit 0
 fi
 
 if [ "$COMMAND" = "seed" ]; then
-    docker compose exec app php artisan db:seed
+    php backend/artisan db:seed
     exit 0
 fi
 
 # Mostrar ayuda por defecto
-echo "Sistema de Ayuda de Base de Datos (Docker Wrapper)"
+echo "Sistema de Ayuda de Base de Datos (Nativo Local)"
 echo "--------------------------------------------------"
 echo "Uso: ./db.sh [comando] [argumentos]"
 echo ""

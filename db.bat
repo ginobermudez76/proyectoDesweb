@@ -1,5 +1,5 @@
 @echo off
-:: Script de ayuda para base de datos y migraciones en Windows
+:: Script de ayuda para base de datos y migraciones local (Nativo)
 
 if "%1"=="create" (
     if "%2"=="" (
@@ -7,37 +7,37 @@ if "%1"=="create" (
         echo Ejemplo: db create create_logins_table
         exit /b 1
     )
-    docker compose exec app php artisan make:migration %2
+    php backend/artisan make:migration %2
     exit /b 0
 )
 
 if "%1"=="migrate" (
-    docker compose exec app php artisan migrate
+    php backend/artisan migrate
     exit /b 0
 )
 
 if "%1"=="fresh" (
-    docker compose exec app php artisan migrate:fresh --seed
+    php backend/artisan migrate:fresh --seed
     exit /b 0
 )
 
 if "%1"=="rollback" (
-    docker compose exec app php artisan migrate:rollback
+    php backend/artisan migrate:rollback
     exit /b 0
 )
 
 if "%1"=="status" (
-    docker compose exec app php artisan migrate:status
+    php backend/artisan migrate:status
     exit /b 0
 )
 
 if "%1"=="seed" (
-    docker compose exec app php artisan db:seed
+    php backend/artisan db:seed
     exit /b 0
 )
 
 :: Mostrar ayuda por defecto
-echo Sistema de Ayuda de Base de Datos (Docker Wrapper)
+echo Sistema de Ayuda de Base de Datos (Nativo Local)
 echo --------------------------------------------------
 echo Uso: db [comando] [argumentos]
 echo.
