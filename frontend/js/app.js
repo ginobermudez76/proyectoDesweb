@@ -1,3 +1,8 @@
+// Corregir automáticamente doble barra inicial en la URL para evitar que se propague en enlaces relativos
+if (window.location.pathname.startsWith('//')) {
+    window.location.replace(window.location.pathname.replace(/^\/+/, '/') + window.location.search + window.location.hash);
+}
+
 const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || !window.location.hostname)
     ? 'http://localhost:8000/api'
     : '/api';
