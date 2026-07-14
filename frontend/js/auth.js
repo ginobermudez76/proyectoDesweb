@@ -15,7 +15,7 @@ function isAdmin()     { return getRole() === 'ADMIN'; }
 
 // Ruta de dashboard según rol → nueva estructura por opción
 function dashboardUrl(basePath = '') {
-    const sep = basePath ? '/' : '';
+    const sep = (basePath && !basePath.endsWith('/')) ? '/' : '';
     const role = getRole();
     if (!role) return `${basePath}${sep}login.html`;
     
@@ -40,7 +40,8 @@ function clearAuth() {
 async function logout(basePath = '..') {
     try { await apiFetch('/logout', { method: 'POST' }); } catch {}
     clearAuth();
-    window.location.href = `${basePath}/login.html`;
+    const sep = (basePath && basePath.endsWith('/')) ? '' : '/';
+    window.location.href = `${basePath}${sep}login.html`;
 }
 
 function requireAuth(basePath = '..') {
