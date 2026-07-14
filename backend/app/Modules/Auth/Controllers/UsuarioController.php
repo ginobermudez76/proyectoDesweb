@@ -121,6 +121,26 @@ class UsuarioController extends Controller
         return response()->json($usuario->load('roles'), 200);
     }
 
+    /**
+     * GET /api/usuarios/tecnicos
+     * Lista usuarios activos con rol TECNICO para el modal de asignación.
+     */
+    public function tecnicos()
+    {
+        $rolTecnico = Rol::where('codigo', 'TECNICO')->first();
+        if (!$rolTecnico) {
+            return response()->json([], 200);
+        }
+
+        $tecnicos = Usuario::whereHas('roles', function ($q) use ($rolTecnico) {
+            $q->where('rol.id', $rolTecnico->id)->where('rol_usuario.deleted', false);
+        })->where('activo', true)
+          ->orderBy('apellidos')
+          ->get(['uuid', 'nombres', 'apellidos', 'nombre_usuario', 'correo_electronico']);
+
+        return response()->json($tecnicos, 200);
+    }
+
     public function roles()
     {
         return response()->json(Rol::all(), 200);

@@ -13,16 +13,19 @@ function isTecnico()   { return getRole() === 'TECNICO'; }
 function isSupervisor(){ return getRole() === 'SUPERVISOR'; }
 function isAdmin()     { return getRole() === 'ADMIN'; }
 
-// Ruta de dashboard según rol
+// Ruta de dashboard según rol → nueva estructura por opción
 function dashboardUrl(basePath = '') {
     const sep = basePath ? '/' : '';
-    switch (getRole()) {
-        case 'CIUDADANO':  return `${basePath}${sep}ciudadano/home.html`;
-        case 'TECNICO':    return `${basePath}${sep}tecnico/panel.html`;
-        case 'SUPERVISOR': return `${basePath}${sep}supervisor/panel.html`;
-        case 'ADMIN':      return `${basePath}${sep}admin/panel.html`;
-        default:           return `${basePath}${sep}login.html`;
+    const role = getRole();
+    if (!role) return `${basePath}${sep}login.html`;
+    
+    // El Administrador inicia en su Dashboard exclusivo
+    if (role === 'ADMIN') {
+        return `${basePath}${sep}pages/dashboard/dashboard.html`;
     }
+    
+    // Todos los demás roles van al panel de incidencias
+    return `${basePath}${sep}pages/incidencias/panel.html`;
 }
 
 function saveAuth(token, user) {
@@ -176,26 +179,35 @@ function getOpciones() {
 }
 
 function getNavLinks() {
-    const ops = getOpciones();
+    const ops  = getOpciones();
     const role = getRole();
     const links = [];
 
-    // Si tiene acceso a incidencias
-    const hasIncidencias = ops.some(o => o.includes("Incidencias"));
-    if (hasIncidencias) {
-        const homeHref = role === 'CIUDADANO' ? 'home.html' : 'panel.html';
-        links.push({ href: homeHref, icon: 'bi-house-fill', label: 'Inicio' });
-        links.push({ href: 'mapa.html', icon: 'bi-map', label: 'Mapa' });
+    // Dashboard - solo para ADMIN
+    if (role === 'ADMIN') {
+        links.push({ href: 'pages/dashboard/dashboard.html', icon: 'bi-speedometer2', label: 'Inicio' });
     }
 
-    // Si tiene acceso a gestión de usuarios
-    if (ops.includes('Gestión de Usuarios')) {
-        links.push({ href: 'usuarios.html', icon: 'bi-people', label: 'Usuarios' });
+    // Incidencias — visible para roles autenticados (excepto ADMIN que no ve incidencias ni mapa)
+    const hasIncidencias = ops.some(o => o.includes('Incidencias'));
+    if (hasIncidencias && role !== 'ADMIN') {
+        links.push({ href: 'pages/incidencias/panel.html',    icon: 'bi-house-fill', label: 'Inicio' });
+        if (role === 'CIUDADANO') {
+            links.push({ href: 'pages/incidencias/reportar.html', icon: 'bi-plus-circle', label: 'Reportar' });
+        }
+        links.push({ href: 'pages/incidencias/mapa.html',     icon: 'bi-map',        label: 'Mapa' });
     }
 
-    // Si tiene acceso a perfil
-    if (ops.includes('Perfil de Usuario')) {
-        links.push({ href: 'perfil.html', icon: 'bi-person', label: 'Perfil' });
+    // Gestión de usuarios — Admin y Supervisor
+    const hasUsuarios = ops.some(o => o.includes('Gestión de Usuarios'));
+    if (hasUsuarios) {
+        links.push({ href: 'pages/usuarios/usuarios.html', icon: 'bi-people', label: 'Usuarios' });
+    }
+
+    // Perfil — todos los roles
+    const hasPerfil = ops.some(o => o.includes('Perfil de Usuario'));
+    if (hasPerfil) {
+        links.push({ href: 'pages/perfil/perfil.html', icon: 'bi-person', label: 'Perfil' });
     }
 
     return links;
@@ -203,22 +215,22 @@ function getNavLinks() {
 
 function _navPrefix() {
     const p = window.location.pathname;
-    return ['/ciudadano/', '/tecnico/', '/supervisor/', '/admin/'].some(s => p.includes(s))
-        ? '../' : '';
+    // Páginas en pages/[opcion]/ → necesitan 2 niveles hacia arriba para llegar a la raíz
+    if (p.includes('/pages/')) return '../../';
+    // Páginas legacy en [rol]/ → 1 nivel
+    if (['/ciudadano/', '/tecnico/', '/supervisor/', '/admin/'].some(s => p.includes(s))) return '../';
+    return '';
 }
 
 function _roleFolder() {
-    const p = window.location.pathname;
-    for (const f of ['ciudadano','tecnico','supervisor','admin']) {
-        if (p.includes(`/${f}/`)) return f;
-    }
-    return { CIUDADANO:'ciudadano', TECNICO:'tecnico', SUPERVISOR:'supervisor', ADMIN:'admin' }[getRole()] || '';
+    // En la nueva estructura todas las páginas están en pages/[opcion]/
+    // No necesitamos resolver carpeta por rol, los hrefs ya son absolutos desde la raíz
+    return '';
 }
 
 function _renderNavLinks(navElement) {
-    const links = getNavLinks();
-    const prefix = _navPrefix();
-    const folder = _roleFolder();
+    const links     = getNavLinks();
+    const prefix    = _navPrefix();
     const isDesktop = window.innerWidth >= 768;
 
     let html = '';
@@ -227,8 +239,9 @@ function _renderNavLinks(navElement) {
     }
 
     html += links.map(l => {
-        const fullHref = `${prefix}${folder}/${l.href}`;
-        const activeClass = window.location.pathname.includes(l.href) ? 'active' : '';
+        // Los hrefs en getNavLinks() ya son relativos a la raíz del frontend
+        const fullHref   = prefix + l.href;
+        const activeClass = window.location.pathname.includes(l.href.split('/').pop()) ? 'active' : '';
         return `<a href="${fullHref}" class="${activeClass}"><i class="bi ${l.icon}"></i><span>${l.label}</span></a>`;
     }).join('');
 

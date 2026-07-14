@@ -13,7 +13,6 @@ async function apiFetch(endpoint, options = {}) {
         const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
 
         if (response.status === 401) {
-            // En login.html, dejar que el caller maneje el 401 (credenciales incorrectas)
             const onLoginPage = window.location.pathname.endsWith('login.html')
                 || window.location.pathname === '/'
                 || window.location.pathname.endsWith('/');
@@ -22,9 +21,10 @@ async function apiFetch(endpoint, options = {}) {
                 localStorage.removeItem('auth_token');
                 localStorage.removeItem('auth_user');
                 alert('Sesión expirada o no autorizada. Redirigiendo al inicio de sesión.');
-                const isSubpage = ['/ciudadano/', '/tecnico/', '/supervisor/', '/admin/']
-                                  .some(p => window.location.pathname.includes(p));
-                window.location.href = isSubpage ? '../login.html' : 'login.html';
+                const depth = window.location.pathname.includes('/pages/') ? '../../' :
+                    ['/ciudadano/', '/tecnico/', '/supervisor/', '/admin/']
+                      .some(p => window.location.pathname.includes(p)) ? '../' : '';
+                window.location.href = depth + 'login.html';
                 return;
             }
         }
@@ -42,10 +42,10 @@ async function apiFetch(endpoint, options = {}) {
             // Manejador de redirección a pantalla de error para códigos críticos
             const redirectStatusCodes = [403, 404, 429, 500, 502, 503, 504];
             if (!isLoginPage && redirectStatusCodes.includes(response.status)) {
-                const isSubpage = ['/ciudadano/', '/tecnico/', '/supervisor/', '/admin/']
-                                  .some(p => window.location.pathname.includes(p));
-                const errorPageUrl = isSubpage ? '../error.html' : 'error.html';
-                window.location.href = `${errorPageUrl}?code=${response.status}&message=${encodeURIComponent(msg)}`;
+                const depth = window.location.pathname.includes('/pages/') ? '../../' :
+                    ['/ciudadano/', '/tecnico/', '/supervisor/', '/admin/']
+                      .some(p => window.location.pathname.includes(p)) ? '../' : '';
+                window.location.href = `${depth}error.html?code=${response.status}&message=${encodeURIComponent(msg)}`;
                 return;
             }
 

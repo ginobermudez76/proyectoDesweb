@@ -20,6 +20,10 @@ class IncidenciaController extends Controller
             return response()->json(Incidencia::where('usuario_id', $request->user()->uuid)->get(), 200);
         }
 
+        if ($rol === 'TECNICO') {
+            return response()->json(Incidencia::where('asignado_a', $request->user()->uuid)->get(), 200);
+        }
+
         return response()->json(Incidencia::all(), 200);
     }
 

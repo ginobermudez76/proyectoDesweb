@@ -17,3 +17,6 @@ Route::middleware(['throttle:api', 'rbac'])->group(function () {
 });
 
 require base_path('app/Modules/Publicaciones/Routes/api.php');
+require base_path('app/Modules/Incidencias/Routes/api.php');
+require base_path('app/Modules/Auth/Routes/api.php');
+require base_path('app/Modules/Catalogos/Routes/api.php');
