@@ -122,7 +122,7 @@ class AuthController extends Controller
                 $usuario = Usuario::find($usuarioId);
 
                 HistorialSesion::create([
-                    'usuario_id'         => $usuarioId,
+                    'usuario_id'         => $usuario ? $usuario->uuid : $usuarioId,
                     'correo_electronico' => $usuario ? $usuario->correo_electronico : 'Desconocido',
                     'accion'             => 'LOGOUT',
                     'ip'                 => $request->ip(),

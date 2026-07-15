@@ -145,4 +145,15 @@ class UsuarioController extends Controller
     {
         return response()->json(Rol::all(), 200);
     }
+
+    public function sesiones(Request $request)
+    {
+        $userUuid = $request->user()->uuid;
+        $sesiones = \App\Modules\Auth\Entities\HistorialSesion::where('usuario_id', $userUuid)
+            ->orderBy('fecha_hora', 'desc')
+            ->limit(50)
+            ->get();
+
+        return response()->json($sesiones, 200);
+    }
 }
