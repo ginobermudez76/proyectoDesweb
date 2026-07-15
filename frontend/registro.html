@@ -69,27 +69,27 @@
         <div class="form-row">
             <div class="form-group">
                 <label class="form-label" for="nombres">Nombres</label>
-                <input class="form-input" id="nombres" type="text" placeholder="Ej. Juan">
+                <input class="form-input" id="nombres" type="text" placeholder="Ej. Juan" autocomplete="off">
             </div>
             <div class="form-group">
                 <label class="form-label" for="apellidos">Apellidos</label>
-                <input class="form-input" id="apellidos" type="text" placeholder="Ej. Pérez">
+                <input class="form-input" id="apellidos" type="text" placeholder="Ej. Pérez" autocomplete="off">
             </div>
         </div>
 
         <div class="form-group">
             <label class="form-label" for="correo">Correo electrónico</label>
-            <input class="form-input" id="correo" type="email" placeholder="juan.perez@ejemplo.com">
+            <input class="form-input" id="correo" type="email" placeholder="juan.perez@ejemplo.com" autocomplete="off">
         </div>
 
         <div class="form-row">
             <div class="form-group">
                 <label class="form-label" for="usuario">Nombre de usuario</label>
-                <input class="form-input" id="usuario" type="text" placeholder="juan.perez">
+                <input class="form-input" id="usuario" type="text" placeholder="juan.perez" autocomplete="off">
             </div>
             <div class="form-group">
                 <label class="form-label" for="password">Contraseña</label>
-                <input class="form-input" id="password" type="password" placeholder="Mín. 8 caracteres">
+                <input class="form-input" id="password" type="password" placeholder="Mín. 8 caracteres" autocomplete="new-password">
             </div>
         </div>
 
@@ -100,7 +100,7 @@
             </div>
             <div class="form-group">
                 <label class="form-label" for="documento">Nº de Documento</label>
-                <input class="form-input" id="documento" type="text" placeholder="Ingresa tu documento">
+                <input class="form-input" id="documento" type="text" placeholder="Ingresa tu documento" autocomplete="off">
             </div>
         </div>
 
@@ -110,25 +110,25 @@
                 <select class="form-input phone-prefix" id="prefijo_celular">
                     <option value="">Cargando…</option>
                 </select>
-                <input class="form-input flex-1" id="celular" type="tel" placeholder="999999999">
+                <input class="form-input flex-1" id="celular" type="tel" placeholder="999999999" autocomplete="off">
             </div>
         </div>
 
         <div class="form-group">
             <label class="form-label" for="pais">País</label>
-            <input class="form-input" id="pais" list="paisList" placeholder="Escribe o selecciona tu país" onchange="onPaisChange()" onblur="validarDatalist('pais', 'paisList')">
+            <input class="form-input" id="pais" list="paisList" placeholder="Escribe o selecciona tu país" onchange="onPaisChange()" onblur="validarDatalist('pais', 'paisList')" autocomplete="off">
             <datalist id="paisList"></datalist>
         </div>
 
         <div class="form-row">
             <div class="form-group" id="estadoGroup">
                 <label class="form-label" for="estado">Estado / Provincia</label>
-                <input class="form-input" id="estado" list="estadoList" placeholder="Escribe o selecciona" onchange="onEstadoChange()" onblur="validarDatalist('estado', 'estadoList')">
+                <input class="form-input" id="estado" list="estadoList" placeholder="Escribe o selecciona" onchange="onEstadoChange()" onblur="validarDatalist('estado', 'estadoList')" autocomplete="off">
                 <datalist id="estadoList"></datalist>
             </div>
             <div class="form-group" id="ciudadGroup">
                 <label class="form-label" for="ciudad">Ciudad</label>
-                <input class="form-input" id="ciudad" list="ciudadList" placeholder="Escribe o selecciona" onblur="validarDatalist('ciudad', 'ciudadList')">
+                <input class="form-input" id="ciudad" list="ciudadList" placeholder="Escribe o selecciona" onblur="validarDatalist('ciudad', 'ciudadList')" autocomplete="off">
                 <datalist id="ciudadList"></datalist>
             </div>
         </div>
@@ -196,7 +196,7 @@
                 const prefixSelect = document.getElementById('prefijo_celular');
                 prefixSelect.innerHTML = countriesData
                     .filter(c => c.dial_code)
-                    .map(c => `<option value="${c.dial_code}">${c.flag || '📍'} ${c.dial_code} (${c.name})</option>`).join('');
+                    .map(c => `<option value="${c.dial_code}">${c.flag || '📍'} ${c.dial_code}</option>`).join('');
             }
         } catch (e) {
             console.error('Error al cargar países:', e);
