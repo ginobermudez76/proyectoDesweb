@@ -80,6 +80,16 @@ class IncidenciaController extends Controller
         $historial_seguimiento = Seguimiento::where('incidencia_id', $id)
             ->orderBy('fecha_cambio', 'desc')
             ->get();
+
+        foreach ($historial_seguimiento as $h) {
+            if (!empty($h->tecnico_id)) {
+                $usr = \App\Modules\Auth\Entities\Usuario::where('uuid', $h->tecnico_id)->first();
+                if ($usr) {
+                    $h->setAttribute('tecnico_nombre', trim($usr->nombres . ' ' . $usr->apellidos));
+                }
+            }
+        }
+
         $comentarios = Comentario::where('incidencia_id', $id)
             ->orderBy('fecha_creacion', 'asc')
             ->get();
