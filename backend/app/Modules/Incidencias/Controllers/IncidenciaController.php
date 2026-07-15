@@ -160,6 +160,8 @@ class IncidenciaController extends Controller
             'asignado_a' => 'nullable|string', // UUID del tecnico
         ]);
 
+        $anteriorAsignado = $incidencia->asignado_a;
+
         if (array_key_exists('descripcion', $validated) && $validated['descripcion'] !== null) {
             $incidencia->descripcion = $validated['descripcion'];
         }
@@ -171,6 +173,30 @@ class IncidenciaController extends Controller
         }
 
         $incidencia->save();
+
+        if ($incidencia->asignado_a !== $anteriorAsignado) {
+            $userUuid = $request->user()->uuid;
+            // Notificar al técnico asignado (si no es el mismo usuario)
+            if ($incidencia->asignado_a && $incidencia->asignado_a !== $userUuid) {
+                \App\Modules\Incidencias\Entities\Notificacion::create([
+                    'usuario_id' => $incidencia->asignado_a,
+                    'incidencia_id' => $incidencia->id,
+                    'titulo' => "Nueva incidencia asignada",
+                    'mensaje' => "Se te ha asignado la incidencia '{$incidencia->titulo}'.",
+                    'leida' => false,
+                ]);
+            }
+            // Notificar al ciudadano creador
+            if ($incidencia->usuario_id && $incidencia->usuario_id !== $userUuid) {
+                \App\Modules\Incidencias\Entities\Notificacion::create([
+                    'usuario_id' => $incidencia->usuario_id,
+                    'incidencia_id' => $incidencia->id,
+                    'titulo' => "Técnico asignado",
+                    'mensaje' => "Se ha asignado un técnico a tu incidencia '{$incidencia->titulo}'.",
+                    'leida' => false,
+                ]);
+            }
+        }
 
         return response()->json($incidencia, 200);
     }

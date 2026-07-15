@@ -37,6 +37,31 @@ class SeguimientoController extends Controller
             'fecha_cambio' => now(),
         ]);
 
+        // Crear notificaciones en MongoDB
+        $userUuid = $request->user()->uuid;
+        $titulo = "Estado de incidencia actualizado";
+        $mensaje = "La incidencia '{$incidencia->titulo}' cambió a '{$validated['estado_nuevo']}'.";
+
+        if ($incidencia->usuario_id && $incidencia->usuario_id !== $userUuid) {
+            \App\Modules\Incidencias\Entities\Notificacion::create([
+                'usuario_id' => $incidencia->usuario_id,
+                'incidencia_id' => $incidencia->id,
+                'titulo' => $titulo,
+                'mensaje' => $mensaje,
+                'leida' => false,
+            ]);
+        }
+
+        if ($incidencia->asignado_a && $incidencia->asignado_a !== $userUuid) {
+            \App\Modules\Incidencias\Entities\Notificacion::create([
+                'usuario_id' => $incidencia->asignado_a,
+                'incidencia_id' => $incidencia->id,
+                'titulo' => $titulo,
+                'mensaje' => $mensaje,
+                'leida' => false,
+            ]);
+        }
+
         return response()->json([
             'message' => 'Estado de la incidencia actualizado con éxito',
             'seguimiento' => $seguimiento,

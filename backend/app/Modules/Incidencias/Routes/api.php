@@ -5,6 +5,7 @@ use App\Modules\Incidencias\Controllers\EvidenciaController;
 use App\Modules\Incidencias\Controllers\IncidenciaController;
 use App\Modules\Incidencias\Controllers\MensajeController;
 use App\Modules\Incidencias\Controllers\SeguimientoController;
+use App\Modules\Incidencias\Controllers\NotificacionController;
 use Illuminate\Support\Facades\Route;
 
 // 1. Grupo general (Límite normal: 180 peticiones por minuto)
@@ -21,6 +22,11 @@ Route::middleware(['rbac', 'throttle:180,1'])->group(function () {
     Route::post('incidencias/{id}/estado', [SeguimientoController::class, 'cambiarEstado']);
     Route::post('incidencias/{id}/comentarios', [ComentarioController::class, 'store']);
     Route::get('incidencias/{id}/mensajes', [MensajeController::class, 'index']);
+
+    // Notificaciones
+    Route::get('notificaciones', [NotificacionController::class, 'index']);
+    Route::patch('notificaciones/{id}/leer', [NotificacionController::class, 'marcarLeida']);
+    Route::post('notificaciones/leer-todas', [NotificacionController::class, 'marcarTodasLeidas']);
 });
 
 // 2. Grupo ULTRA PROTEGIDO contra bots/spam (Límite estricto: 9 peticiones por minuto)

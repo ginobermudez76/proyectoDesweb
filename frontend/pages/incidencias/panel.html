@@ -127,7 +127,6 @@ async function cargar() {
             document.getElementById('alertBanner').style.display = 'flex';
             document.getElementById('alertText').textContent =
                 `${n} incidencia${n > 1 ? 's urgentes' : ' urgente'} sin resolver`;
-            showNotifBadge(n);
         }
 
         renderLista();

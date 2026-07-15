@@ -28,6 +28,31 @@ class ComentarioController extends Controller
             'fecha_creacion' => now(),
         ]);
 
+        // Crear notificaciones en MongoDB
+        $userUuid = $request->user()->uuid;
+        $titulo = "Nueva nota agregada";
+        $mensaje = "Se agregó una nueva nota a la incidencia '{$incidencia->titulo}': " . substr($validated['texto'], 0, 45) . (strlen($validated['texto']) > 45 ? '...' : '');
+
+        if ($incidencia->usuario_id && $incidencia->usuario_id !== $userUuid) {
+            \App\Modules\Incidencias\Entities\Notificacion::create([
+                'usuario_id' => $incidencia->usuario_id,
+                'incidencia_id' => $incidencia->id,
+                'titulo' => $titulo,
+                'mensaje' => $mensaje,
+                'leida' => false,
+            ]);
+        }
+
+        if ($incidencia->asignado_a && $incidencia->asignado_a !== $userUuid) {
+            \App\Modules\Incidencias\Entities\Notificacion::create([
+                'usuario_id' => $incidencia->asignado_a,
+                'incidencia_id' => $incidencia->id,
+                'titulo' => $titulo,
+                'mensaje' => $mensaje,
+                'leida' => false,
+            ]);
+        }
+
         return response()->json([
             'message' => 'Comentario agregado correctamente',
             'comentario' => $comentario,

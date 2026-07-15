@@ -368,6 +368,300 @@ async function denyAccess() {
     throw new Error('Acceso no autorizado');
 }
 
+/* ===== NOTIFICACIONES EN TIEMPO REAL (POLLING & DROPDOWN) ===== */
+
+const NOTIF_STYLING_ID = '_notif_styles';
+if (!document.getElementById(NOTIF_STYLING_ID)) {
+    const s = document.createElement('style');
+    s.id = NOTIF_STYLING_ID;
+    s.textContent = `
+        .bell-wrapper {
+            position: relative;
+            display: inline-flex;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            transition: background .2s;
+        }
+        .bell-wrapper:hover {
+            background: var(--gray-100);
+        }
+        .bell-badge {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: #EF4444;
+            color: #fff;
+            font-size: 9px;
+            font-weight: 700;
+            min-width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1.5px solid var(--white);
+            padding: 0 2px;
+        }
+        .notif-panel {
+            position: fixed;
+            width: min(360px, 92vw);
+            max-height: 440px;
+            background: var(--white);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.18);
+            border: 1px solid var(--gray-200);
+            z-index: 99999;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            animation: fadeInNotif 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes fadeInNotif {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .notif-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--gray-200);
+            background: var(--gray-50);
+        }
+        .notif-title {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+        .notif-clear-btn {
+            font-size: 11.5px;
+            color: var(--orange);
+            background: none;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 6px;
+            transition: background .15s;
+        }
+        .notif-clear-btn:hover {
+            background: var(--bg-orange-light);
+        }
+        .notif-list {
+            overflow-y: auto;
+            flex: 1;
+        }
+        .notif-item {
+            display: flex;
+            flex-direction: column;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--gray-100);
+            cursor: pointer;
+            transition: background 0.15s ease;
+            text-decoration: none;
+        }
+        .notif-item:hover {
+            background: var(--gray-50);
+        }
+        .notif-item.unread {
+            background: var(--bg-orange-light);
+            border-left: 3px solid var(--orange);
+        }
+        .notif-item-title {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 3px;
+        }
+        .notif-item-body {
+            font-size: 12px;
+            color: var(--gray-700);
+            line-height: 1.4;
+            margin-bottom: 4px;
+        }
+        .notif-item-time {
+            font-size: 10px;
+            color: var(--gray-400);
+        }
+        .notif-empty {
+            padding: 32px 16px;
+            text-align: center;
+            color: var(--gray-400);
+            font-size: 13px;
+        }
+    `;
+    document.head.appendChild(s);
+}
+
+let lastNotifIds = new Set();
+let isFirstLoad = true;
+
+function setupNotificationsUI() {
+    const bell = document.querySelector('.bi-bell');
+    if (!bell) return;
+
+    // Si ya fue configurado el wrapper, no repetir
+    if (bell.parentNode.classList.contains('bell-wrapper')) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'bell-wrapper';
+    bell.parentNode.replaceChild(wrapper, bell);
+    wrapper.appendChild(bell);
+
+    const badge = document.createElement('span');
+    badge.className = 'bell-badge';
+    badge.style.display = 'none';
+    wrapper.appendChild(badge);
+
+    // Crear el panel de notificaciones e insertarlo en el body
+    const panel = document.createElement('div');
+    panel.id = '_notifPanel';
+    panel.className = 'notif-panel';
+    panel.innerHTML = `
+        <div class="notif-header">
+            <span class="notif-title">Notificaciones</span>
+            <button class="notif-clear-btn" onclick="marcarTodasLasNotificacionesLeidas()">Marcar todo como leído</button>
+        </div>
+        <div class="notif-list" id="_notifList">
+            <div class="notif-empty">Cargando notificaciones…</div>
+        </div>
+    `;
+    document.body.appendChild(panel);
+
+    // Manejar el toggle al hacer click en la campana
+    wrapper.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isVisible = panel.style.display === 'flex';
+        
+        // Cerrar otros paneles si los hay
+        document.querySelectorAll('.notif-panel').forEach(p => p.style.display = 'none');
+
+        if (!isVisible) {
+            // Posicionar el panel debajo de la campana
+            const rect = wrapper.getBoundingClientRect();
+            panel.style.top = `${rect.bottom + window.scrollY + 8}px`;
+            
+            // Alinear al borde derecho en pantallas grandes
+            if (window.innerWidth >= 768) {
+                panel.style.left = 'auto';
+                panel.style.right = `${window.innerWidth - rect.right - window.scrollX}px`;
+            } else {
+                panel.style.right = '16px';
+                panel.style.left = 'auto';
+            }
+
+            panel.style.display = 'flex';
+            renderNotificacionesLista();
+        } else {
+            panel.style.display = 'none';
+        }
+    });
+
+    // Cerrar al hacer click fuera
+    document.addEventListener('click', (e) => {
+        if (!panel.contains(e.target) && !wrapper.contains(e.target)) {
+            panel.style.display = 'none';
+        }
+    });
+}
+
+async function fetchNotificaciones() {
+    if (!getToken()) return;
+    try {
+        const notifs = await apiFetch('/notificaciones');
+        
+        // Contar no leídas
+        const unreadCount = notifs.filter(n => !n.leida).length;
+        const badge = document.querySelector('.bell-badge');
+        if (badge) {
+            if (unreadCount > 0) {
+                badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        // Mostrar toasts para nuevas notificaciones no leídas
+        const newIds = new Set();
+        notifs.forEach(n => {
+            newIds.add(n._id);
+            if (!n.leida && !lastNotifIds.has(n._id)) {
+                // Si no es la primera carga de la página, mostrar toast
+                if (!isFirstLoad && typeof showToast === 'function') {
+                    showToast(n.mensaje, 'info');
+                }
+            }
+        });
+
+        lastNotifIds = newIds;
+        isFirstLoad = false;
+    } catch (e) {
+        console.error('Error al consultar notificaciones:', e);
+    }
+}
+
+async function renderNotificacionesLista() {
+    const listContainer = document.getElementById('_notifList');
+    if (!listContainer) return;
+
+    try {
+        const notifs = await apiFetch('/notificaciones');
+        if (notifs.length === 0) {
+            listContainer.innerHTML = '<div class="notif-empty">No tienes notificaciones.</div>';
+            return;
+        }
+
+        listContainer.innerHTML = notifs.map(n => {
+            const relativeTime = typeof timeAgo === 'function' ? timeAgo(n.created_at) : 'Hace un momento';
+            return `
+                <div class="notif-item ${n.leida ? '' : 'unread'}" onclick="abrirNotificacion('${n._id}', '${n.incidencia_id}')">
+                    <div class="notif-item-title">${n.titulo}</div>
+                    <div class="notif-item-body">${n.mensaje}</div>
+                    <div class="notif-item-time">${relativeTime}</div>
+                </div>
+            `;
+        }).join('');
+    } catch (e) {
+        listContainer.innerHTML = '<div class="notif-empty">Error al cargar notificaciones.</div>';
+    }
+}
+
+window.abrirNotificacion = async function(id, incidenciaId) {
+    try {
+        await apiFetch(`/notificaciones/${id}/leer`, { method: 'PATCH' });
+    } catch (e) {
+        console.error('Error al marcar notificación como leída:', e);
+    }
+    
+    const panel = document.getElementById('_notifPanel');
+    if (panel) panel.style.display = 'none';
+    
+    // Determinar prefijo de página
+    const prefix = _navPrefix();
+    window.location.href = `${prefix}pages/incidencias/detalle.html?id=${incidenciaId}`;
+};
+
+window.marcarTodasLasNotificacionesLeidas = async function() {
+    try {
+        await apiFetch('/notificaciones/leer-todas', { method: 'POST' });
+        showToast('Todas las notificaciones marcadas como leídas', 'success');
+        
+        // Ocultar badge
+        const badge = document.querySelector('.bell-badge');
+        if (badge) badge.style.display = 'none';
+
+        // Re-render
+        renderNotificacionesLista();
+    } catch (e) {
+        showToast('No se pudieron marcar las notificaciones como leídas', 'error');
+    }
+};
+
 document.addEventListener('DOMContentLoaded', async () => {
     await checkRoutePermission();
 
@@ -386,5 +680,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.body.style.paddingLeft  = '240px';
             document.body.style.paddingBottom = '0';
         }
+
+        // Configurar UI de notificaciones e iniciar sondeo/polling
+        setupNotificationsUI();
+        await fetchNotificaciones();
+        
+        // Sondeo inteligente cada 12 segundos
+        setInterval(fetchNotificaciones, 12000);
     }
 });
+
