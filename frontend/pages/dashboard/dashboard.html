@@ -125,12 +125,12 @@ document.getElementById('userName').textContent = getUserName();
 
 async function cargarStats() {
     try {
-        const todasIncidencias = await apiFetch('/incidencias');
-        const total     = todasIncidencias.length;
-        const urgentes  = todasIncidencias.filter(i => i.prioridad === 'Urgente').length;
-        const resueltas = todasIncidencias.filter(i => i.estado === 'Resuelta').length;
-        const pendientes= todasIncidencias.filter(i => i.estado === 'Pendiente').length;
-        const proceso   = todasIncidencias.filter(i => i.estado === 'En Proceso').length;
+        const stats = await apiFetch('/dashboard/stats');
+        const total = stats.total;
+        const urgentes = stats.urgentes;
+        const resueltas = stats.resueltas;
+        const pendientes = stats.pendientes;
+        const proceso = stats.proceso;
 
         document.getElementById('totalInc').textContent     = total;
         document.getElementById('urgentesEl').textContent   = urgentes;

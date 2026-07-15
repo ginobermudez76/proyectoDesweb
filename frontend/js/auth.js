@@ -263,7 +263,50 @@ function _renderNavLinks(navElement) {
     });
 }
 
+// Validar acceso a la página actual según opciones de la base de datos (rol_opcion)
+function checkRoutePermission() {
+    const p = window.location.pathname;
+
+    // Si es la página de login, index o página de error, no validar
+    if (p.endsWith('login.html') || p.endsWith('error.html') || p === '/' || p.endsWith('/')) {
+        return;
+    }
+
+    // Si el usuario no tiene token y está en otra página, requireAuth() lo redirigirá a login.html
+    if (!getToken()) return;
+
+    const ops  = getOpciones();
+    const role = getRole();
+
+    // 1. Gestión de Usuarios
+    if (p.includes('/pages/usuarios/') && !ops.includes('Gestión de Usuarios')) {
+        denyAccess();
+    }
+
+    // 2. Dashboard de Administración (solo ADMIN)
+    if (p.includes('/pages/dashboard/') && role !== 'ADMIN') {
+        denyAccess();
+    }
+
+    // 3. Incidencias y Mapa (requiere opciones de Incidencias, ADMIN no tiene permitido verlas ni mapa)
+    if (p.includes('/pages/incidencias/')) {
+        const tienePermisoIncidencias = ops.some(o => o.includes('Incidencias'));
+        if (!tienePermisoIncidencias || role === 'ADMIN') {
+            denyAccess();
+        }
+    }
+}
+
+function denyAccess() {
+    const prefix = _navPrefix();
+    const sep = (prefix && prefix.endsWith('/')) ? '' : '/';
+    window.location.href = `${prefix}${sep}error.html?code=403&message=${encodeURIComponent('Acceso denegado (RBAC)')}`;
+    throw new Error('Acceso no autorizado');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    checkRoutePermission();
+
     let nav = document.querySelector('.bottom-nav');
     
     if (getToken()) {

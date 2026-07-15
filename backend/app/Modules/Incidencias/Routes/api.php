@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\Route;
 
 // 1. Grupo general (Límite normal: 180 peticiones por minuto)
 Route::middleware(['rbac', 'throttle:180,1'])->group(function () {
-    // Consultas GET (Listar incidencias, ver detalles)
+    // Consultas GET (Listar incidencias, ver detalles, stats)
+    Route::get('dashboard/stats', [IncidenciaController::class, 'dashboardStats']);
     Route::get('incidencias', [IncidenciaController::class, 'index']);
     Route::get('incidencias/{incidencia}', [IncidenciaController::class, 'show']);
 

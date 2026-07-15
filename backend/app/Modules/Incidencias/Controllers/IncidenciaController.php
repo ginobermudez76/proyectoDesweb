@@ -187,4 +187,30 @@ class IncidenciaController extends Controller
 
         return response()->json(['message' => 'Incidencia eliminada correctamente'], 200);
     }
+
+    /**
+     * GET /api/dashboard/stats
+     * Retorna conteos globales para el dashboard de administración/supervisión.
+     */
+    public function dashboardStats(Request $request)
+    {
+        $rol = $request->user()->roles->first()->codigo ?? 'CIUDADANO';
+        if ($rol !== 'ADMIN' && $rol !== 'SUPERVISOR') {
+            return response()->json(['message' => 'Acceso denegado.'], 403);
+        }
+
+        $total = Incidencia::count();
+        $urgentes = Incidencia::where('prioridad', 'Urgente')->count();
+        $resueltas = Incidencia::where('estado', 'Resuelta')->count();
+        $pendientes = Incidencia::where('estado', 'Pendiente')->count();
+        $proceso = Incidencia::where('estado', 'En Proceso')->count();
+
+        return response()->json([
+            'total' => $total,
+            'urgentes' => $urgentes,
+            'resueltas' => $resueltas,
+            'pendientes' => $pendientes,
+            'proceso' => $proceso,
+        ], 200);
+    }
 }

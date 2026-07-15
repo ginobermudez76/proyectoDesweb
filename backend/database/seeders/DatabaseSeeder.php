@@ -166,12 +166,8 @@ class DatabaseSeeder extends Seeder
             $mapRolOpcion($rolSupervisor->id, 'Gestión de Usuarios');
         }
 
-        // Administrador: Sistema completo
+        // Administrador: Sistema completo (excepto ver o gestionar incidencias individuales)
         if ($rolAdmin) {
-            $mapRolOpcion($rolAdmin->id, 'Incidencias - Lectura y Reporte');
-            $mapRolOpcion($rolAdmin->id, 'Incidencias - Gestión Operativa');
-            $mapRolOpcion($rolAdmin->id, 'Incidencias - Edición Especial');
-            $mapRolOpcion($rolAdmin->id, 'Incidencias - Eliminación');
             $mapRolOpcion($rolAdmin->id, 'Perfil de Usuario');
             $mapRolOpcion($rolAdmin->id, 'Gestión de Usuarios');
             $mapRolOpcion($rolAdmin->id, 'Catálogos');
@@ -190,6 +186,9 @@ class DatabaseSeeder extends Seeder
             ['nombre' => 'Agregar Comentario',           'metodo' => 'POST',   'url' => 'api/incidencias/*/comentarios'],
             ['nombre' => 'Subir Evidencia',              'metodo' => 'POST',   'url' => 'api/incidencias/*/evidencias'],
             ['nombre' => 'Enviar Mensaje',               'metodo' => 'POST',   'url' => 'api/incidencias/*/mensajes'],
+            ['nombre' => 'Ver Mensajes',                 'metodo' => 'GET',    'url' => 'api/incidencias/*/mensajes'],
+            ['nombre' => 'Estadísticas de Dashboard',    'metodo' => 'GET',    'url' => 'api/dashboard/stats'],
+            ['nombre' => 'Crear Publicación',            'metodo' => 'POST',   'url' => 'api/publicaciones'],
             ['nombre' => 'Ver Perfil',                   'metodo' => 'GET',    'url' => 'api/user'],
             ['nombre' => 'Listar Roles',                 'metodo' => 'GET',    'url' => 'api/roles'],
             ['nombre' => 'Listar Usuarios',              'metodo' => 'GET',    'url' => 'api/usuarios'],
@@ -235,6 +234,8 @@ class DatabaseSeeder extends Seeder
         $mapOpcionEndpoint('Incidencias - Lectura y Reporte', 'DELETE', 'api/incidencias/*');
         $mapOpcionEndpoint('Incidencias - Lectura y Reporte', 'POST',   'api/incidencias/*/comentarios');
         $mapOpcionEndpoint('Incidencias - Lectura y Reporte', 'POST',   'api/incidencias/*/evidencias');
+        $mapOpcionEndpoint('Incidencias - Lectura y Reporte', 'GET',    'api/incidencias/*/mensajes');
+        $mapOpcionEndpoint('Incidencias - Lectura y Reporte', 'POST',   'api/publicaciones');
 
         // Incidencias - Gestión Operativa
         $mapOpcionEndpoint('Incidencias - Gestión Operativa', 'POST', 'api/incidencias/*/estado');
@@ -254,6 +255,7 @@ class DatabaseSeeder extends Seeder
         // Catálogos — accesible para todos los roles autenticados
         $mapOpcionEndpoint('Catálogos', 'GET', 'api/catalogos');
         $mapOpcionEndpoint('Catálogos', 'GET', 'api/usuarios/tecnicos');
+        $mapOpcionEndpoint('Catálogos', 'GET', 'api/dashboard/stats');
 
         // =====================================================================
         // 7. CATÁLOGOS DE DOMINIO
