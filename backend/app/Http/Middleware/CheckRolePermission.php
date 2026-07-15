@@ -82,7 +82,7 @@ class CheckRolePermission
 
         Auth::login($usuario);
 
-        if ($request->is('api/logout') || $request->is('api/user')) {
+        if ($request->is('api/logout') || $request->is('api/user') || $request->is('api/notificaciones') || $request->is('api/notificaciones/*')) {
             return $next($request);
         }
         $metodoActual = $request->method();
