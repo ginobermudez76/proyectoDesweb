@@ -44,16 +44,25 @@ async function logout(basePath = '..') {
     window.location.href = `${basePath}${sep}login.html`;
 }
 
-/**
- * Muestra confirmación antes de cerrar sesión.
- * @param {string} basePath - ruta relativa al login
- */
 async function confirmLogout(basePath = '..') {
-    // showConfirmModal viene de modal.js; si no está disponible, cerramos directamente
-    if (typeof showConfirmModal !== 'function') {
-        logout(basePath);
-        return;
+    // Si no está bootstrap ni modal, los cargamos dinámicamente
+    if (typeof bootstrap === 'undefined') {
+        await new Promise((resolve) => {
+            const script = document.createElement('script');
+            script.src = "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js";
+            script.onload = resolve;
+            document.head.appendChild(script);
+        });
     }
+    if (typeof showConfirmModal !== 'function') {
+        await new Promise((resolve) => {
+            const script = document.createElement('script');
+            script.src = "/js/modal.js";
+            script.onload = resolve;
+            document.head.appendChild(script);
+        });
+    }
+
     const ok = await showConfirmModal(
         'Cerrar sesión',
         '¿Estás seguro de que deseas cerrar sesión?',
