@@ -15,6 +15,7 @@ class Opcion extends Model
         'uuid',
         'nombre_opcion',
         'descripcion',
+        'ruta',
         'deleted',
     ];
 

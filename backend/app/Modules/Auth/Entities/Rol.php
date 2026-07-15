@@ -91,6 +91,6 @@ class Rol extends Model
             'rol_opcion',
             'id_rol',
             'id_opcion',
-        )->wherePivot('deleted', false)->withTimestamps();
+        )->withPivot('lectura', 'escritura', 'deleted')->withTimestamps();
     }
 }

@@ -113,6 +113,18 @@ class CheckRolePermission
                     $rutaCoincide = $request->is($endpoint->url);
 
                     if ($metodoCoincide && $rutaCoincide) {
+                        // Dynamic calculated read/write permission validation
+                        $esGet = strtoupper($metodoActual) === 'GET';
+                        $tieneLectura = filter_var($opcion->pivot->lectura ?? false, FILTER_VALIDATE_BOOLEAN);
+                        $tieneEscritura = filter_var($opcion->pivot->escritura ?? false, FILTER_VALIDATE_BOOLEAN);
+
+                        if ($esGet && !$tieneLectura) {
+                            continue;
+                        }
+                        if (!$esGet && !$tieneEscritura) {
+                            continue;
+                        }
+
                         $tienePermiso = true;
                         break 3;
                     }

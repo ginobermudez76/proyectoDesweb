@@ -266,6 +266,12 @@ function getNavLinks() {
         links.push({ href: 'pages/usuarios/usuarios.html', icon: 'bi-people', label: 'Usuarios' });
     }
 
+    // Gestión de Roles — Admin
+    const hasRoles = ops.some(o => o.includes('Gestión de Roles'));
+    if (hasRoles) {
+        links.push({ href: 'pages/roles/roles.html', icon: 'bi-shield-lock', label: 'Roles' });
+    }
+
     // Perfil — todos los roles
     const hasPerfil = ops.some(o => o.includes('Perfil de Usuario'));
     if (hasPerfil) {
@@ -339,12 +345,17 @@ async function checkRoutePermission() {
         await denyAccess();
     }
 
-    // 2. Dashboard de Administración (solo ADMIN)
+    // 2. Gestión de Roles
+    if (p.includes('/pages/roles/') && !ops.includes('Gestión de Roles')) {
+        await denyAccess();
+    }
+
+    // 3. Dashboard de Administración (solo ADMIN)
     if (p.includes('/pages/dashboard/') && role !== 'ADMIN') {
         await denyAccess();
     }
 
-    // 3. Incidencias y Mapa (requiere opciones de Incidencias, ADMIN no tiene permitido verlas ni mapa)
+    // 4. Incidencias y Mapa (requiere opciones de Incidencias, ADMIN no tiene permitido verlas ni mapa)
     if (p.includes('/pages/incidencias/')) {
         const tienePermisoIncidencias = ops.some(o => o.includes('Incidencias'));
         if (!tienePermisoIncidencias || role === 'ADMIN') {

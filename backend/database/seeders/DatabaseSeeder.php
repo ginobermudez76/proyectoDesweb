@@ -85,13 +85,14 @@ class DatabaseSeeder extends Seeder
         // 2. OPCIONES (Menús Visuales y Permisos)
         // =====================================================================
         $opciones = [
-            ['nombre_opcion' => 'Incidencias - Lectura y Reporte',  'descripcion' => 'Acceso básico para ver, reportar y comentar incidencias.'],
-            ['nombre_opcion' => 'Incidencias - Gestión Operativa',   'descripcion' => 'Permiso para cambiar estado y enviar mensajes oficiales.'],
-            ['nombre_opcion' => 'Incidencias - Edición Especial',    'descripcion' => 'Permiso para actualizar detalles de la incidencia.'],
-            ['nombre_opcion' => 'Incidencias - Eliminación',         'descripcion' => 'Permiso para eliminar incidencias.'],
-            ['nombre_opcion' => 'Perfil de Usuario',                 'descripcion' => 'Acceso a la información personal del usuario logueado.'],
-            ['nombre_opcion' => 'Gestión de Usuarios',               'descripcion' => 'Administración y creación de usuarios y listar roles.'],
-            ['nombre_opcion' => 'Catálogos',                         'descripcion' => 'Consulta de catálogos del sistema (estados, prioridades, tipos).'],
+            ['nombre_opcion' => 'Incidencias - Lectura y Reporte',  'descripcion' => 'Acceso básico para ver, reportar y comentar incidencias.', 'ruta' => '/incidencias/panel'],
+            ['nombre_opcion' => 'Incidencias - Gestión Operativa',   'descripcion' => 'Permiso para cambiar estado y enviar mensajes oficiales.', 'ruta' => '/incidencias/gestion'],
+            ['nombre_opcion' => 'Incidencias - Edición Especial',    'descripcion' => 'Permiso para actualizar detalles de la incidencia.', 'ruta' => '/incidencias/editar'],
+            ['nombre_opcion' => 'Incidencias - Eliminación',         'descripcion' => 'Permiso para eliminar incidencias.', 'ruta' => '/incidencias/eliminar'],
+            ['nombre_opcion' => 'Perfil de Usuario',                 'descripcion' => 'Acceso a la información personal del usuario logueado.', 'ruta' => '/perfil'],
+            ['nombre_opcion' => 'Gestión de Usuarios',               'descripcion' => 'Administración y creación de usuarios y listar roles.', 'ruta' => '/usuarios'],
+            ['nombre_opcion' => 'Catálogos',                         'descripcion' => 'Consulta de catálogos del sistema (estados, prioridades, tipos).', 'ruta' => '/catalogos'],
+            ['nombre_opcion' => 'Gestión de Roles',                  'descripcion' => 'Administración y asignación de menús y permisos a roles.', 'ruta' => '/roles'],
         ];
 
         foreach ($opciones as $opcion) {
@@ -100,6 +101,7 @@ class DatabaseSeeder extends Seeder
                 [
                     'uuid'        => DB::raw('uuid_generate_v4()'),
                     'descripcion' => $opcion['descripcion'],
+                    'ruta'        => $opcion['ruta'],
                     'deleted'     => false,
                     'created_at'  => now(),
                 ],
@@ -178,47 +180,54 @@ class DatabaseSeeder extends Seeder
         $rolTecnico    = DB::table('rol')->where('codigo', 'TECNICO')->first();
         $rolCiudadano  = DB::table('rol')->where('codigo', 'CIUDADANO')->first();
 
-        $mapRolOpcion = function ($rolId, $opcionNombre) {
+        $mapRolOpcion = function ($rolId, $opcionNombre, $lectura = true, $escritura = false) {
             $opcionId = DB::table('opcion')->where('nombre_opcion', $opcionNombre)->value('id');
             if ($rolId && $opcionId) {
                 DB::table('rol_opcion')->updateOrInsert(
                     ['id_rol' => $rolId, 'id_opcion' => $opcionId],
-                    ['uuid' => DB::raw('uuid_generate_v4()'), 'deleted' => false, 'created_at' => now()]
+                    [
+                        'uuid'       => DB::raw('uuid_generate_v4()'),
+                        'lectura'    => $lectura,
+                        'escritura'  => $escritura,
+                        'deleted'    => false,
+                        'created_at' => now(),
+                    ]
                 );
             }
         };
 
-        // Ciudadano: Lectura/reporte, perfil, catálogos
+        // Ciudadano: Lectura/reporte, perfil, catálogos (escritura en reporte)
         if ($rolCiudadano) {
-            $mapRolOpcion($rolCiudadano->id, 'Incidencias - Lectura y Reporte');
-            $mapRolOpcion($rolCiudadano->id, 'Perfil de Usuario');
-            $mapRolOpcion($rolCiudadano->id, 'Catálogos');
+            $mapRolOpcion($rolCiudadano->id, 'Incidencias - Lectura y Reporte', true, true);
+            $mapRolOpcion($rolCiudadano->id, 'Perfil de Usuario', true, true);
+            $mapRolOpcion($rolCiudadano->id, 'Catálogos', true, false);
         }
 
         // Técnico: Lectura, gestión operativa, perfil, catálogos
         if ($rolTecnico) {
-            $mapRolOpcion($rolTecnico->id, 'Incidencias - Lectura y Reporte');
-            $mapRolOpcion($rolTecnico->id, 'Incidencias - Gestión Operativa');
-            $mapRolOpcion($rolTecnico->id, 'Perfil de Usuario');
-            $mapRolOpcion($rolTecnico->id, 'Catálogos');
+            $mapRolOpcion($rolTecnico->id, 'Incidencias - Lectura y Reporte', true, false);
+            $mapRolOpcion($rolTecnico->id, 'Incidencias - Gestión Operativa', true, true);
+            $mapRolOpcion($rolTecnico->id, 'Perfil de Usuario', true, true);
+            $mapRolOpcion($rolTecnico->id, 'Catálogos', true, false);
         }
 
         // Supervisor: Todo sobre incidencias + perfil + catálogos + gestión de usuarios (ver técnicos)
         if ($rolSupervisor) {
-            $mapRolOpcion($rolSupervisor->id, 'Incidencias - Lectura y Reporte');
-            $mapRolOpcion($rolSupervisor->id, 'Incidencias - Gestión Operativa');
-            $mapRolOpcion($rolSupervisor->id, 'Incidencias - Edición Especial');
-            $mapRolOpcion($rolSupervisor->id, 'Incidencias - Eliminación');
-            $mapRolOpcion($rolSupervisor->id, 'Perfil de Usuario');
-            $mapRolOpcion($rolSupervisor->id, 'Catálogos');
-            $mapRolOpcion($rolSupervisor->id, 'Gestión de Usuarios');
+            $mapRolOpcion($rolSupervisor->id, 'Incidencias - Lectura y Reporte', true, true);
+            $mapRolOpcion($rolSupervisor->id, 'Incidencias - Gestión Operativa', true, true);
+            $mapRolOpcion($rolSupervisor->id, 'Incidencias - Edición Especial', true, true);
+            $mapRolOpcion($rolSupervisor->id, 'Incidencias - Eliminación', true, true);
+            $mapRolOpcion($rolSupervisor->id, 'Perfil de Usuario', true, true);
+            $mapRolOpcion($rolSupervisor->id, 'Catálogos', true, false);
+            $mapRolOpcion($rolSupervisor->id, 'Gestión de Usuarios', true, true);
         }
 
         // Administrador: Sistema completo (excepto ver o gestionar incidencias individuales)
         if ($rolAdmin) {
-            $mapRolOpcion($rolAdmin->id, 'Perfil de Usuario');
-            $mapRolOpcion($rolAdmin->id, 'Gestión de Usuarios');
-            $mapRolOpcion($rolAdmin->id, 'Catálogos');
+            $mapRolOpcion($rolAdmin->id, 'Perfil de Usuario', true, true);
+            $mapRolOpcion($rolAdmin->id, 'Gestión de Usuarios', true, true);
+            $mapRolOpcion($rolAdmin->id, 'Catálogos', true, true);
+            $mapRolOpcion($rolAdmin->id, 'Gestión de Roles', true, true);
         }
 
         // =====================================================================
@@ -245,6 +254,11 @@ class DatabaseSeeder extends Seeder
             ['nombre' => 'Actualizar Usuario',           'metodo' => 'PUT',    'url' => 'api/usuarios/*'],
             ['nombre' => 'Activar/Desactivar Usuario',   'metodo' => 'PATCH',  'url' => 'api/usuarios/*/toggle'],
             ['nombre' => 'Consultar Catálogos',          'metodo' => 'GET',    'url' => 'api/catalogos'],
+            ['nombre' => 'Listar Roles Admin',           'metodo' => 'GET',    'url' => 'api/admin/roles'],
+            ['nombre' => 'Crear Rol',                    'metodo' => 'POST',   'url' => 'api/admin/roles'],
+            ['nombre' => 'Actualizar Rol',               'metodo' => 'PUT',    'url' => 'api/admin/roles/*'],
+            ['nombre' => 'Eliminar Rol',                 'metodo' => 'DELETE', 'url' => 'api/admin/roles/*'],
+            ['nombre' => 'Listar Opciones Sistema',      'metodo' => 'GET',    'url' => 'api/admin/opciones'],
         ];
 
         foreach ($endpoints as $endpoint) {
@@ -304,6 +318,13 @@ class DatabaseSeeder extends Seeder
         $mapOpcionEndpoint('Catálogos', 'GET', 'api/catalogos');
         $mapOpcionEndpoint('Catálogos', 'GET', 'api/usuarios/tecnicos');
         $mapOpcionEndpoint('Catálogos', 'GET', 'api/dashboard/stats');
+
+        // Gestión de Roles
+        $mapOpcionEndpoint('Gestión de Roles', 'GET',    'api/admin/roles');
+        $mapOpcionEndpoint('Gestión de Roles', 'POST',   'api/admin/roles');
+        $mapOpcionEndpoint('Gestión de Roles', 'PUT',    'api/admin/roles/*');
+        $mapOpcionEndpoint('Gestión de Roles', 'DELETE', 'api/admin/roles/*');
+        $mapOpcionEndpoint('Gestión de Roles', 'GET',    'api/admin/opciones');
 
         // =====================================================================
         // 7. CATÁLOGOS DE DOMINIO
