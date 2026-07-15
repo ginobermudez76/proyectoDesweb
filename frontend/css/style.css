@@ -38,6 +38,19 @@ p { margin-bottom: 0; }
     --gray-400: #9CA3AF;
     --gray-700: #374151;
     --gray-900: #111827;
+    --white:    #FFFFFF;
+
+    /* Light backgrounds */
+    --bg-orange-light: #FFF7ED;
+    --bg-red-light:    #FEF2F2;
+    --bg-green-light:  #F0FDF4;
+    --bg-blue-light:   #EFF6FF;
+
+    /* Role colors */
+    --role-admin:      #5B21B6;
+    --role-supervisor: #92400E;
+    --role-tecnico:    #1D4ED8;
+    --role-ciudadano:  #065F46;
 }
 
 /* ===== TOP HEADER ===== */
@@ -271,7 +284,7 @@ p { margin-bottom: 0; }
 .category-item i { font-size: 22px; }
 .category-item.selected {
     border-color: var(--orange);
-    background: #FFF7ED;
+    background: var(--bg-orange-light);
     color: var(--orange);
 }
 
@@ -368,9 +381,9 @@ p { margin-bottom: 0; }
     color: var(--gray-700);
     transition: all .15s;
 }
-.status-btn.active-recibido { border-color: var(--blue); background: #EFF6FF; color: var(--blue); }
-.status-btn.active-proceso  { border-color: var(--orange); background: #FFF7ED; color: var(--orange); }
-.status-btn.active-resuelto { border-color: var(--green); background: #F0FDF4; color: var(--green); }
+.status-btn.active-recibido { border-color: var(--blue); background: var(--bg-blue-light); color: var(--blue); }
+.status-btn.active-proceso  { border-color: var(--orange); background: var(--bg-orange-light); color: var(--orange); }
+.status-btn.active-resuelto { border-color: var(--green); background: var(--bg-green-light); color: var(--green); }
 
 /* ===== AVATAR ===== */
 .avatar-circle {

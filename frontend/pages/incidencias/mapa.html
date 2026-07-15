@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="/css/style.css" rel="stylesheet">
+    <script src="/js/colors.js"></script>
     <style>
         body { padding-bottom:0; }
         .map-wrap { position:relative; height:calc(100vh - 62px); }
@@ -77,14 +78,14 @@ if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(pos => {
         userPos = [pos.coords.latitude, pos.coords.longitude];
         map.setView(userPos, 14);
-        L.circleMarker(userPos, { radius:8, color:'#fff', fillColor:'#6366F1', fillOpacity:1, weight:2 })
+        L.circleMarker(userPos, { radius:8, color: APP_COLORS.white, fillColor: APP_COLORS.blue, fillOpacity:1, weight:2 })
             .addTo(map).bindPopup('Tu ubicación');
         
         refrescarMasCercano();
     });
 }
 
-const PRIORIDAD_COLOR = { 'Urgente':'#EF4444', 'Alta':'#EF4444', 'Media':'#F97316', 'Normal':'#F97316', 'Baja':'#3B82F6' };
+const PRIORIDAD_COLOR = APP_COLORS.prioridades;
 let mapData = [];
 
 async function cargar() {
@@ -107,9 +108,9 @@ async function cargar() {
             // Leyenda de prioridad
             document.getElementById('mapLegend').innerHTML = `
                 <div style="font-weight:600;font-size:11px;margin-bottom:4px">Prioridad</div>
-                <div><span class="legend-dot" style="background:#EF4444"></span>Urgente</div>
-                <div><span class="legend-dot" style="background:#F97316"></span>Media</div>
-                <div><span class="legend-dot" style="background:#3B82F6"></span>Baja</div>
+                <div><span class="legend-dot" style="background:var(--red)"></span>Urgente</div>
+                <div><span class="legend-dot" style="background:var(--orange)"></span>Media</div>
+                <div><span class="legend-dot" style="background:var(--blue)"></span>Baja</div>
             `;
         } else {
             // Leyenda dinámica de estados

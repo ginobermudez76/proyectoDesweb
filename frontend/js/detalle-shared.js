@@ -50,7 +50,7 @@ function buildHistorial(historial) {
                     ${h.tecnico_id ? `Por: ${h.tecnico_nombre || h.tecnico_id}` : 'Por: Supervisor/Admin'}
                 </div>
                 ${h.observacion && h.observacion !== 'Sin observaciones.'
-                    ? `<div style="font-size:12px;color:#4B5563;margin-top:2px">${h.observacion}</div>`
+                    ? `<div style="font-size:12px;color:var(--gray-700);margin-top:2px">${h.observacion}</div>`
                     : ''}
             </div>
         </div>`).join('');
@@ -66,7 +66,7 @@ function buildComentarios(lista) {
             <div class="text-muted-sm" style="margin-bottom:2px">
                 ${timeAgo(c.fecha_creacion || c.created_at)}
             </div>
-            <div style="font-size:13px;color:#374151">${c.texto}</div>
+            <div style="font-size:13px;color:var(--gray-700)">${c.texto}</div>
         </div>`).join('');
 }
 
