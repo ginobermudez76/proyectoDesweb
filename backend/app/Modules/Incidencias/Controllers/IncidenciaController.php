@@ -84,8 +84,18 @@ class IncidenciaController extends Controller
             ->orderBy('fecha_creacion', 'asc')
             ->get();
 
+        $tecnicoNombre = null;
+        if (!empty($incidencia->asignado_a)) {
+            $tecnico = \App\Modules\Auth\Entities\Usuario::where('uuid', $incidencia->asignado_a)->first();
+            if ($tecnico) {
+                $tecnicoNombre = trim($tecnico->nombres . ' ' . $tecnico->apellidos);
+            }
+        }
+        $incidencia->setAttribute('asignado_a_nombre', $tecnicoNombre);
+
         return response()->json([
             'incidencia' => $incidencia,
+            'asignado_a_nombre' => $tecnicoNombre,
             'evidencias' => $evidencias,
             'historial_seguimiento' => $historial_seguimiento,
             'comentarios' => $comentarios,

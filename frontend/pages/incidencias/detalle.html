@@ -57,7 +57,7 @@ async function cargar() {
     }
 }
 
-async function render({ incidencia: inc, evidencias, historial_seguimiento, comentarios }) {
+async function render({ incidencia: inc, evidencias, historial_seguimiento, comentarios, asignado_a_nombre }) {
     const priInfo  = getPrioridadInfo(inc.prioridad);
     const estInfo  = getEstadoInfo(inc.estado);
     const tResol   = tiempoResolucion(inc.fecha_creacion, historial_seguimiento);
@@ -132,7 +132,7 @@ async function render({ incidencia: inc, evidencias, historial_seguimiento, come
                         ${inc.asignado_a
                             ? `<div class="assigned-avatar">T</div>
                                <span style="font-size:14px;font-weight:500;word-break:break-all">
-                                   ${inc.asignado_a}
+                                   ${inc.asignado_a_nombre || asignado_a_nombre || inc.asignado_a}
                                </span>`
                             : `<span class="text-muted-sm">Sin asignar</span>`}
                     </div>
