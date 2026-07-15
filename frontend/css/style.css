@@ -260,8 +260,8 @@ p { margin-bottom: 0; }
     padding: 10px 4px;
     border-radius: 10px;
     cursor: pointer;
-    border: 2px solid transparent;
-    background: var(--gray-100);
+    border: 2px solid var(--gray-200);
+    background: #fff;
     font-size: 9px;
     text-align: center;
     gap: 5px;
