@@ -21,12 +21,36 @@ class CheckRolePermission
         $token = $request->bearerToken();
 
         if (!$token) {
+            AccesoNoAutorizado::create([
+                'usuario_uuid'       => null,
+                'correo_electronico' => null,
+                'rol'                => 'SIN_AUTENTICAR',
+                'ip'                 => $request->ip(),
+                'user_agent'         => $request->userAgent(),
+                'metodo'             => $request->method(),
+                'url'                => $request->path(),
+                'tipo_violacion'     => 'TOKEN_AUSENTE',
+                'detalle'            => 'Petición API sin token Bearer.',
+                'fecha_hora'         => now(),
+            ]);
             return response()->json(['message' => 'No autorizado. Token ausente.'], 401);
         }
 
         $userId = Cache::store('redis')->get('auth_token:'.$token);
 
         if (!$userId) {
+            AccesoNoAutorizado::create([
+                'usuario_uuid'       => null,
+                'correo_electronico' => null,
+                'rol'                => 'SIN_AUTENTICAR',
+                'ip'                 => $request->ip(),
+                'user_agent'         => $request->userAgent(),
+                'metodo'             => $request->method(),
+                'url'                => $request->path(),
+                'tipo_violacion'     => 'TOKEN_EXPIRADO',
+                'detalle'            => 'Token inválido o sesión expirada en Redis.',
+                'fecha_hora'         => now(),
+            ]);
             return response()->json(['message' => 'Sesión expirada o inválida.'], 401);
         }
 
@@ -41,6 +65,18 @@ class CheckRolePermission
         });
 
         if (!$usuario instanceof Usuario) {
+            AccesoNoAutorizado::create([
+                'usuario_uuid'       => null,
+                'correo_electronico' => null,
+                'rol'                => 'SIN_AUTENTICAR',
+                'ip'                 => $request->ip(),
+                'user_agent'         => $request->userAgent(),
+                'metodo'             => $request->method(),
+                'url'                => $request->path(),
+                'tipo_violacion'     => 'USUARIO_INEXISTENTE',
+                'detalle'            => "ID de usuario {$userId} en token no encontrado en base de datos.",
+                'fecha_hora'         => now(),
+            ]);
             return response()->json(['message' => 'Usuario no encontrado en la base de datos.'], 401);
         }
 

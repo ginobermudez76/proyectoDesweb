@@ -44,11 +44,33 @@ async function logout(basePath = '..') {
     window.location.href = `${basePath}${sep}login.html`;
 }
 
+async function sendClientUnauthorizedLog(tipoViolacion, url, detalle) {
+    try {
+        await apiFetch('/logs/unauthorized', {
+            method: 'POST',
+            body: JSON.stringify({
+                tipo_violacion: tipoViolacion,
+                url: url,
+                detalle: detalle,
+                metodo: 'GET'
+            })
+        });
+    } catch (e) {
+        console.error('Error al registrar acceso no autorizado en MongoDB:', e);
+    }
+}
+
 function requireAuth(basePath = null) {
     const prefix = basePath !== null ? basePath : _navPrefix();
     const sep = (prefix && prefix.endsWith('/')) ? '' : '/';
     if (!getToken()) {
-        window.location.href = `${prefix}${sep}login.html`;
+        sendClientUnauthorizedLog(
+            'TOKEN_AUSENTE_CLIENT',
+            window.location.pathname,
+            'Intento de acceso a página protegida sin sesión activa (401 Client).'
+        ).then(() => {
+            window.location.href = `${prefix}${sep}login.html`;
+        });
         return false;
     }
     return true;
@@ -60,7 +82,13 @@ function requireRole(allowed) {
     if (!allowed.includes(getRole())) {
         const sep = (prefix && prefix.endsWith('/')) ? '' : '/';
         const errorPageUrl = `${prefix}${sep}error.html`;
-        window.location.href = `${errorPageUrl}?code=403&message=${encodeURIComponent('Acceso denegado (403)')}`;
+        sendClientUnauthorizedLog(
+            'RBAC_CLIENT',
+            window.location.pathname,
+            `Intento de acceso a página restringida para roles permitidos. Rol actual: ${getRole()}`
+        ).then(() => {
+            window.location.href = `${errorPageUrl}?code=403&message=${encodeURIComponent('Acceso denegado (403)')}`;
+        });
         return false;
     }
     return true;
@@ -264,7 +292,7 @@ function _renderNavLinks(navElement) {
 }
 
 // Validar acceso a la página actual según opciones de la base de datos (rol_opcion)
-function checkRoutePermission() {
+async function checkRoutePermission() {
     const p = window.location.pathname;
 
     // Si es la página de login, index o página de error, no validar
@@ -280,32 +308,40 @@ function checkRoutePermission() {
 
     // 1. Gestión de Usuarios
     if (p.includes('/pages/usuarios/') && !ops.includes('Gestión de Usuarios')) {
-        denyAccess();
+        await denyAccess();
     }
 
     // 2. Dashboard de Administración (solo ADMIN)
     if (p.includes('/pages/dashboard/') && role !== 'ADMIN') {
-        denyAccess();
+        await denyAccess();
     }
 
     // 3. Incidencias y Mapa (requiere opciones de Incidencias, ADMIN no tiene permitido verlas ni mapa)
     if (p.includes('/pages/incidencias/')) {
         const tienePermisoIncidencias = ops.some(o => o.includes('Incidencias'));
         if (!tienePermisoIncidencias || role === 'ADMIN') {
-            denyAccess();
+            await denyAccess();
         }
     }
 }
 
-function denyAccess() {
+async function denyAccess() {
     const prefix = _navPrefix();
     const sep = (prefix && prefix.endsWith('/')) ? '' : '/';
+    
+    // Registrar en MongoDB antes de redirigir
+    await sendClientUnauthorizedLog(
+        'RBAC_CLIENT',
+        window.location.pathname,
+        `Acceso denegado client-side a la página actual. Rol: ${getRole()}`
+    );
+    
     window.location.href = `${prefix}${sep}error.html?code=403&message=${encodeURIComponent('Acceso denegado (RBAC)')}`;
     throw new Error('Acceso no autorizado');
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    checkRoutePermission();
+document.addEventListener('DOMContentLoaded', async () => {
+    await checkRoutePermission();
 
     let nav = document.querySelector('.bottom-nav');
     

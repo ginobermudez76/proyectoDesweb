@@ -141,4 +141,39 @@ class AuthController extends Controller
             'message' => 'Sesión cerrada exitosamente en Redis. Token destruido.',
         ], 200);
     }
+
+    public function logUnauthorizedAccess(Request $request)
+    {
+        $request->validate([
+            'tipo_violacion' => 'required|string',
+            'url'            => 'required|string',
+            'detalle'        => 'required|string',
+            'metodo'         => 'nullable|string',
+        ]);
+
+        $token = $request->bearerToken();
+        $usuario = null;
+
+        if ($token) {
+            $userId = Cache::store('redis')->get('auth_token:'.$token);
+            if ($userId) {
+                $usuario = Usuario::find($userId);
+            }
+        }
+
+        \App\Modules\Auth\Entities\AccesoNoAutorizado::create([
+            'usuario_uuid'       => $usuario?->uuid,
+            'correo_electronico' => $usuario?->correo_electronico,
+            'rol'                => $usuario?->roles->first()?->codigo ?? 'SIN_AUTENTICAR',
+            'ip'                 => $request->ip(),
+            'user_agent'         => $request->userAgent(),
+            'metodo'             => $request->input('metodo', 'GET'),
+            'url'                => $request->input('url'),
+            'tipo_violacion'     => $request->input('tipo_violacion'),
+            'detalle'            => $request->input('detalle'),
+            'fecha_hora'         => now(),
+        ]);
+
+        return response()->json(['message' => 'Acceso no autorizado registrado en MongoDB.'], 201);
+    }
 }
