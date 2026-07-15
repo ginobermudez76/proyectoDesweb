@@ -3,9 +3,7 @@ if (window.location.pathname.startsWith('//')) {
     window.location.replace(window.location.pathname.replace(/^\/+/, '/') + window.location.search + window.location.hash);
 }
 
-const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || !window.location.hostname)
-    ? 'http://localhost:8000/api'
-    : '/api';
+const API_URL = '/api';
 
 async function apiFetch(endpoint, options = {}) {
     const token = localStorage.getItem('auth_token');
