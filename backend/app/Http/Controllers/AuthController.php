@@ -262,4 +262,94 @@ class AuthController extends Controller
             'usuario'      => $usuario->load('roles.opciones'),
         ], 201);
     }
+
+    public function paises()
+    {
+        $paises = Cache::store('redis')->remember('ubicaciones:paises', now()->addDays(7), function () {
+            $response = \Illuminate\Support\Facades\Http::get('https://countriesnow.space/api/v0.1/countries/info?returns=dialCode,unicodeFlag');
+            if ($response->failed()) {
+                return [];
+            }
+            $data = $response->json()['data'] ?? [];
+            
+            $list = [];
+            foreach ($data as $c) {
+                if (!empty($c['name'])) {
+                    $list[] = [
+                        'name' => $c['name'],
+                        'dial_code' => $c['dialCode'] ?? '',
+                        'flag' => $c['unicodeFlag'] ?? '',
+                    ];
+                }
+            }
+            
+            usort($list, function ($a, $b) {
+                return strcasecmp($a['name'], $b['name']);
+            });
+            
+            return $list;
+        });
+
+        return response()->json($paises, 200);
+    }
+
+    public function estados(Request $request)
+    {
+        $request->validate([
+            'country' => 'required|string',
+        ]);
+
+        $country = $request->input('country');
+        $cacheKey = 'ubicaciones:estados:' . md5($country);
+
+        $estados = Cache::store('redis')->remember($cacheKey, now()->addDays(7), function () use ($country) {
+            $response = \Illuminate\Support\Facades\Http::post('https://countriesnow.space/api/v0.1/countries/states', [
+                'country' => $country
+            ]);
+            if ($response->failed()) {
+                return [];
+            }
+            $states = $response->json()['data']['states'] ?? [];
+            
+            $list = [];
+            foreach ($states as $s) {
+                if (!empty($s['name'])) {
+                    $list[] = $s['name'];
+                }
+            }
+            
+            natcasesort($list);
+            return array_values($list);
+        });
+
+        return response()->json($estados, 200);
+    }
+
+    public function ciudades(Request $request)
+    {
+        $request->validate([
+            'country' => 'required|string',
+            'state'   => 'required|string',
+        ]);
+
+        $country = $request->input('country');
+        $state   = $request->input('state');
+        $cacheKey = 'ubicaciones:ciudades:' . md5($country . '_' . $state);
+
+        $ciudades = Cache::store('redis')->remember($cacheKey, now()->addDays(7), function () use ($country, $state) {
+            $response = \Illuminate\Support\Facades\Http::post('https://countriesnow.space/api/v0.1/countries/state/cities', [
+                'country' => $country,
+                'state'   => $state
+            ]);
+            if ($response->failed()) {
+                return [];
+            }
+            $cities = $response->json()['data'] ?? [];
+            
+            natcasesort($cities);
+            return array_values($cities);
+        });
+
+        return response()->json($ciudades, 200);
+    }
 }

@@ -17,7 +17,7 @@ class CheckRolePermission
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if ($request->is('api/register') || $request->is('api/documentos/tipos') || $request->is('api/logs/unauthorized')) {
+        if ($request->is('api/register') || $request->is('api/documentos/tipos') || $request->is('api/logs/unauthorized') || $request->is('api/ubicaciones/*')) {
             return $next($request);
         }
 

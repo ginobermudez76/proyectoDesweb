@@ -116,23 +116,20 @@
 
         <div class="form-group">
             <label class="form-label" for="pais">País</label>
-            <select class="form-input" id="pais" onchange="onPaisChange()">
-                <option value="">Cargando países…</option>
-            </select>
+            <input class="form-input" id="pais" list="paisList" placeholder="Escribe o selecciona tu país" onchange="onPaisChange()" onblur="validarDatalist('pais', 'paisList')">
+            <datalist id="paisList"></datalist>
         </div>
 
         <div class="form-row">
             <div class="form-group" id="estadoGroup">
                 <label class="form-label" for="estado">Estado / Provincia</label>
-                <select class="form-input" id="estado" onchange="onEstadoChange()">
-                    <option value="">Selecciona un país primero</option>
-                </select>
+                <input class="form-input" id="estado" list="estadoList" placeholder="Escribe o selecciona" onchange="onEstadoChange()" onblur="validarDatalist('estado', 'estadoList')">
+                <datalist id="estadoList"></datalist>
             </div>
             <div class="form-group" id="ciudadGroup">
                 <label class="form-label" for="ciudad">Ciudad</label>
-                <select class="form-input" id="ciudad">
-                    <option value="">Selecciona una provincia primero</option>
-                </select>
+                <input class="form-input" id="ciudad" list="ciudadList" placeholder="Escribe o selecciona" onblur="validarDatalist('ciudad', 'ciudadList')">
+                <datalist id="ciudadList"></datalist>
             </div>
         </div>
 
@@ -186,26 +183,23 @@
 
     async function cargarUbicacionBase() {
         try {
-            // 1. Obtener todos los países con sus dialCodes de countriesnow
-            const res = await fetch('https://countriesnow.space/api/v0.1/countries/info?returns=dialCode,unicodeFlag');
-            const data = await res.json();
+            // Obtener países ordenados alfabéticamente desde el proxy del backend (Redis cache)
+            countriesData = await apiFetch('/ubicaciones/paises');
             
-            if (data && !data.error) {
-                countriesData = data.data;
+            if (countriesData && countriesData.length > 0) {
+                // Cargar datalist de país
+                const paisList = document.getElementById('paisList');
+                paisList.innerHTML = countriesData
+                    .map(c => `<option value="${c.name}">${c.flag || ''} ${c.name}</option>`).join('');
 
-                // Cargar selectores de país
-                const paisSelect = document.getElementById('pais');
-                paisSelect.innerHTML = '<option value="">Selecciona tu país</option>' + 
-                    countriesData.map(c => `<option value="${c.name}" data-code="${c.unicodeFlag}">${c.unicodeFlag || ''} ${c.name}</option>`).join('');
-
-                // Cargar selectores de prefijo celular
+                // Cargar selectores de prefijo celular (con banderas y ordenados)
                 const prefixSelect = document.getElementById('prefijo_celular');
                 prefixSelect.innerHTML = countriesData
-                    .filter(c => c.dialCode)
-                    .map(c => `<option value="${c.dialCode}">${c.dialCode} (${c.name})</option>`).join('');
+                    .filter(c => c.dial_code)
+                    .map(c => `<option value="${c.dial_code}">${c.flag || '📍'} ${c.dial_code} (${c.name})</option>`).join('');
             }
         } catch (e) {
-            console.error('Error al cargar API de países:', e);
+            console.error('Error al cargar países:', e);
             fallbackUbicacionInputs();
         }
     }
@@ -217,14 +211,14 @@
             
             if (ipData && ipData.countryName) {
                 // Auto-seleccionar país
-                const paisSelect = document.getElementById('pais');
-                paisSelect.value = ipData.countryName;
+                const paisInput = document.getElementById('pais');
+                paisInput.value = ipData.countryName;
                 onPaisChange(ipData.regionName, ipData.cityName);
 
                 // Auto-seleccionar prefijo
                 const countryObj = countriesData.find(c => c.name.toLowerCase() === ipData.countryName.toLowerCase());
                 if (countryObj) {
-                    document.getElementById('prefijo_celular').value = countryObj.dialCode;
+                    document.getElementById('prefijo_celular').value = countryObj.dial_code;
                 }
             }
         } catch (e) {
@@ -233,54 +227,60 @@
     }
 
     function fallbackUbicacionInputs() {
-        // En caso de que falle el API externo, reemplazamos por inputs de texto normales para no bloquear el formulario
-        document.getElementById('pais').outerHTML = `<input class="form-input" id="pais" type="text" placeholder="Ingresa tu país">`;
-        document.getElementById('estadoGroup').innerHTML = `
-            <label class="form-label" for="estado">Estado / Provincia</label>
-            <input class="form-input" id="estado" type="text" placeholder="Estado / Provincia">`;
-        document.getElementById('ciudadGroup').innerHTML = `
-            <label class="form-label" for="ciudad">Ciudad</label>
-            <input class="form-input" id="ciudad" type="text" placeholder="Ciudad">`;
         document.getElementById('prefijo_celular').innerHTML = `
-            <option value="+593">+593 (EC)</option>
-            <option value="+1">+1 (US)</option>
-            <option value="+57">+57 (CO)</option>`;
+            <option value="+593">🇪🇨 +593 (Ecuador)</option>
+            <option value="+1">🇺🇸 +1 (USA)</option>
+            <option value="+57">🇨🇴 +57 (Colombia)</option>`;
     }
+
+    // Helper para forzar la selección de elementos existentes en los datalists
+    window.validarDatalist = function(inputId, datalistId) {
+        const input = document.getElementById(inputId);
+        const datalist = document.getElementById(datalistId);
+        if (!input || !datalist || !input.value.trim()) return;
+
+        const options = Array.from(datalist.options).map(opt => opt.value.trim().toLowerCase());
+        const typedValue = input.value.trim().toLowerCase();
+
+        // Si el valor escrito no está en la lista de opciones válidas, limpiar el input
+        if (!options.includes(typedValue)) {
+            input.value = '';
+            if (inputId === 'pais') {
+                document.getElementById('estadoList').innerHTML = '';
+                document.getElementById('ciudadList').innerHTML = '';
+            } else if (inputId === 'estado') {
+                document.getElementById('ciudadList').innerHTML = '';
+            }
+        }
+    };
 
     async function onPaisChange(preSelectEstado = '', preSelectCiudad = '') {
         const country = document.getElementById('pais').value;
-        const estadoSelect = document.getElementById('estado');
-        const ciudadSelect = document.getElementById('ciudad');
+        const estadoInput = document.getElementById('estado');
+        const estadoList = document.getElementById('estadoList');
+        const ciudadInput = document.getElementById('ciudad');
+        const ciudadList = document.getElementById('ciudadList');
         
         if (!country) return;
         
-        estadoSelect.innerHTML = '<option value="">Cargando provincias…</option>';
-        ciudadSelect.innerHTML = '<option value="">Selecciona una provincia primero</option>';
+        estadoInput.value = '';
+        ciudadInput.value = '';
+        estadoList.innerHTML = '<option value="Cargando provincias…">';
+        ciudadList.innerHTML = '';
 
         try {
-            const res = await fetch('https://countriesnow.space/api/v0.1/countries/states', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ country })
-            });
-            const data = await res.json();
+            // Consultar estados desde el backend (Redis cache)
+            const states = await apiFetch(`/ubicaciones/estados?country=${encodeURIComponent(country)}`);
             
-            if (data && !data.error && data.data.states.length > 0) {
-                estadoSelect.innerHTML = '<option value="">Selecciona provincia</option>' +
-                    data.data.states.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+            if (states && states.length > 0) {
+                estadoList.innerHTML = states.map(s => `<option value="${s}"></option>`).join('');
                 
-                if (preSelectEstado) {
-                    estadoSelect.value = preSelectEstado;
+                if (preSelectEstado && states.includes(preSelectEstado)) {
+                    estadoInput.value = preSelectEstado;
                     onEstadoChange(preSelectCiudad);
                 }
             } else {
-                // Fallback a input de texto si no tiene estados registrados
-                document.getElementById('estadoGroup').innerHTML = `
-                    <label class="form-label" for="estado">Estado / Provincia</label>
-                    <input class="form-input" id="estado" type="text" placeholder="Ingresa tu provincia" oninput="onEstadoTextInputChange()">`;
-                document.getElementById('ciudadGroup').innerHTML = `
-                    <label class="form-label" for="ciudad">Ciudad</label>
-                    <input class="form-input" id="ciudad" type="text" placeholder="Ingresa tu ciudad">`;
+                estadoList.innerHTML = '';
             }
         } catch (e) {
             console.error('Error al cargar provincias:', e);
@@ -290,44 +290,29 @@
     async function onEstadoChange(preSelectCiudad = '') {
         const country = document.getElementById('pais').value;
         const state = document.getElementById('estado').value;
-        const ciudadSelect = document.getElementById('ciudad');
+        const ciudadInput = document.getElementById('ciudad');
+        const ciudadList = document.getElementById('ciudadList');
 
         if (!state) return;
-        ciudadSelect.innerHTML = '<option value="">Cargando ciudades…</option>';
+        
+        ciudadInput.value = '';
+        ciudadList.innerHTML = '<option value="Cargando ciudades…">';
 
         try {
-            const res = await fetch('https://countriesnow.space/api/v0.1/countries/state/cities', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ country, state })
-            });
-            const data = await res.json();
+            // Consultar ciudades desde el backend (Redis cache)
+            const cities = await apiFetch(`/ubicaciones/ciudades?country=${encodeURIComponent(country)}&state=${encodeURIComponent(state)}`);
 
-            if (data && !data.error && data.data.length > 0) {
-                ciudadSelect.innerHTML = '<option value="">Selecciona ciudad</option>' +
-                    data.data.map(c => `<option value="${c}">${c}</option>`).join('');
+            if (cities && cities.length > 0) {
+                ciudadList.innerHTML = cities.map(c => `<option value="${c}"></option>`).join('');
                 
-                if (preSelectCiudad) {
-                    ciudadSelect.value = preSelectCiudad;
+                if (preSelectCiudad && cities.includes(preSelectCiudad)) {
+                    ciudadInput.value = preSelectCiudad;
                 }
             } else {
-                // Fallback a input de texto para ciudad
-                document.getElementById('ciudadGroup').innerHTML = `
-                    <label class="form-label" for="ciudad">Ciudad</label>
-                    <input class="form-input" id="ciudad" type="text" placeholder="Ingresa tu ciudad">`;
+                ciudadList.innerHTML = '';
             }
         } catch (e) {
             console.error('Error al cargar ciudades:', e);
-        }
-    }
-
-    function onEstadoTextInputChange() {
-        // Si el estado es un input de texto libre, la ciudad también debe ser input de texto libre
-        const ciudadEl = document.getElementById('ciudad');
-        if (ciudadEl && ciudadEl.tagName === 'SELECT') {
-            document.getElementById('ciudadGroup').innerHTML = `
-                <label class="form-label" for="ciudad">Ciudad</label>
-                <input class="form-input" id="ciudad" type="text" placeholder="Ingresa tu ciudad">`;
         }
     }
 
@@ -346,9 +331,9 @@
         const prefijo = document.getElementById('prefijo_celular').value;
         const celular = document.getElementById('celular').value.trim();
         
-        const pais = document.getElementById('pais').value;
-        const estado = document.getElementById('estado').value;
-        const ciudad = document.getElementById('ciudad').value;
+        const pais = document.getElementById('pais').value.trim();
+        const estado = document.getElementById('estado').value.trim();
+        const ciudad = document.getElementById('ciudad').value.trim();
 
         if (!nombres || !apellidos || !correo || !usuario || !password || !documento || !celular || !pais || !estado || !ciudad) {
             errEl.textContent = 'Por favor, completa todos los campos del formulario.';
@@ -359,7 +344,6 @@
         btn.disabled = true;
         btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Registrando…';
 
-        // Estructura de la jerarquía de ubicación para MongoDB
         const ubicacionJson = {
             pais: pais,
             provincia_estado: estado,
@@ -384,13 +368,11 @@
                 })
             });
 
-            // Guardar credenciales de sesión en localStorage
             localStorage.setItem('auth_token', data.access_token);
             localStorage.setItem('auth_user', JSON.stringify(data.usuario));
 
             showToast('Cuenta creada con éxito. ¡Bienvenido!', 'success');
 
-            // Redirigir al panel principal
             setTimeout(() => {
                 window.location.href = '/pages/incidencias/panel.html';
             }, 1000);
