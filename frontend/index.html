@@ -13,12 +13,16 @@
         try {
             const u = JSON.parse(localStorage.getItem('auth_user') || '{}');
             const role = (u.roles && u.roles.length) ? u.roles[0].codigo : null;
-            const dest = { CIUDADANO:'ciudadano/home.html', TECNICO:'tecnico/panel.html',
-                           SUPERVISOR:'supervisor/panel.html', ADMIN:'admin/panel.html' };
-            window.location.replace(dest[role] || 'login.html');
-        } catch { window.location.replace('login.html'); }
+            const dest = {
+                CIUDADANO: '/pages/incidencias/panel.html',
+                TECNICO: '/pages/incidencias/panel.html',
+                SUPERVISOR: '/pages/incidencias/panel.html',
+                ADMIN: '/pages/dashboard/dashboard.html'
+            };
+            window.location.replace(dest[role] || '/login.html');
+        } catch { window.location.replace('/login.html'); }
     } else {
-        window.location.replace('login.html');
+        window.location.replace('/login.html');
     }
 </script>
 </body>
