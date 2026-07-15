@@ -83,7 +83,7 @@ async function render({ incidencia: inc, evidencias, historial_seguimiento, come
                 </span>
             </div>
             <div class="readonly-estado" id="estadoContainer"></div>
-            <button onclick="rechazarResolucion(${JSON.stringify(id)}, '${role.toLowerCase()}', cargar)"
+            <button onclick="rechazarResolucion('${id}', '${role.toLowerCase()}', cargar)"
                     style="margin-top:10px;width:100%;padding:11px;border-radius:12px;
                            border:1.5px solid #EF4444;background:#FEF2F2;color:#B91C1C;
                            font-weight:600;font-size:13px;cursor:pointer">
@@ -137,7 +137,7 @@ async function render({ incidencia: inc, evidencias, historial_seguimiento, come
                             : `<span class="text-muted-sm">Sin asignar</span>`}
                     </div>
                     <button class="btn-cambiar"
-                            onclick="showAsignarTecnicoModal(${JSON.stringify(id)}, cargar)">
+                            onclick="showAsignarTecnicoModal('${id}', cargar)">
                         <i class="bi bi-person-plus"></i>
                         ${inc.asignado_a ? 'Reasignar' : 'Asignar'}
                     </button>
@@ -189,7 +189,7 @@ async function render({ incidencia: inc, evidencias, historial_seguimiento, come
                 <textarea class="form-input mt-2" id="notaInput"
                           placeholder="Agregar observación…"></textarea>
                 <button class="btn-orange mt-2"
-                        onclick="agregarNota(${JSON.stringify(id)}, cargar)">
+                        onclick="agregarNota('${id}', cargar)">
                     <i class="bi bi-chat-left-text"></i> Agregar nota
                 </button>` : ''}
             </div>
@@ -198,7 +198,7 @@ async function render({ incidencia: inc, evidencias, historial_seguimiento, come
             <div class="section" style="padding-top:0">
                 <hr style="border-color:var(--gray-200);margin:0 0 16px">
                 <button class="btn btn-danger w-100"
-                        onclick="eliminarIncidencia(${JSON.stringify(id)}, 'panel.html')">
+                        onclick="eliminarIncidencia('${id}', 'panel.html')">
                     <i class="bi bi-trash-fill"></i> Eliminar incidencia
                 </button>
             </div>` : ''}
