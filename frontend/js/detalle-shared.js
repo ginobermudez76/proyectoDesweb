@@ -101,9 +101,10 @@ async function agregarNota(incidenciaId, onSuccess) {
             method: 'POST',
             body: JSON.stringify({ texto }),
         });
+        showToast('Nota agregada con éxito', 'success');
         if (typeof onSuccess === 'function') onSuccess();
     } catch (e) {
-        alert(e.message || 'Error al agregar nota.');
+        showToast(e.message || 'No se pudo agregar la nota. Inténtalo de nuevo.', 'error');
     }
 }
 
@@ -116,16 +117,17 @@ async function eliminarIncidencia(incidenciaId, redirectUrl = 'panel.html') {
     const confirmado = await showConfirmModal(
         'Eliminar incidencia',
         '¿Estás seguro de que deseas eliminar esta incidencia permanentemente? Esta acción no se puede deshacer.',
-        'Eliminar',
+        'Confirmar',
         'btn-danger'
     );
     if (!confirmado) return;
 
     try {
         await apiFetch(`/incidencias/${incidenciaId}`, { method: 'DELETE' });
-        window.location.href = redirectUrl;
+        showToast('Incidencia eliminada correctamente', 'success');
+        setTimeout(() => { window.location.href = redirectUrl; }, 900);
     } catch (e) {
-        alert(e.message || 'Error al eliminar.');
+        showToast(e.message || 'No se pudo eliminar la incidencia.', 'error');
     }
 }
 
@@ -139,7 +141,7 @@ async function rechazarResolucion(incidenciaId, rol, onSuccess) {
     const confirmado = await showConfirmModal(
         'Rechazar resolución',
         '¿Rechazar la resolución del técnico y devolver a "En proceso"?',
-        'Rechazar',
+        'Confirmar',
         'btn-warning'
     );
     if (!confirmado) return;
@@ -159,8 +161,9 @@ async function rechazarResolucion(incidenciaId, rol, onSuccess) {
             method: 'POST',
             body: JSON.stringify({ texto: `⚠️ Resolución rechazada: ${motivoFinal}` }),
         });
+        showToast('Resolución rechazada, incidencia devuelta a En Proceso', 'warning');
         if (typeof onSuccess === 'function') onSuccess();
     } catch (e) {
-        alert(e.message || 'Error al rechazar.');
+        showToast(e.message || 'No se pudo rechazar la resolución.', 'error');
     }
 }

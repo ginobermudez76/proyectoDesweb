@@ -25,11 +25,13 @@ async function apiFetch(endpoint, options = {}) {
             if (!onLoginPage) {
                 localStorage.removeItem('auth_token');
                 localStorage.removeItem('auth_user');
-                alert('Sesión expirada o no autorizada. Redirigiendo al inicio de sesión.');
-                const depth = window.location.pathname.includes('/pages/') ? '../../' :
-                    ['/ciudadano/', '/tecnico/', '/supervisor/', '/admin/']
-                      .some(p => window.location.pathname.includes(p)) ? '../' : '';
-                window.location.href = depth + 'login.html';
+                showToast('Tu sesión ha expirado. Redirigiendo al inicio de sesión…', 'warning');
+                setTimeout(() => {
+                    const depth = window.location.pathname.includes('/pages/') ? '../../' :
+                        ['/ciudadano/', '/tecnico/', '/supervisor/', '/admin/']
+                          .some(p => window.location.pathname.includes(p)) ? '../' : '';
+                    window.location.href = depth + 'login.html';
+                }, 2000);
                 return;
             }
         }
@@ -60,13 +62,13 @@ async function apiFetch(endpoint, options = {}) {
                     console.warn(`400 Bad Request: ${msg}`);
                     break;
                 case 405:
-                    alert(`Método no permitido (405):\nLa acción solicitada no es compatible con el servidor.`);
+                    showToast('Acción no permitida por el servidor. Contacta al administrador.', 'error');
                     break;
                 case 409:
-                    alert(`Conflicto (409):\n${msg}`);
+                    showToast(msg || 'Conflicto: el registro ya existe o hay datos duplicados.', 'error');
                     break;
                 case 415:
-                    alert(`Tipo de contenido no soportado (415):\nEl servidor esperaba un formato diferente.`);
+                    showToast('Error de formato: el servidor no reconoció los datos enviados.', 'error');
                     break;
             }
 

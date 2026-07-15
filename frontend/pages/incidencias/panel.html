@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Panel de gestión y seguimiento de incidencias urbanas">
+    <meta name="description" content="Panel de gestiÃ³n y seguimiento de incidencias urbanas">
     <title>Panel de Incidencias</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -15,25 +15,25 @@
 
     <div class="greeting-header">
         <div>
-            <div class="greeting-text" id="rolLabel">…</div>
-            <div class="greeting-name" id="userName">…</div>
+            <div class="greeting-text" id="rolLabel">â€¦</div>
+            <div class="greeting-name" id="userName">â€¦</div>
         </div>
         <i class="bi bi-bell" style="font-size:22px;color:var(--gray-400)"></i>
     </div>
 
-    <!-- Resumen rápido -->
+    <!-- Resumen rÃ¡pido -->
     <div class="section" style="padding-bottom:0">
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:4px">
             <div class="card-white" style="padding:12px;text-align:center;margin-bottom:0">
-                <div style="font-size:22px;font-weight:700;color:var(--orange)" id="totalEl">—</div>
+                <div style="font-size:22px;font-weight:700;color:var(--orange)" id="totalEl">â€”</div>
                 <div class="text-muted-sm">Total</div>
             </div>
             <div class="card-white" style="padding:12px;text-align:center;margin-bottom:0">
-                <div style="font-size:22px;font-weight:700;color:#EF4444" id="urgentesEl">—</div>
+                <div style="font-size:22px;font-weight:700;color:#EF4444" id="urgentesEl">â€”</div>
                 <div class="text-muted-sm">Urgentes</div>
             </div>
             <div class="card-white" style="padding:12px;text-align:center;margin-bottom:0">
-                <div style="font-size:22px;font-weight:700;color:var(--green)" id="resueltasEl">—</div>
+                <div style="font-size:22px;font-weight:700;color:var(--green)" id="resueltasEl">â€”</div>
                 <div class="text-muted-sm">Resueltas</div>
             </div>
         </div>
@@ -45,23 +45,23 @@
         <span id="alertText"></span>
     </div>
 
-    <!-- Filtros dinámicos -->
+    <!-- Filtros dinÃ¡micos -->
     <div class="filter-tabs" id="filterTabs">
         <button class="filter-tab active" data-filter="todas" onclick="setFiltro(this)">Todas</button>
         <button class="filter-tab" data-filter="urgente" onclick="setFiltro(this)">Urgentes</button>
-        <!-- Filtros extra por rol se añaden desde JS -->
+        <!-- Filtros extra por rol se aÃ±aden desde JS -->
     </div>
     <div style="padding:0 16px 8px">
         <input type="search" class="form-control form-control-sm" id="tipoSearch"
-               placeholder="Buscar por título…" oninput="renderLista()">
+               placeholder="Buscar por tÃ­tuloâ€¦" oninput="renderLista()">
     </div>
 
     <div class="section">
         <div class="section-title" id="countLabel">Incidencias</div>
-        <div id="lista"><div class="text-muted-sm text-center py-3">Cargando…</div></div>
+        <div id="lista"><div class="text-muted-sm text-center py-3">Cargandoâ€¦</div></div>
     </div>
 
-    <!-- Botón reportar (solo ciudadano) -->
+    <!-- BotÃ³n reportar (solo ciudadano) -->
     <div id="btnReportarWrap" style="display:none;padding:0 16px 16px">
         <a href="reportar.html" class="btn-orange" style="display:flex;align-items:center;justify-content:center;gap:8px">
             <i class="bi bi-plus-circle"></i> Reportar incidencia
@@ -71,11 +71,12 @@
 </div>
 
 <script src="/js/app.js"></script>
+<script src="/js/toast.js"></script>
 <script src="/js/auth.js"></script>
 <script src="/js/catalogos.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// ── Protección de ruta ────────────────────────────────────────────────────
+// â”€â”€ ProtecciÃ³n de ruta â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 if (!requireAuth()) throw new Error('Redirigiendo');
 
 const role = getRole();
@@ -99,7 +100,7 @@ if (role === 'SUPERVISOR' || role === 'ADMIN') {
     `);
 }
 
-// Mostrar botón reportar al ciudadano
+// Mostrar botÃ³n reportar al ciudadano
 if (role === 'CIUDADANO') {
     document.getElementById('btnReportarWrap').style.display = '';
 }
@@ -111,7 +112,7 @@ async function cargar() {
     try {
         todas = await apiFetch('/incidencias');
 
-        // Cargar catálogos para tener labels actualizados
+        // Cargar catÃ¡logos para tener labels actualizados
         await getCatalogos();
 
         const urgentes  = todas.filter(i => i.prioridad === 'Urgente');
@@ -159,7 +160,7 @@ function renderLista() {
     const lista = filtrar(todas);
     document.getElementById('countLabel').textContent = `Incidencias (${lista.length})`;
 
-    // Determinar la URL de detalle relativa a esta página
+    // Determinar la URL de detalle relativa a esta pÃ¡gina
     const href = i => `detalle.html?id=${i.id}`;
 
     document.getElementById('lista').innerHTML = lista.length
@@ -168,7 +169,7 @@ function renderLista() {
 }
 
 /**
- * Versión de incidentCardHTML que usa catálogos dinámicos.
+ * VersiÃ³n de incidentCardHTML que usa catÃ¡logos dinÃ¡micos.
  */
 function incidentCardHTMLCatalog(inc, href) {
     const priInfo = getPrioridadInfo(inc.prioridad);
@@ -182,7 +183,7 @@ function incidentCardHTMLCatalog(inc, href) {
         </div>
         <div class="text-muted-sm" style="margin-bottom:6px">
             <i class="bi bi-geo-alt" style="font-size:11px"></i>
-            ${inc.ubicacion ? 'Ver ubicación' : 'Sin ubicación'} · ${timeAgo(inc.fecha_creacion)}
+            ${inc.ubicacion ? 'Ver ubicaciÃ³n' : 'Sin ubicaciÃ³n'} Â· ${timeAgo(inc.fecha_creacion)}
         </div>
         <span class="badge-status ${estInfo.css_class}">${estInfo.label || inc.estado}</span>
         ${(role === 'SUPERVISOR' || role === 'ADMIN') && !inc.asignado_a

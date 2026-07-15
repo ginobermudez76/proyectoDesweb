@@ -25,10 +25,10 @@
 <div class="app-container">
     <div class="map-wrap">
         <div id="map"></div>
-        <!-- Leyenda dinámica -->
+        <!-- Leyenda dinÃ¡mica -->
         <div class="map-legend" id="mapLegend">
             <div style="font-weight:600;font-size:11px;margin-bottom:4px">Estado</div>
-            <div class="text-muted-sm" style="font-size:10px">Cargando…</div>
+            <div class="text-muted-sm" style="font-size:10px">Cargandoâ€¦</div>
         </div>
         <!-- CTA Reportar (Solo visible para Ciudadanos) -->
         <div id="btnReportarWrap" style="display:none;position:absolute;bottom:80px;left:50%;transform:translateX(-50%);width:calc(100% - 32px);z-index:1000">
@@ -36,12 +36,12 @@
                 <i class="bi bi-plus-circle"></i> Reportar incidencia
             </button>
         </div>
-        <!-- Alerta Incidencia Más Cercana (Solo visible para Técnicos) -->
+        <!-- Alerta Incidencia MÃ¡s Cercana (Solo visible para TÃ©cnicos) -->
         <div class="map-bottom-card" id="nearestCard" style="display:none">
-            <div class="text-muted-sm" style="margin-bottom:4px">MÁS CERCANA ASIGNADA A MÍ</div>
+            <div class="text-muted-sm" style="margin-bottom:4px">MÃS CERCANA ASIGNADA A MÃ</div>
             <div style="display:flex;align-items:center;gap:6px">
                 <span class="legend-dot" id="nearestDot" style="width:12px;height:12px;border-radius:50%;display:inline-block"></span>
-                <span style="font-size:14px;font-weight:600" id="nearestTitle">—</span>
+                <span style="font-size:14px;font-weight:600" id="nearestTitle">â€”</span>
                 <span class="text-muted-sm" id="nearestDist"></span>
             </div>
         </div>
@@ -49,6 +49,7 @@
 </div>
 
 <script src="/js/app.js"></script>
+<script src="/js/toast.js"></script>
 <script src="/js/auth.js"></script>
 <script src="/js/catalogos.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -64,7 +65,7 @@ if (role === 'CIUDADANO') {
 
 const map = L.map('map').setView([19.4326, -99.1332], 12);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap',
+    attribution: 'Â© OpenStreetMap',
 }).addTo(map);
 
 function haversine([lat1,lng1],[lat2,lng2]) {
@@ -79,7 +80,7 @@ if (navigator.geolocation) {
         userPos = [pos.coords.latitude, pos.coords.longitude];
         map.setView(userPos, 14);
         L.circleMarker(userPos, { radius:8, color: APP_COLORS.white, fillColor: APP_COLORS.blue, fillOpacity:1, weight:2 })
-            .addTo(map).bindPopup('Tu ubicación');
+            .addTo(map).bindPopup('Tu ubicaciÃ³n');
         
         refrescarMasCercano();
     });
@@ -102,7 +103,7 @@ async function cargar() {
         cats.estados.forEach(e => { colorMap[e.codigo] = e.color_hex || '#9CA3AF'; });
 
         if (role === 'TECNICO') {
-            // Filtrar solo asignadas al técnico
+            // Filtrar solo asignadas al tÃ©cnico
             mapData = data.filter(inc => String(inc.asignado_a) === String(user.uuid));
 
             // Leyenda de prioridad
@@ -113,7 +114,7 @@ async function cargar() {
                 <div><span class="legend-dot" style="background:var(--blue)"></span>Baja</div>
             `;
         } else {
-            // Leyenda dinámica de estados
+            // Leyenda dinÃ¡mica de estados
             const legendHTML = cats.estados.map(e =>
                 `<div><span class="legend-dot" style="background:${e.color_hex || '#9CA3AF'}"></span>${e.label}</div>`
             ).join('');
@@ -135,7 +136,7 @@ async function cargar() {
                 color = colorMap[inc.estado] || '#9CA3AF';
                 const estInfo = getEstadoInfo(inc.estado, cats.estados);
                 const priInfo = getPrioridadInfo(inc.prioridad, cats.prioridades);
-                descText = `<span style="color:${color}">${estInfo.label}</span> · ${priInfo.label || inc.prioridad || 'Media'}`;
+                descText = `<span style="color:${color}">${estInfo.label}</span> Â· ${priInfo.label || inc.prioridad || 'Media'}`;
             }
 
             L.circleMarker([lat, lng], {
@@ -145,7 +146,7 @@ async function cargar() {
               .bindPopup(`
                 <b>${inc.titulo}</b><br>
                 ${descText}<br>
-                <a href="detalle.html?id=${inc.id}">Ver detalle →</a>
+                <a href="detalle.html?id=${inc.id}">Ver detalle â†’</a>
               `);
         });
 

@@ -44,6 +44,25 @@ async function logout(basePath = '..') {
     window.location.href = `${basePath}${sep}login.html`;
 }
 
+/**
+ * Muestra confirmación antes de cerrar sesión.
+ * @param {string} basePath - ruta relativa al login
+ */
+async function confirmLogout(basePath = '..') {
+    // showConfirmModal viene de modal.js; si no está disponible, cerramos directamente
+    if (typeof showConfirmModal !== 'function') {
+        logout(basePath);
+        return;
+    }
+    const ok = await showConfirmModal(
+        'Cerrar sesión',
+        '¿Estás seguro de que deseas cerrar sesión?',
+        'Confirmar',
+        'btn-danger'
+    );
+    if (ok) logout(basePath);
+}
+
 async function sendClientUnauthorizedLog(tipoViolacion, url, detalle) {
     try {
         await apiFetch('/logs/unauthorized', {
@@ -287,7 +306,7 @@ function _renderNavLinks(navElement) {
     navElement.innerHTML = html;
     navElement.querySelector('#_sidebarLogout')?.addEventListener('click', e => {
         e.preventDefault();
-        logout(prefix || '.');
+        confirmLogout(prefix || '.');
     });
 }
 

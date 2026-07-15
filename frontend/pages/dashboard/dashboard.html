@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Dashboard de Control Global de la Plataforma">
-    <title>Panel de Control — Administrador</title>
+    <title>Panel de Control â€” Administrador</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="/css/style.css" rel="stylesheet">
@@ -30,7 +30,7 @@
     <div class="greeting-header">
         <div>
             <div class="greeting-text">Administrador del sistema</div>
-            <div class="greeting-name" id="userName">…</div>
+            <div class="greeting-name" id="userName">â€¦</div>
         </div>
         <i class="bi bi-gear" style="font-size:22px;color:var(--gray-400)"></i>
     </div>
@@ -44,7 +44,7 @@
                     <i class="bi bi-exclamation-circle" style="color:var(--orange)"></i>
                 </div>
                 <div>
-                    <div class="val" id="totalInc">—</div>
+                    <div class="val" id="totalInc">â€”</div>
                     <div class="lbl">Total de incidencias</div>
                 </div>
             </div>
@@ -52,36 +52,36 @@
                 <div class="icon-circle" style="background:#FEE2E2">
                     <i class="bi bi-fire" style="color:#EF4444"></i>
                 </div>
-                <div><div class="val" id="urgentesEl">—</div><div class="lbl">Urgentes</div></div>
+                <div><div class="val" id="urgentesEl">â€”</div><div class="lbl">Urgentes</div></div>
             </div>
             <div class="stat-card">
                 <div class="icon-circle" style="background:#D1FAE5">
                     <i class="bi bi-check-circle" style="color:var(--green)"></i>
                 </div>
-                <div><div class="val" id="resueltasEl">—</div><div class="lbl">Resueltas</div></div>
+                <div><div class="val" id="resueltasEl">â€”</div><div class="lbl">Resueltas</div></div>
             </div>
             <div class="stat-card">
                 <div class="icon-circle" style="background:#DBEAFE">
                     <i class="bi bi-clock" style="color:var(--blue)"></i>
                 </div>
-                <div><div class="val" id="pendientesEl">—</div><div class="lbl">Pendientes</div></div>
+                <div><div class="val" id="pendientesEl">â€”</div><div class="lbl">Pendientes</div></div>
             </div>
             <div class="stat-card">
                 <div class="icon-circle" style="background:#FED7AA">
                     <i class="bi bi-arrow-repeat" style="color:var(--orange)"></i>
                 </div>
-                <div><div class="val" id="procesoEl">—</div><div class="lbl">En proceso</div></div>
+                <div><div class="val" id="procesoEl">â€”</div><div class="lbl">En proceso</div></div>
             </div>
         </div>
     </div>
 
     <div class="divider"></div>
 
-    <!-- Distribución por estado (Bootstrap progress bars) -->
+    <!-- DistribuciÃ³n por estado (Bootstrap progress bars) -->
     <div class="section">
-        <div class="section-title">Distribución por estado</div>
+        <div class="section-title">DistribuciÃ³n por estado</div>
         <div id="chartEstado">
-            <div class="text-muted-sm">Cargando…</div>
+            <div class="text-muted-sm">Cargandoâ€¦</div>
         </div>
     </div>
 
@@ -89,7 +89,7 @@
 
     <!-- Acciones del sistema -->
     <div class="section">
-        <div class="section-title">Gestión del sistema</div>
+        <div class="section-title">GestiÃ³n del sistema</div>
         <div class="menu-list">
             <a class="menu-item" href="../usuarios/usuarios.html">
                 <div class="menu-left"><i class="bi bi-people lead"></i> Usuarios y roles</div>
@@ -100,7 +100,7 @@
                 <i class="bi bi-chevron-right arrow"></i>
             </a>
             <a class="menu-item">
-                <div class="menu-left"><i class="bi bi-journal-text lead"></i> Auditoría</div>
+                <div class="menu-left"><i class="bi bi-journal-text lead"></i> AuditorÃ­a</div>
                 <i class="bi bi-chevron-right arrow"></i>
             </a>
             <a class="menu-item">
@@ -111,15 +111,18 @@
     </div>
 
     <div class="section" style="padding-top:0">
-        <button class="btn-red" onclick="logout('../../')">
-            <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+        <button class="btn-red" onclick="confirmLogout('../../')">
+            <i class="bi bi-box-arrow-right"></i> Cerrar sesiÃ³n
         </button>
     </div>
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/js/app.js"></script>
+<script src="/js/toast.js"></script>
 <script src="/js/auth.js"></script>
+<script src="/js/modal.js"></script>
 <script>
 if (!requireAdmin()) throw new Error('Redirigiendo');
 document.getElementById('userName').textContent = getUserName();

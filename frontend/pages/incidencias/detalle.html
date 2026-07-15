@@ -33,6 +33,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="/js/app.js"></script>
 <script src="/js/auth.js"></script>
+<script src="/js/toast.js"></script>
 <script src="/js/catalogos.js"></script>
 <script src="/js/modal.js"></script>
 <script src="/js/detalle-shared.js"></script>
@@ -228,9 +229,10 @@ async function guardarEstado() {
                 observacion:  nota || `Actualizado por ${role.toLowerCase()}.`,
             }),
         });
+        showToast('Estado actualizado correctamente', 'success');
         cargar();
     } catch (e) {
-        alert(e.message || 'Error al actualizar estado.');
+        showToast(e.message || 'No se pudo actualizar el estado. Inténtalo de nuevo.', 'error');
     }
 }
 

@@ -125,7 +125,7 @@ async function showAsignarTecnicoModal(incidenciaId, onSuccess) {
     try {
         tecnicos = await apiFetch('/usuarios/tecnicos');
     } catch (e) {
-        alert('No se pudo cargar la lista de técnicos: ' + (e.message || 'Error'));
+        showToast('No se pudo cargar la lista de técnicos: ' + (e.message || 'Error de red'), 'error');
         return;
     }
 
@@ -199,9 +199,10 @@ async function showAsignarTecnicoModal(incidenciaId, onSuccess) {
                 body: JSON.stringify({ asignado_a: selectedUuid }),
             });
             modal.hide();
+            showToast('Técnico asignado correctamente', 'success');
             if (typeof onSuccess === 'function') onSuccess();
         } catch (e) {
-            alert(e.message || 'Error al asignar técnico.');
+            showToast(e.message || 'No se pudo asignar el técnico. Inténtalo de nuevo.', 'error');
         }
     });
 }
