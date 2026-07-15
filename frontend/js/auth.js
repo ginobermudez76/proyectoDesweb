@@ -507,6 +507,11 @@ function setupNotificationsUI() {
     // Si ya fue configurado el wrapper, no repetir
     if (bell.parentNode.classList.contains('bell-wrapper')) return;
 
+    // Solicitar permiso de notificaciones de escritorio al navegador
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+
     const wrapper = document.createElement('div');
     wrapper.className = 'bell-wrapper';
     bell.parentNode.replaceChild(wrapper, bell);
@@ -586,14 +591,23 @@ async function fetchNotificaciones() {
             }
         }
 
-        // Mostrar toasts para nuevas notificaciones no leídas
+        // Mostrar toasts y notificaciones de escritorio para nuevas no leídas
         const newIds = new Set();
         notifs.forEach(n => {
-            newIds.add(n._id);
-            if (!n.leida && !lastNotifIds.has(n._id)) {
-                // Si no es la primera carga de la página, mostrar toast
-                if (!isFirstLoad && typeof showToast === 'function') {
-                    showToast(n.mensaje, 'info');
+            newIds.add(n.id);
+            if (!n.leida && !lastNotifIds.has(n.id)) {
+                // Si no es la primera carga de la página, mostrar toast y desktop notification
+                if (!isFirstLoad) {
+                    if (typeof showToast === 'function') {
+                        showToast(n.mensaje, 'info');
+                    }
+                    // Si la pestaña está en segundo plano o minimizada, lanzar notificación del OS
+                    if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+                        new Notification(n.titulo, {
+                            body: n.mensaje,
+                            tag: n.id
+                        });
+                    }
                 }
             }
         });
@@ -619,7 +633,7 @@ async function renderNotificacionesLista() {
         listContainer.innerHTML = notifs.map(n => {
             const relativeTime = typeof timeAgo === 'function' ? timeAgo(n.created_at) : 'Hace un momento';
             return `
-                <div class="notif-item ${n.leida ? '' : 'unread'}" onclick="abrirNotificacion('${n._id}', '${n.incidencia_id}')">
+                <div class="notif-item ${n.leida ? '' : 'unread'}" onclick="abrirNotificacion('${n.id}', '${n.incidencia_id}')">
                     <div class="notif-item-title">${n.titulo}</div>
                     <div class="notif-item-body">${n.mensaje}</div>
                     <div class="notif-item-time">${relativeTime}</div>
@@ -685,8 +699,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         setupNotificationsUI();
         await fetchNotificaciones();
         
-        // Sondeo inteligente cada 12 segundos
-        setInterval(fetchNotificaciones, 12000);
+        // Sondeo inteligente cada 5 segundos (casi instantáneo)
+        setInterval(fetchNotificaciones, 5000);
     }
 });
 
