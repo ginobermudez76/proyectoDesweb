@@ -21,15 +21,15 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'correo_electronico' => 'required|email',
+            'correo_electronico' => 'required|string',
             'password'           => 'required',
         ]);
 
         $ip    = $request->ip();
-        $email = strtolower($request->correo_electronico);
+        $loginInput = strtolower($request->correo_electronico);
 
         $keyIp    = "login_fails:ip:{$ip}";
-        $keyEmail = "login_fails:email:{$email}";
+        $keyEmail = "login_fails:input:{$loginInput}";
 
         // ── 1. Verificar si hay un bloqueo activo ──────────────────────────
         $failsIp    = (int) Cache::store('redis')->get($keyIp, 0);
@@ -44,13 +44,15 @@ class AuthController extends Controller
 
             return response()->json([
                 'message'             => 'Cuenta bloqueada por múltiples intentos fallidos. '
-                                        .'Intenta de nuevo en '.ceil($ttl / 60).' minuto(s).',
+                                         .'Intenta de nuevo en '.ceil($ttl / 60).' minuto(s).',
                 'retry_after_seconds' => $ttl,
             ], 429);
         }
 
-        // ── 2. Validar credenciales ────────────────────────────────────────
-        $usuario = Usuario::where('correo_electronico', $email)->first();
+        // ── 2. Validar credenciales (correo_electronico o nombre_usuario) ──
+        $usuario = Usuario::where('correo_electronico', $loginInput)
+            ->orWhere('nombre_usuario', $loginInput)
+            ->first();
 
         if (!$usuario || !Hash::check($request->password, $usuario->password_hash)) {
 
@@ -66,7 +68,7 @@ class AuthController extends Controller
 
             // ── Registrar en MongoDB ──────────────────────────────────────
             IntentoLoginFallido::create([
-                'correo_electronico' => $email,
+                'correo_electronico' => $loginInput,
                 'ip'                 => $ip,
                 'user_agent'         => $request->userAgent(),
                 'intento_numero'     => $intento,
@@ -175,5 +177,89 @@ class AuthController extends Controller
         ]);
 
         return response()->json(['message' => 'Acceso no autorizado registrado en MongoDB.'], 201);
+    }
+
+    public function tiposDocumento()
+    {
+        $tipos = \App\Modules\Auth\Entities\TipoDocumento::all();
+        return response()->json($tipos, 200);
+    }
+
+    public function register(Request $request)
+    {
+        $validated = $request->validate([
+            'nombres'            => 'required|string|max:50',
+            'apellidos'          => 'required|string|max:50',
+            'correo_electronico' => 'required|email|max:255|unique:usuario,correo_electronico',
+            'nombre_usuario'     => 'required|string|max:50|unique:usuario,nombre_usuario',
+            'password'           => 'required|string|min:8',
+            'id_tipo_documento'  => 'required|integer|exists:tipo_documento,id',
+            'documento'          => 'required|string|max:50',
+            'celular'            => 'required|string|max:30',
+            // Campos de ubicación para MongoDB
+            'prefijo_celular'    => 'required|string|max:10',
+            'codigo_pais'        => 'required|string|max:10',
+            'ubicacion'          => 'required|array',
+        ]);
+
+        // Validar el documento dinámicamente usando regex del tipo de documento
+        $tipoDoc = \App\Modules\Auth\Entities\TipoDocumento::findOrFail($validated['id_tipo_documento']);
+        $reglas  = $tipoDoc->validacion;
+        if (!empty($reglas['regex'])) {
+            if (!preg_match('/' . $reglas['regex'] . '/', $validated['documento'])) {
+                return response()->json([
+                    'message' => $reglas['error_msg'] ?? 'El formato del documento es inválido.'
+                ], 422);
+            }
+        }
+
+        // Crear usuario en SQL
+        $usuario = new Usuario();
+        $usuario->nombres            = $validated['nombres'];
+        $usuario->apellidos          = $validated['apellidos'];
+        $usuario->correo_electronico = strtolower($validated['correo_electronico']);
+        $usuario->nombre_usuario     = strtolower($validated['nombre_usuario']);
+        $usuario->password_hash      = Hash::make($validated['password']);
+        $usuario->id_tipo_documento  = $validated['id_tipo_documento'];
+        $usuario->documento          = $validated['documento'];
+        $usuario->celular            = $validated['celular'];
+        $usuario->activo             = true; // Activo por defecto
+        $usuario->deleted            = false;
+        $usuario->save();
+
+        // Asociar el rol CIUDADANO
+        $rol = \App\Modules\Auth\Entities\Rol::where('codigo', 'CIUDADANO')->firstOrFail();
+        $usuario->roles()->attach($rol->id, [
+            'deleted'    => false,
+            'created_at' => now(),
+        ]);
+
+        // Crear el perfil en MongoDB
+        \App\Modules\Auth\Entities\CiudadanoPerfil::create([
+            'usuario_uuid'    => $usuario->uuid,
+            'prefijo_celular' => $validated['prefijo_celular'],
+            'codigo_pais'     => $validated['codigo_pais'],
+            'ubicacion'       => $validated['ubicacion'],
+        ]);
+
+        // Autenticar: generar token y registrar en MongoDB
+        $token = Str::random(60);
+        Cache::store('redis')->put('auth_token:'.$token, $usuario->id, now()->addDays(7));
+
+        HistorialSesion::create([
+            'usuario_id'         => $usuario->uuid,
+            'correo_electronico' => $usuario->correo_electronico,
+            'accion'             => 'LOGIN',
+            'ip'                 => $request->ip(),
+            'dispositivo'        => $request->userAgent(),
+            'fecha_hora'         => now(),
+        ]);
+
+        return response()->json([
+            'message'      => 'Usuario registrado e ingresado con éxito',
+            'access_token' => $token,
+            'token_type'   => 'Bearer',
+            'usuario'      => $usuario->load('roles.opciones'),
+        ], 201);
     }
 }

@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['throttle:login'])->post('/login', [AuthController::class, 'login']);
 Route::post('/logs/unauthorized', [AuthController::class, 'logUnauthorizedAccess']);
+Route::get('/documentos/tipos', [AuthController::class, 'tiposDocumento']);
+Route::post('/register', [AuthController::class, 'register']);
 
 Route::middleware(['throttle:api', 'rbac'])->group(function () {
 

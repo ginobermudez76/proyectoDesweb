@@ -11,6 +11,54 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // =====================================================================
+        // 0. TIPOS DE DOCUMENTO
+        // =====================================================================
+        $tiposDoc = [
+            [
+                'codigo' => 'CEDULA',
+                'label' => 'Cédula de Identidad',
+                'validacion' => json_encode([
+                    'regex' => '^[0-9]{10}$',
+                    'min' => 10,
+                    'max' => 10,
+                    'error_msg' => 'La cédula debe tener exactamente 10 dígitos numéricos.'
+                ])
+            ],
+            [
+                'codigo' => 'RUC',
+                'label' => 'RUC',
+                'validacion' => json_encode([
+                    'regex' => '^[0-9]{13}$',
+                    'min' => 13,
+                    'max' => 13,
+                    'error_msg' => 'El RUC debe tener exactamente 13 dígitos numéricos.'
+                ])
+            ],
+            [
+                'codigo' => 'PASAPORTE',
+                'label' => 'Pasaporte',
+                'validacion' => json_encode([
+                    'regex' => '^[a-zA-Z0-9]{5,20}$',
+                    'min' => 5,
+                    'max' => 20,
+                    'error_msg' => 'El pasaporte debe tener entre 5 y 20 caracteres alfanuméricos.'
+                ])
+            ],
+        ];
+
+        foreach ($tiposDoc as $td) {
+            DB::table('tipo_documento')->updateOrInsert(
+                ['codigo' => $td['codigo']],
+                [
+                    'label' => $td['label'],
+                    'validacion' => $td['validacion'],
+                    'deleted' => false,
+                    'created_at' => now(),
+                ]
+            );
+        }
+
+        // =====================================================================
         // 1. ROLES
         // =====================================================================
         $roles = [

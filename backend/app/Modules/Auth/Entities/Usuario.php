@@ -32,6 +32,9 @@ class Usuario extends Authenticatable
         'activo',
         'deleted',
         'deleted_at',
+        'id_tipo_documento',
+        'documento',
+        'celular',
     ];
 
     // Ocultar atributos sensibles en serialización
@@ -96,5 +99,10 @@ class Usuario extends Authenticatable
             'id_usuario',
             'id_rol',
         )->wherePivot('deleted', false)->withTimestamps();
+    }
+
+    public function tipoDocumento()
+    {
+        return $this->belongsTo(TipoDocumento::class, 'id_tipo_documento');
     }
 }
