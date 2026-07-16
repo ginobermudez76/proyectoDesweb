@@ -257,6 +257,80 @@ class IncidenciaController extends Controller
             'resueltas' => $resueltas,
             'pendientes' => $pendientes,
             'proceso' => $proceso,
+            'recientes' => $this->incidenciasRecientes(),
+            'porSemana' => $this->incidenciasPorSemana(),
+            'actividad' => $this->actividadReciente(),
         ], 200);
+    }
+
+    /**
+     * Últimas 5 incidencias con el nombre del técnico asignado (si tiene).
+     */
+    private function incidenciasRecientes()
+    {
+        $recientes = Incidencia::orderBy('fecha_creacion', 'desc')->limit(5)->get();
+
+        foreach ($recientes as $inc) {
+            $asignadoNombre = null;
+            if (!empty($inc->asignado_a)) {
+                $tecnico = \App\Modules\Auth\Entities\Usuario::where('uuid', $inc->asignado_a)->first();
+                if ($tecnico) {
+                    $asignadoNombre = trim($tecnico->nombres.' '.$tecnico->apellidos);
+                }
+            }
+            $inc->setAttribute('asignado_a_nombre', $asignadoNombre);
+        }
+
+        return $recientes;
+    }
+
+    /**
+     * Conteo de incidencias creadas en los últimos 7 días, agrupado por día (Lun-Dom).
+     */
+    private function incidenciasPorSemana()
+    {
+        $dias = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+        $conteo = array_fill(0, 7, 0);
+
+        $inicioSemana = now()->subDays(6)->startOfDay();
+        Incidencia::where('fecha_creacion', '>=', $inicioSemana)
+            ->get(['fecha_creacion'])
+            ->each(function ($inc) use (&$conteo) {
+                if ($inc->fecha_creacion) {
+                    $conteo[$inc->fecha_creacion->dayOfWeekIso - 1]++;
+                }
+            });
+
+        return collect($dias)->map(fn ($dia, $i) => ['dia' => $dia, 'total' => $conteo[$i]])->values();
+    }
+
+    /**
+     * Últimos eventos del sistema: cambios de estado, incidencias nuevas y usuarios registrados.
+     */
+    private function actividadReciente()
+    {
+        $eventos = collect();
+
+        Seguimiento::orderBy('fecha_cambio', 'desc')->limit(5)->get()->each(function ($s) use ($eventos) {
+            $tecnico = \App\Modules\Auth\Entities\Usuario::where('uuid', $s->tecnico_id)->first();
+            $nombre = $tecnico ? trim($tecnico->nombres.' '.$tecnico->apellidos) : 'Alguien';
+            $texto = $s->estado_nuevo === 'Resuelta'
+                ? "{$nombre} resolvió una incidencia"
+                : "{$nombre} cambió el estado a '{$s->estado_nuevo}'";
+            $eventos->push(['texto' => $texto, 'fecha' => $s->fecha_cambio]);
+        });
+
+        Incidencia::orderBy('fecha_creacion', 'desc')->limit(3)->get()->each(function ($inc) use ($eventos) {
+            $texto = $inc->prioridad === 'Urgente'
+                ? 'Nueva incidencia urgente reportada'
+                : 'Nueva incidencia reportada';
+            $eventos->push(['texto' => $texto, 'fecha' => $inc->fecha_creacion]);
+        });
+
+        \App\Modules\Auth\Entities\Usuario::orderBy('created_at', 'desc')->limit(2)->get()->each(function ($u) use ($eventos) {
+            $eventos->push(['texto' => 'Nuevo usuario registrado', 'fecha' => $u->created_at]);
+        });
+
+        return $eventos->sortByDesc('fecha')->take(5)->values();
     }
 }

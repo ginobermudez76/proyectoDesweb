@@ -25,15 +25,15 @@
     <div class="section" style="padding-bottom:0">
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:4px">
             <div class="card-white" style="padding:12px;text-align:center;margin-bottom:0">
-                <div style="font-size:22px;font-weight:700;color:var(--orange)" id="totalEl">—</div>
+                <div style="font-size:22px;font-weight:700;color:var(--accent-text)" id="totalEl">—</div>
                 <div class="text-muted-sm">Total</div>
             </div>
             <div class="card-white" style="padding:12px;text-align:center;margin-bottom:0">
-                <div style="font-size:22px;font-weight:700;color:#EF4444" id="urgentesEl">—</div>
+                <div style="font-size:22px;font-weight:700;color:#F87171" id="urgentesEl">—</div>
                 <div class="text-muted-sm">Urgentes</div>
             </div>
             <div class="card-white" style="padding:12px;text-align:center;margin-bottom:0">
-                <div style="font-size:22px;font-weight:700;color:var(--green)" id="resueltasEl">—</div>
+                <div style="font-size:22px;font-weight:700;color:#4ADE80" id="resueltasEl">—</div>
                 <div class="text-muted-sm">Resueltas</div>
             </div>
         </div>
@@ -58,7 +58,27 @@
 
     <div class="section">
         <div class="section-title" id="countLabel">Incidencias</div>
-        <div id="lista"><div class="text-muted-sm text-center py-3">Cargando…</div></div>
+
+        <!-- Móvil: tarjetas -->
+        <div id="lista" class="mobile-only"><div class="text-muted-sm text-center py-3">Cargando…</div></div>
+
+        <!-- Escritorio: tabla de datos -->
+        <div class="table-card desktop-only">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Título</th>
+                        <th>Prioridad</th>
+                        <th>Estado</th>
+                        <th>Ubicación</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody id="listaTabla">
+                    <tr><td colspan="5" class="text-muted-sm text-center py-3">Cargando…</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <!-- Botón reportar (solo ciudadano) -->
@@ -131,8 +151,10 @@ async function cargar() {
 
         renderLista();
     } catch {
-        document.getElementById('lista').innerHTML =
-            '<div class="text-muted-sm text-center py-3">Error al cargar.</div>';
+        const err = '<div class="text-muted-sm text-center py-3">Error al cargar.</div>';
+        document.getElementById('lista').innerHTML = err;
+        document.getElementById('listaTabla').innerHTML =
+            `<tr><td colspan="5" class="text-muted-sm text-center py-3">Error al cargar.</td></tr>`;
     }
 }
 
@@ -159,16 +181,21 @@ function renderLista() {
     const lista = filtrar(todas);
     document.getElementById('countLabel').textContent = `Incidencias (${lista.length})`;
 
-    // Determinar la URL de detalle relativa a esta página
     const href = i => `detalle.html?id=${i.id}`;
 
+    // Móvil: tarjetas
     document.getElementById('lista').innerHTML = lista.length
         ? lista.map(i => incidentCardHTMLCatalog(i, href(i))).join('')
         : '<div class="text-muted-sm text-center py-3">Sin incidencias en este filtro.</div>';
+
+    // Escritorio: filas de tabla
+    document.getElementById('listaTabla').innerHTML = lista.length
+        ? lista.map(i => incidentRowHTML(i, href(i))).join('')
+        : `<tr><td colspan="5" class="text-muted-sm text-center py-3">Sin incidencias en este filtro.</td></tr>`;
 }
 
 /**
- * Versión de incidentCardHTML que usa catálogos dinámicos.
+ * Tarjeta móvil (usa catálogos dinámicos).
  */
 function incidentCardHTMLCatalog(inc, href) {
     const priInfo = getPrioridadInfo(inc.prioridad);
@@ -189,6 +216,24 @@ function incidentCardHTMLCatalog(inc, href) {
             ? '<span class="badge-status badge-urgente" style="margin-left:6px;font-size:10px">Sin asignar</span>'
             : ''}
     </div>`;
+}
+
+/**
+ * Fila de tabla para escritorio (mismos datos y catálogos).
+ */
+function incidentRowHTML(inc, href) {
+    const priInfo = getPrioridadInfo(inc.prioridad);
+    const estInfo = getEstadoInfo(inc.estado);
+    const sinAsig = (role === 'SUPERVISOR' || role === 'ADMIN') && !inc.asignado_a
+        ? ' <span class="badge-status badge-urgente" style="font-size:10px">Sin asignar</span>' : '';
+    return `
+    <tr onclick="window.location.href='${href}'">
+        <td class="td-title">${inc.titulo}</td>
+        <td><span class="badge-status ${priInfo.css_class}">${priInfo.label || inc.prioridad || 'Media'}</span></td>
+        <td><span class="badge-status ${estInfo.css_class}">${estInfo.label || inc.estado}</span>${sinAsig}</td>
+        <td><i class="bi bi-geo-alt" style="font-size:11px"></i> ${inc.ubicacion ? 'Ver ubicación' : 'Sin ubicación'}</td>
+        <td>${timeAgo(inc.fecha_creacion)}</td>
+    </tr>`;
 }
 
 cargar();

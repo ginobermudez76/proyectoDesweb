@@ -247,39 +247,43 @@ function getNavLinks() {
 
     // Dashboard - solo para ADMIN
     if (role === 'ADMIN') {
-        links.push({ href: 'pages/dashboard/dashboard.html', icon: 'bi-speedometer2', label: 'Inicio' });
+        links.push({ href: 'pages/dashboard/dashboard.html', icon: 'bi-speedometer2', label: 'Panel de control', group: 'general' });
     }
 
     // Incidencias — visible para roles autenticados (excepto ADMIN que no ve incidencias ni mapa)
     const hasIncidencias = ops.some(o => o.includes('Incidencias'));
     if (hasIncidencias && role !== 'ADMIN') {
-        links.push({ href: 'pages/incidencias/panel.html',    icon: 'bi-house-fill', label: 'Inicio' });
+        links.push({ href: 'pages/incidencias/panel.html',    icon: 'bi-house-fill', label: 'Inicio', group: 'general' });
         if (role === 'CIUDADANO') {
-            links.push({ href: 'pages/incidencias/reportar.html', icon: 'bi-plus-circle', label: 'Reportar' });
+            links.push({ href: 'pages/incidencias/reportar.html', icon: 'bi-plus-circle', label: 'Reportar', group: 'general' });
         }
-        links.push({ href: 'pages/incidencias/mapa.html',     icon: 'bi-map',        label: 'Mapa' });
+        links.push({ href: 'pages/incidencias/mapa.html',     icon: 'bi-map',        label: 'Mapa', group: 'general' });
     }
 
     // Gestión de usuarios — Admin y Supervisor
     const hasUsuarios = ops.some(o => o.includes('Gestión de Usuarios'));
     if (hasUsuarios) {
-        links.push({ href: 'pages/usuarios/usuarios.html', icon: 'bi-people', label: 'Usuarios' });
+        links.push({ href: 'pages/usuarios/usuarios.html', icon: 'bi-people', label: 'Usuarios y roles', group: 'administracion' });
     }
 
     // Gestión de Roles — Admin
     const hasRoles = ops.some(o => o.includes('Gestión de Roles'));
     if (hasRoles) {
-        links.push({ href: 'pages/roles/roles.html', icon: 'bi-shield-lock', label: 'Roles' });
+        links.push({ href: 'pages/roles/roles.html', icon: 'bi-shield-lock', label: 'Roles', group: 'administracion' });
     }
 
-    // Perfil — todos los roles
+    // Perfil — todos los roles. En móvil es el único acceso a "Cerrar sesión"
+    // (el sidebar de escritorio la reemplaza por la tarjeta de usuario al pie).
     const hasPerfil = ops.some(o => o.includes('Perfil de Usuario'));
     if (hasPerfil) {
-        links.push({ href: 'pages/perfil/perfil.html', icon: 'bi-person', label: 'Perfil' });
+        links.push({ href: 'pages/perfil/perfil.html', icon: 'bi-person', label: 'Perfil', group: 'general' });
     }
 
     return links;
 }
+
+const NAV_GROUP_LABELS = { general: 'GENERAL', administracion: 'ADMINISTRACIÓN' };
+const ROL_LABELS_CORTO = { ADMIN: 'Administrador', SUPERVISOR: 'Supervisor', TECNICO: 'Técnico', CIUDADANO: 'Ciudadano' };
 
 function _navPrefix() {
     const p = window.location.pathname;
@@ -306,17 +310,43 @@ function _renderNavLinks(navElement) {
         html += '<div class="nav-brand"><span class="nav-brand-icon">📍</span> Incidencias</div>';
     }
 
-    html += links.map(l => {
-        // Los hrefs en getNavLinks() ya son relativos a la raíz del frontend
-        const fullHref   = prefix + l.href;
+    // En escritorio, Perfil se muestra como tarjeta de usuario al pie, no como link suelto.
+    const linksVisibles = isDesktop ? links.filter(l => !l.href.includes('perfil/perfil.html')) : links;
+
+    let lastGroup = null;
+    linksVisibles.forEach(l => {
+        if (isDesktop && l.group && l.group !== lastGroup) {
+            html += `<div class="nav-group-label">${NAV_GROUP_LABELS[l.group] || ''}</div>`;
+            lastGroup = l.group;
+        }
+        const fullHref    = prefix + l.href; // Los hrefs en getNavLinks() ya son relativos a la raíz del frontend
         const activeClass = window.location.pathname.includes(l.href.split('/').pop()) ? 'active' : '';
-        return `<a href="${fullHref}" class="${activeClass}"><i class="bi ${l.icon}"></i><span>${l.label}</span></a>`;
-    }).join('');
+        html += `<a href="${fullHref}" class="${activeClass}"><i class="bi ${l.icon}"></i><span>${l.label}</span></a>`;
+    });
 
     html += '<div class="nav-divider"></div>';
-    html += `<a href="#" class="nav-logout-link" id="_sidebarLogout">
-        <i class="bi bi-box-arrow-right"></i><span>Cerrar sesión</span>
-    </a>`;
+
+    if (isDesktop) {
+        const role     = getRole();
+        const color    = (typeof APP_COLORS !== 'undefined' && APP_COLORS.roles[role]) || '#9CA3AF';
+        html += `
+        <div class="nav-user-card">
+            <a href="${prefix}pages/perfil/perfil.html" class="nav-user-link">
+                <span class="nav-user-avatar" style="background:${color}">${getUserInitials()}</span>
+                <span class="nav-user-info">
+                    <span class="nav-user-name">${getUserName() || 'Usuario'}</span>
+                    <span class="nav-user-role">${ROL_LABELS_CORTO[role] || role || ''}</span>
+                </span>
+            </a>
+            <button type="button" class="nav-user-logout" id="_sidebarLogout" aria-label="Cerrar sesión">
+                <i class="bi bi-box-arrow-right"></i>
+            </button>
+        </div>`;
+    } else {
+        html += `<a href="#" class="nav-logout-link" id="_sidebarLogout">
+            <i class="bi bi-box-arrow-right"></i><span>Cerrar sesión</span>
+        </a>`;
+    }
 
     navElement.innerHTML = html;
     navElement.querySelector('#_sidebarLogout')?.addEventListener('click', e => {

@@ -9,20 +9,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="/css/style.css" rel="stylesheet">
     <script src="/js/colors.js"></script>
-    <style>
-        .stat-card {
-            background:#fff; border-radius:14px; padding:16px;
-            display:flex; align-items:center; gap:14px;
-            box-shadow:0 1px 3px rgba(0,0,0,.06);
-        }
-        .stat-card .icon-circle {
-            width:48px; height:48px; border-radius:12px;
-            display:flex; align-items:center; justify-content:center;
-            font-size:22px; flex-shrink:0;
-        }
-        .stat-card .val { font-size:24px; font-weight:700; color:var(--gray-900); }
-        .stat-card .lbl { font-size:12px; color:var(--gray-400); }
-    </style>
 </head>
 <body>
 <div class="app-container">
@@ -30,90 +16,100 @@
     <div class="greeting-header">
         <div>
             <div class="greeting-text">Administrador del sistema</div>
-            <div class="greeting-name" id="userName">…</div>
+            <div class="greeting-name">Panel de control</div>
         </div>
-        <i class="bi bi-gear" style="font-size:22px;color:var(--gray-400)"></i>
+        <div class="topbar-actions">
+            <div class="topbar-search">
+                <i class="bi bi-search"></i>
+                <input type="search" placeholder="Buscar incidencia, usuario…" disabled>
+            </div>
+            <i class="bi bi-bell" style="font-size:22px;color:var(--gray-400)"></i>
+        </div>
     </div>
 
-    <!-- Stats del sistema -->
+    <!-- KPIs del sistema -->
     <div class="section">
         <div class="section-title">Resumen del sistema</div>
-        <div class="admin-stats-wrap">
-            <div class="stat-card">
-                <div class="icon-circle" style="background:#FFF7ED">
-                    <i class="bi bi-exclamation-circle" style="color:var(--orange)"></i>
-                </div>
-                <div>
-                    <div class="val" id="totalInc">—</div>
-                    <div class="lbl">Total de incidencias</div>
-                </div>
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <i class="bi bi-exclamation-circle kpi-ico"></i>
+                <div class="kpi-val" id="totalInc">—</div>
+                <div class="kpi-lbl">Total incidencias</div>
             </div>
-            <div class="stat-card">
-                <div class="icon-circle" style="background:#FEE2E2">
-                    <i class="bi bi-fire" style="color:#EF4444"></i>
-                </div>
-                <div><div class="val" id="urgentesEl">—</div><div class="lbl">Urgentes</div></div>
+            <div class="kpi-card">
+                <i class="bi bi-fire kpi-ico" style="color:#F87171"></i>
+                <div class="kpi-val" id="urgentesEl">—</div>
+                <div class="kpi-lbl">Urgentes</div>
             </div>
-            <div class="stat-card">
-                <div class="icon-circle" style="background:#D1FAE5">
-                    <i class="bi bi-check-circle" style="color:var(--green)"></i>
-                </div>
-                <div><div class="val" id="resueltasEl">—</div><div class="lbl">Resueltas</div></div>
+            <div class="kpi-card">
+                <i class="bi bi-check-circle kpi-ico" style="color:#4ADE80"></i>
+                <div class="kpi-val" id="resueltasEl">—</div>
+                <div class="kpi-lbl">Resueltas</div>
             </div>
-            <div class="stat-card">
-                <div class="icon-circle" style="background:#DBEAFE">
-                    <i class="bi bi-clock" style="color:var(--blue)"></i>
-                </div>
-                <div><div class="val" id="pendientesEl">—</div><div class="lbl">Pendientes</div></div>
+            <div class="kpi-card">
+                <i class="bi bi-clock kpi-ico" style="color:#60A5FA"></i>
+                <div class="kpi-val" id="pendientesEl">—</div>
+                <div class="kpi-lbl">Pendientes</div>
             </div>
-            <div class="stat-card">
-                <div class="icon-circle" style="background:#FED7AA">
-                    <i class="bi bi-arrow-repeat" style="color:var(--orange)"></i>
-                </div>
-                <div><div class="val" id="procesoEl">—</div><div class="lbl">En proceso</div></div>
+            <div class="kpi-card kpi-main">
+                <i class="bi bi-arrow-repeat kpi-ico"></i>
+                <div class="kpi-val" id="procesoEl">—</div>
+                <div class="kpi-lbl">En proceso</div>
             </div>
         </div>
     </div>
 
-    <div class="divider"></div>
-
-    <!-- Distribución por estado (Bootstrap progress bars) -->
-    <div class="section">
-        <div class="section-title">Distribución por estado</div>
-        <div id="chartEstado">
-            <div class="text-muted-sm">Cargando…</div>
-        </div>
-    </div>
-
-    <div class="divider"></div>
-
-    <!-- Acciones del sistema -->
-    <div class="section">
-        <div class="section-title">Gestión del sistema</div>
-        <div class="menu-list">
-            <a class="menu-item" href="../usuarios/usuarios.html">
-                <div class="menu-left"><i class="bi bi-people lead"></i> Usuarios y roles</div>
-                <i class="bi bi-chevron-right arrow"></i>
-            </a>
-            <a class="menu-item">
-                <div class="menu-left"><i class="bi bi-shield-lock lead"></i> Permisos RBAC</div>
-                <i class="bi bi-chevron-right arrow"></i>
-            </a>
-            <a class="menu-item">
-                <div class="menu-left"><i class="bi bi-journal-text lead"></i> Auditoría</div>
-                <i class="bi bi-chevron-right arrow"></i>
-            </a>
-            <a class="menu-item">
-                <div class="menu-left"><i class="bi bi-bar-chart-line lead"></i> Reportes globales</div>
-                <i class="bi bi-chevron-right arrow"></i>
-            </a>
-        </div>
-    </div>
-
+    <!-- Distribución + Incidencias por semana + Actividad reciente (3 columnas en escritorio) -->
     <div class="section" style="padding-top:0">
-        <button class="btn-red" onclick="confirmLogout('../../')">
-            <i class="bi bi-box-arrow-right"></i> Cerrar sesión
-        </button>
+        <div class="dash-grid-3">
+            <div class="card-white" style="margin-bottom:0">
+                <div class="section-title">Distribución</div>
+                <div id="chartEstado">
+                    <div class="text-muted-sm">Cargando…</div>
+                </div>
+            </div>
+            <div class="card-white" style="margin-bottom:0">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                    <div class="section-title" style="margin-bottom:0">Incidencias por semana</div>
+                    <span class="week-delta" id="weekDelta"></span>
+                </div>
+                <div id="chartSemana" class="week-chart">
+                    <div class="text-muted-sm">Cargando…</div>
+                </div>
+            </div>
+            <div class="card-white" style="margin-bottom:0">
+                <div class="section-title">Actividad reciente</div>
+                <div id="listaActividad" class="activity-feed">
+                    <div class="text-muted-sm">Cargando…</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Incidencias recientes -->
+    <div class="section" style="padding-top:0">
+        <div class="section-title">Incidencias recientes</div>
+
+        <!-- Móvil: tarjetas -->
+        <div id="listaRecientes" class="mobile-only"><div class="text-muted-sm text-center py-3">Cargando…</div></div>
+
+        <!-- Escritorio: tabla de datos -->
+        <div class="table-card desktop-only">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Título</th>
+                        <th>Prioridad</th>
+                        <th>Estado</th>
+                        <th>Asignado</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaRecientes">
+                    <tr><td colspan="5" class="text-muted-sm text-center py-3">Cargando…</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
 </div>
@@ -125,48 +121,127 @@
 <script src="/js/modal.js"></script>
 <script>
 if (!requireAdmin()) throw new Error('Redirigiendo');
-document.getElementById('userName').textContent = getUserName();
 
 async function cargarStats() {
     try {
         const stats = await apiFetch('/dashboard/stats');
-        const total = stats.total;
-        const urgentes = stats.urgentes;
-        const resueltas = stats.resueltas;
-        const pendientes = stats.pendientes;
-        const proceso = stats.proceso;
+        document.getElementById('totalInc').textContent     = stats.total;
+        document.getElementById('urgentesEl').textContent   = stats.urgentes;
+        document.getElementById('resueltasEl').textContent  = stats.resueltas;
+        document.getElementById('pendientesEl').textContent = stats.pendientes;
+        document.getElementById('procesoEl').textContent    = stats.proceso;
 
-        document.getElementById('totalInc').textContent     = total;
-        document.getElementById('urgentesEl').textContent   = urgentes;
-        document.getElementById('resueltasEl').textContent  = resueltas;
-        document.getElementById('pendientesEl').textContent = pendientes;
-        document.getElementById('procesoEl').textContent    = proceso;
-
-        renderChart(total, pendientes, proceso, resueltas);
+        renderChart(stats.total, stats.pendientes, stats.proceso, stats.resueltas);
+        renderSemana(stats.porSemana || []);
+        renderActividad(stats.actividad || []);
+        renderRecientes(stats.recientes || []);
     } catch {}
 }
 
+/** Donut (conic-gradient) + leyenda con porcentajes. */
 function renderChart(total, pendientes, proceso, resueltas) {
-    if (!total) { document.getElementById('chartEstado').innerHTML = '<div class="text-muted-sm">Sin datos.</div>'; return; }
-    const pct = n => total ? Math.round((n / total) * 100) : 0;
-    const bars = [
-        { label: 'Pendiente',   n: pendientes, color: '#3B82F6' },
-        { label: 'En proceso',  n: proceso,    color: '#F97316' },
-        { label: 'Resuelto',    n: resueltas,  color: '#22C55E' },
+    const el = document.getElementById('chartEstado');
+    if (!total) { el.innerHTML = '<div class="text-muted-sm">Sin datos.</div>'; return; }
+    const pct = n => Math.round((n / total) * 100);
+    const segs = [
+        { label: 'Pendiente',  n: pendientes, color: '#60A5FA' },
+        { label: 'En proceso', n: proceso,    color: '#FB923C' },
+        { label: 'Resuelto',   n: resueltas,  color: '#4ADE80' },
     ];
-    document.getElementById('chartEstado').innerHTML = bars.map(b => `
-        <div class="mb-2">
-            <div class="d-flex justify-content-between mb-1">
-                <small class="fw-semibold">${b.label}</small>
-                <small class="text-muted">${b.n} (${pct(b.n)}%)</small>
+    let acc = 0;
+    const stops = segs.map(s => {
+        const from = acc; acc += (s.n / total) * 100;
+        return `${s.color} ${from}% ${acc}%`;
+    }).join(',');
+
+    el.innerHTML = `
+    <div class="donut-wrap">
+        <div class="donut" style="background:conic-gradient(${stops})">
+            <div class="donut-hole">
+                <div class="dh-val">${total}</div>
+                <div class="dh-lbl">total</div>
             </div>
-            <div class="progress" style="height:18px;border-radius:8px">
-                <div class="progress-bar" role="progressbar"
-                    style="width:${pct(b.n)}%;background-color:${b.color};border-radius:8px"
-                    aria-valuenow="${pct(b.n)}" aria-valuemin="0" aria-valuemax="100">
-                </div>
+        </div>
+        <div class="donut-legend">
+            ${segs.map(s => `
+            <div class="dl-row">
+                <span class="dl-name"><span class="dl-dot" style="background:${s.color}"></span>${s.label}</span>
+                <span class="dl-val">${s.n} · ${pct(s.n)}%</span>
+            </div>`).join('')}
+        </div>
+    </div>`;
+}
+
+/** Barras verticales con el conteo de incidencias por día (últimos 7 días). */
+function renderSemana(dias) {
+    const el = document.getElementById('chartSemana');
+    const max = Math.max(1, ...dias.map(d => d.total));
+    const totalSemana = dias.reduce((a, d) => a + d.total, 0);
+    document.getElementById('weekDelta').textContent = totalSemana ? `${totalSemana} esta semana` : '';
+
+    if (!dias.length) { el.innerHTML = '<div class="text-muted-sm">Sin datos.</div>'; return; }
+
+    el.innerHTML = dias.map(d => `
+        <div class="week-bar-wrap">
+            <div class="week-bar" style="height:${Math.round((d.total / max) * 100)}%" title="${d.total}"></div>
+            <div class="week-bar-label">${d.dia}</div>
+        </div>`).join('');
+}
+
+/** Feed de los últimos eventos del sistema. */
+function renderActividad(items) {
+    const el = document.getElementById('listaActividad');
+    if (!items.length) { el.innerHTML = '<div class="text-muted-sm">Sin actividad reciente.</div>'; return; }
+
+    el.innerHTML = items.map(a => `
+        <div class="activity-item">
+            <span class="activity-dot"></span>
+            <div>
+                <div class="activity-text">${a.texto}</div>
+                <div class="activity-time">${timeAgo(a.fecha)}</div>
             </div>
         </div>`).join('');
+}
+
+/** Últimas 5 incidencias reportadas: tarjetas (móvil) + tabla (escritorio). */
+function renderRecientes(items) {
+    const tbody = document.getElementById('tablaRecientes');
+    const lista = document.getElementById('listaRecientes');
+
+    if (!items.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-muted-sm text-center py-3">Sin incidencias registradas.</td></tr>';
+        lista.innerHTML = '<div class="text-muted-sm text-center py-3">Sin incidencias registradas.</div>';
+        return;
+    }
+
+    tbody.innerHTML = items.map(i => {
+        const pri = prioridadInfo(i.prioridad);
+        const est = estadoInfo(i.estado);
+        return `
+        <tr>
+            <td class="td-title">${i.titulo}</td>
+            <td><span class="badge-status ${pri.badgeCls}">${i.prioridad || 'Media'}</span></td>
+            <td><span class="badge-status ${est.cls}">${est.label}</span></td>
+            <td>${i.asignado_a_nombre || '<span class="text-muted-sm">Sin asignar</span>'}</td>
+            <td class="text-muted-sm">${timeAgo(i.fecha_creacion)}</td>
+        </tr>`;
+    }).join('');
+
+    lista.innerHTML = items.map(i => {
+        const pri = prioridadInfo(i.prioridad);
+        const est = estadoInfo(i.estado);
+        return `
+        <div class="incident-card ${pri.borderCls}">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+                <span style="font-size:14px;font-weight:600;color:var(--gray-900)">${i.titulo}</span>
+                <span class="badge-status ${pri.badgeCls}">${i.prioridad || 'Media'}</span>
+            </div>
+            <div class="text-muted-sm" style="margin-bottom:6px">
+                ${i.asignado_a_nombre || 'Sin asignar'} · ${timeAgo(i.fecha_creacion)}
+            </div>
+            <span class="badge-status ${est.cls}">${est.label}</span>
+        </div>`;
+    }).join('');
 }
 
 cargarStats();
