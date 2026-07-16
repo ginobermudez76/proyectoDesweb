@@ -15,13 +15,13 @@
 
     <div class="greeting-header">
         <div>
-            <div class="greeting-text">Administrador del sistema</div>
+            <div class="greeting-text" id="greetingText">Administrador del sistema</div>
             <div class="greeting-name">Panel de control</div>
         </div>
         <div class="topbar-actions">
             <div class="topbar-search">
                 <i class="bi bi-search"></i>
-                <input type="search" placeholder="Buscar incidencia, usuario…" disabled>
+                <input type="search" id="searchPlaceholder" placeholder="Buscar incidencia, usuario…" disabled>
             </div>
             <i class="bi bi-bell" style="font-size:22px;color:var(--gray-400)"></i>
         </div>
@@ -29,7 +29,7 @@
 
     <!-- KPIs del sistema -->
     <div class="section">
-        <div class="section-title">Resumen del sistema</div>
+        <div class="section-title" id="resumenTitle">Resumen del sistema</div>
         <div class="kpi-grid">
             <div class="kpi-card">
                 <i class="bi bi-exclamation-circle kpi-ico"></i>
@@ -62,13 +62,13 @@
     <!-- Distribución + Incidencias por semana + Actividad reciente (3 columnas en escritorio) -->
     <div class="section" style="padding-top:0">
         <div class="dash-grid-3">
-            <div class="card-white" style="margin-bottom:0">
+            <div class="card-white">
                 <div class="section-title">Distribución</div>
                 <div id="chartEstado">
                     <div class="text-muted-sm">Cargando…</div>
                 </div>
             </div>
-            <div class="card-white" style="margin-bottom:0">
+            <div class="card-white">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
                     <div class="section-title" style="margin-bottom:0">Incidencias por semana</div>
                     <span class="week-delta" id="weekDelta"></span>
@@ -77,7 +77,7 @@
                     <div class="text-muted-sm">Cargando…</div>
                 </div>
             </div>
-            <div class="card-white" style="margin-bottom:0">
+            <div class="card-white">
                 <div class="section-title">Actividad reciente</div>
                 <div id="listaActividad" class="activity-feed">
                     <div class="text-muted-sm">Cargando…</div>
@@ -86,9 +86,9 @@
         </div>
     </div>
 
-    <!-- Incidencias recientes -->
-    <div class="section" style="padding-top:0">
-        <div class="section-title">Incidencias recientes</div>
+    <!-- Incidencias recientes (ADMIN: top 5, sin filtros) -->
+    <div class="section" id="seccionRecientes" style="padding-top:0">
+        <div class="section-title" id="recientesTitle">Incidencias recientes</div>
 
         <!-- Móvil: tarjetas -->
         <div id="listaRecientes" class="mobile-only"><div class="text-muted-sm text-center py-3">Cargando…</div></div>
@@ -112,6 +112,52 @@
         </div>
     </div>
 
+    <!-- Mis incidencias (CIUDADANO: lista completa con filtros y buscador) -->
+    <div id="seccionMisIncidencias" style="display:none">
+        <div class="filter-tabs" id="filterTabs">
+            <button class="filter-tab active" data-filter="todas"     onclick="setFiltroCiudadano(this)">Todas</button>
+            <button class="filter-tab" data-filter="urgente"   onclick="setFiltroCiudadano(this)">Urgentes</button>
+            <button class="filter-tab" data-filter="pendiente" onclick="setFiltroCiudadano(this)">Pendientes</button>
+            <button class="filter-tab" data-filter="proceso"   onclick="setFiltroCiudadano(this)">En proceso</button>
+            <button class="filter-tab" data-filter="resuelta"  onclick="setFiltroCiudadano(this)">Resueltas</button>
+        </div>
+        <div style="padding:0 16px 8px">
+            <input type="search" class="form-control form-control-sm" id="tipoSearch"
+                   placeholder="Buscar por título…" oninput="renderMisIncidencias()">
+        </div>
+
+        <div class="section">
+            <div class="section-title" id="countLabel">Mis incidencias</div>
+
+            <!-- Móvil: tarjetas -->
+            <div id="lista" class="mobile-only"><div class="text-muted-sm text-center py-3">Cargando…</div></div>
+
+            <!-- Escritorio: tabla de datos -->
+            <div class="table-card desktop-only">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Título</th>
+                            <th>Prioridad</th>
+                            <th>Estado</th>
+                            <th>Ubicación</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaTabla">
+                        <tr><td colspan="5" class="text-muted-sm text-center py-3">Cargando…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div style="padding:0 16px 16px">
+            <a href="../incidencias/reportar.html" class="btn-orange" style="display:flex;align-items:center;justify-content:center;gap:8px">
+                <i class="bi bi-plus-circle"></i> Reportar incidencia
+            </a>
+        </div>
+    </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -119,8 +165,21 @@
 <script src="/js/toast.js"></script>
 <script src="/js/auth.js"></script>
 <script src="/js/modal.js"></script>
+<script src="/js/catalogos.js"></script>
 <script>
-if (!requireAdmin()) throw new Error('Redirigiendo');
+if (!requireRole(['ADMIN', 'CIUDADANO'])) throw new Error('Redirigiendo');
+
+const _esCiudadano = getRole() === 'CIUDADANO';
+if (_esCiudadano) {
+    document.getElementById('greetingText').textContent = 'Hola, ' + (getUserName() || 'ciudadano');
+    document.getElementById('searchPlaceholder').placeholder = 'Buscar incidencia…';
+    document.getElementById('resumenTitle').textContent = 'Resumen de tus incidencias';
+    document.title = 'Panel de Control — Mis Incidencias';
+
+    // El ciudadano no ve la tabla "top 5" de admin: usa la lista completa con filtros/buscador.
+    document.getElementById('seccionRecientes').style.display = 'none';
+    document.getElementById('seccionMisIncidencias').style.display = '';
+}
 
 async function cargarStats() {
     try {
@@ -244,7 +303,90 @@ function renderRecientes(items) {
     }).join('');
 }
 
+/* ===== Mis incidencias (CIUDADANO): lista completa con filtros, buscador y clic al detalle ===== */
+
+let todasMisIncidencias = [];
+let filtroCiudadanoActual = 'todas';
+
+async function cargarMisIncidencias() {
+    try {
+        todasMisIncidencias = await apiFetch('/incidencias');
+        await getCatalogos();
+        renderMisIncidencias();
+    } catch {
+        const err = '<div class="text-muted-sm text-center py-3">Error al cargar.</div>';
+        document.getElementById('lista').innerHTML = err;
+        document.getElementById('listaTabla').innerHTML =
+            `<tr><td colspan="5" class="text-muted-sm text-center py-3">Error al cargar.</td></tr>`;
+    }
+}
+
+function setFiltroCiudadano(btn) {
+    document.querySelectorAll('#filterTabs .filter-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filtroCiudadanoActual = btn.dataset.filter;
+    renderMisIncidencias();
+}
+
+const FILTROS_CIUDADANO = {
+    urgente:   i => i.prioridad === 'Urgente',
+    pendiente: i => i.estado === 'Pendiente',
+    proceso:   i => i.estado === 'En Proceso',
+    resuelta:  i => i.estado === 'Resuelta',
+};
+
+function renderMisIncidencias() {
+    const q = (document.getElementById('tipoSearch')?.value || '').toLowerCase();
+    const filtroFn = FILTROS_CIUDADANO[filtroCiudadanoActual];
+    let lista = filtroFn ? todasMisIncidencias.filter(filtroFn) : todasMisIncidencias;
+    if (q) lista = lista.filter(i => (i.titulo || '').toLowerCase().includes(q));
+
+    document.getElementById('countLabel').textContent = `Mis incidencias (${lista.length})`;
+
+    const href = i => `../incidencias/detalle.html?id=${i.id}`;
+
+    document.getElementById('lista').innerHTML = lista.length
+        ? lista.map(i => misIncidenciasCardHTML(i, href(i))).join('')
+        : '<div class="text-muted-sm text-center py-3">Sin incidencias en este filtro.</div>';
+
+    document.getElementById('listaTabla').innerHTML = lista.length
+        ? lista.map(i => misIncidenciasRowHTML(i, href(i))).join('')
+        : `<tr><td colspan="5" class="text-muted-sm text-center py-3">Sin incidencias en este filtro.</td></tr>`;
+}
+
+function misIncidenciasCardHTML(inc, href) {
+    const priInfo = getPrioridadInfo(inc.prioridad);
+    const estInfo = getEstadoInfo(inc.estado);
+    return `
+    <div class="incident-card ${priInfo.css_class ? priInfo.css_class.replace('badge-','border-') : ''}"
+         onclick="window.location.href='${href}'">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <span style="font-size:14px;font-weight:600;color:var(--gray-900)">${inc.titulo}</span>
+            <span class="badge-status ${priInfo.css_class}">${priInfo.label || inc.prioridad || 'Media'}</span>
+        </div>
+        <div class="text-muted-sm" style="margin-bottom:6px">
+            <i class="bi bi-geo-alt" style="font-size:11px"></i>
+            ${inc.ubicacion ? 'Ver ubicación' : 'Sin ubicación'} · ${timeAgo(inc.fecha_creacion)}
+        </div>
+        <span class="badge-status ${estInfo.css_class}">${estInfo.label || inc.estado}</span>
+    </div>`;
+}
+
+function misIncidenciasRowHTML(inc, href) {
+    const priInfo = getPrioridadInfo(inc.prioridad);
+    const estInfo = getEstadoInfo(inc.estado);
+    return `
+    <tr onclick="window.location.href='${href}'">
+        <td class="td-title">${inc.titulo}</td>
+        <td><span class="badge-status ${priInfo.css_class}">${priInfo.label || inc.prioridad || 'Media'}</span></td>
+        <td><span class="badge-status ${estInfo.css_class}">${estInfo.label || inc.estado}</span></td>
+        <td><i class="bi bi-geo-alt" style="font-size:11px"></i> ${inc.ubicacion ? 'Ver ubicación' : 'Sin ubicación'}</td>
+        <td>${timeAgo(inc.fecha_creacion)}</td>
+    </tr>`;
+}
+
 cargarStats();
+if (_esCiudadano) cargarMisIncidencias();
 </script>
 </body>
 </html>

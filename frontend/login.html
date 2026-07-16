@@ -136,8 +136,27 @@
             });
             saveAuth(data.access_token, data.usuario);
 
-            // Transición animada de ingreso al sistema
-            document.getElementById('loginTransition').classList.add('show');
+            // Transición animada de ingreso al sistema: el color "sale" del botón.
+            // Se fija el clip-path inicial (radio 0, centrado en el botón) y
+            // recién en el SIGUIENTE frame (doble rAF) se cambia solo el radio
+            // a 150%. Así ambos estados usan el mismo punto fijo en px y el
+            // navegador no tiene que interpolar también el centro del círculo
+            // (que es lo que hacía que se viera salir del medio de la pantalla).
+            const transitionEl = document.getElementById('loginTransition');
+            const rect = btn.getBoundingClientRect();
+            const ox = rect.left + rect.width / 2;
+            const oy = rect.top + rect.height / 2;
+
+            transitionEl.style.transition = 'none';
+            transitionEl.style.clipPath = `circle(0% at ${ox}px ${oy}px)`;
+            transitionEl.classList.add('show');
+            void transitionEl.getBoundingClientRect(); // fuerza a "confirmar" el radio 0% antes de animar
+
+            transitionEl.style.transition = '';
+            requestAnimationFrame(() => {
+                transitionEl.style.clipPath = `circle(150% at ${ox}px ${oy}px)`;
+            });
+
             setTimeout(() => { window.location.href = dashboardUrl(''); }, 1400);
         } catch (e) {
             // Intentar parsear el cuerpo JSON de la respuesta de error

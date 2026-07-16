@@ -15,8 +15,10 @@
         .map-wrap { position:relative; height:calc(100vh - 62px); }
         #map { width:100%; height:100%; }
         .map-bottom-card {
-            position:absolute; bottom:80px; left:16px; right:16px;
-            background:#fff; border-radius:12px; padding:12px 16px;
+            position:absolute; bottom:80px; left:50%; transform:translateX(-50%);
+            width:calc(100% - 32px);
+            background:var(--surface); border:1px solid var(--gray-200);
+            border-radius:12px; padding:12px 16px;
             box-shadow:0 4px 12px rgba(0,0,0,.1); z-index:1000;
         }
     </style>
@@ -38,11 +40,16 @@
         </div>
         <!-- Alerta Incidencia Más Cercana (Solo visible para Técnicos) -->
         <div class="map-bottom-card" id="nearestCard" style="display:none">
-            <div class="text-muted-sm" style="margin-bottom:4px">MÃS CERCANA ASIGNADA A MÃ</div>
+            <div class="text-muted-sm" style="margin-bottom:4px">MÁS CERCANA ASIGNADA A MÍ</div>
             <div style="display:flex;align-items:center;gap:6px">
                 <span class="legend-dot" id="nearestDot" style="width:12px;height:12px;border-radius:50%;display:inline-block"></span>
-                <span style="font-size:14px;font-weight:600" id="nearestTitle">—</span>
+                <span style="font-size:14px;font-weight:600;flex:1" id="nearestTitle">—</span>
                 <span class="text-muted-sm" id="nearestDist"></span>
+                <a id="nearestDirigirme" href="#" target="_blank" rel="noopener"
+                   onclick="event.stopPropagation()"
+                   class="btn-orange" style="width:auto;padding:6px 12px;font-size:12px;border-radius:8px">
+                    <i class="bi bi-signpost-2"></i> Ir
+                </a>
             </div>
         </div>
     </div>
@@ -65,8 +72,21 @@ if (role === 'CIUDADANO') {
 
 const map = L.map('map').setView([19.4326, -99.1332], 12);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: 'Â© OpenStreetMap',
+    attribution: '© OpenStreetMap',
 }).addTo(map);
+
+/**
+ * URL universal de Google Maps para trazar ruta hasta (lat,lng).
+ * En celular abre la app de Google Maps (si está instalada) para navegación
+ * turn-by-turn; en PC abre Google Maps en el navegador. Si se conoce la
+ * posición actual del técnico se usa como origen; si no, Google Maps usa
+ * la ubicación en vivo del dispositivo.
+ */
+function googleMapsDirUrl(lat, lng) {
+    const destino = `${lat},${lng}`;
+    const origen = userPos ? `&origin=${userPos[0]},${userPos[1]}` : '';
+    return `https://www.google.com/maps/dir/?api=1&destination=${destino}${origen}&travelmode=driving`;
+}
 
 function haversine([lat1,lng1],[lat2,lng2]) {
     const R=6371000, dLat=(lat2-lat1)*Math.PI/180, dLng=(lng2-lng1)*Math.PI/180;
@@ -139,6 +159,12 @@ async function cargar() {
                 descText = `<span style="color:${color}">${estInfo.label}</span> · ${priInfo.label || inc.prioridad || 'Media'}`;
             }
 
+            const comoLlegarHTML = role === 'TECNICO'
+                ? `<br><a href="${googleMapsDirUrl(lat, lng)}" target="_blank" rel="noopener">
+                       <i class="bi bi-signpost-2"></i> Cómo llegar
+                   </a>`
+                : '';
+
             L.circleMarker([lat, lng], {
                 radius: 11, color: '#fff', fillColor: color,
                 fillOpacity: 0.9, weight: 2,
@@ -146,7 +172,7 @@ async function cargar() {
               .bindPopup(`
                 <b>${inc.titulo}</b><br>
                 ${descText}<br>
-                <a href="detalle.html?id=${inc.id}">Ver detalle →</a>
+                <a href="detalle.html?id=${inc.id}">Ver detalle →</a>${comoLlegarHTML}
               `);
         });
 
@@ -172,11 +198,13 @@ async function cargar() {
       });
 
       if (nearest) {
+          const [nLng, nLat] = nearest.inc.ubicacion.coordinates;
           document.getElementById('nearestCard').style.display = 'block';
           document.getElementById('nearestDot').style.background = nearest.color;
           document.getElementById('nearestTitle').textContent = nearest.inc.titulo;
           const m = Math.round(minDist);
           document.getElementById('nearestDist').textContent = m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${m} m`;
+          document.getElementById('nearestDirigirme').href = googleMapsDirUrl(nLat, nLng);
           document.getElementById('nearestCard').onclick = () =>
               window.location.href = `detalle.html?id=${nearest.inc.id}`;
           document.getElementById('nearestCard').style.cursor = 'pointer';

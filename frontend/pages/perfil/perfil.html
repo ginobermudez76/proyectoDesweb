@@ -13,8 +13,10 @@
 <body>
 <div class="app-container">
 
-    <div class="app-header" style="justify-content:center;border-bottom:none">
+    <div class="app-header" style="justify-content:space-between;border-bottom:none">
+        <div style="width:22px;visibility:hidden" aria-hidden="true"><i class="bi bi-x" style="font-size:22px"></i></div>
         <h5>Mi Perfil</h5>
+        <i class="bi bi-bell" style="font-size:22px;color:var(--gray-400)"></i>
     </div>
 
     <div class="section" style="text-align:center;padding-top:8px">
@@ -23,7 +25,8 @@
         <div class="text-muted-sm" id="rolLabel">…</div>
     </div>
 
-    <div class="card-white mx-3 mb-3">
+    <!-- Estadísticas: rol genérico (ciudadano/supervisor/admin) -->
+    <div class="card-white mx-3 mb-3" id="statsDefault">
         <div class="profile-stats">
             <div class="stat-item">
                 <div class="stat-value" id="totalEl">—</div>
@@ -40,9 +43,27 @@
         </div>
     </div>
 
+    <!-- Estadísticas: técnico -->
+    <div class="card-white mx-3 mb-3" id="statsTecnico" style="display:none">
+        <div class="profile-stats">
+            <div class="stat-item">
+                <div class="stat-value" id="asignadasHoyEl">—</div>
+                <div class="stat-label">Asignadas hoy</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value green" id="resueltasTecEl">—</div>
+                <div class="stat-label">Resueltas</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" style="color:var(--accent-text)" id="tiempoPromEl">—</div>
+                <div class="stat-label">Tiempo prom.</div>
+            </div>
+        </div>
+    </div>
+
     <div class="section" style="padding-top:0">
         <div class="menu-list">
-            <a class="menu-item">
+            <a class="menu-item" onclick="abrirNotificaciones(event)">
                 <div class="menu-left"><i class="bi bi-bell lead"></i> Notificaciones</div>
                 <i class="bi bi-chevron-right arrow"></i>
             </a>
@@ -50,7 +71,7 @@
                 <div class="menu-left"><i class="bi bi-shield-lock lead"></i> Historial de sesiones</div>
                 <i class="bi bi-chevron-right arrow"></i>
             </a>
-            <a class="menu-item">
+            <a class="menu-item" onclick="abrirAyuda()">
                 <div class="menu-left"><i class="bi bi-question-circle lead"></i> Ayuda y soporte</div>
                 <i class="bi bi-chevron-right arrow"></i>
             </a>
@@ -92,7 +113,56 @@ async function cargarStats() {
         document.getElementById('urgentesEl').textContent  = data.filter(i => i.prioridad === 'Urgente').length;
     } catch {}
 }
-cargarStats();
+
+/** Formatea minutos a una unidad legible (min / h / días). */
+function formatDuracion(mins) {
+    if (mins < 60) return `${mins}min`;
+    const horas = Math.floor(mins / 60);
+    if (horas < 24) return `${horas}h`;
+    return `${Math.floor(horas / 24)}d`;
+}
+
+async function cargarStatsTecnico() {
+    try {
+        const data = await apiFetch('/perfil/stats-tecnico');
+        document.getElementById('asignadasHoyEl').textContent = data.asignadas_hoy;
+        document.getElementById('resueltasTecEl').textContent = data.resueltas;
+        document.getElementById('tiempoPromEl').textContent =
+            data.tiempo_promedio_minutos != null ? formatDuracion(data.tiempo_promedio_minutos) : '—';
+    } catch {}
+}
+
+if (getRole() === 'TECNICO') {
+    document.getElementById('statsDefault').style.display = 'none';
+    document.getElementById('statsTecnico').style.display = '';
+    cargarStatsTecnico();
+} else {
+    cargarStats();
+}
+
+/** Abre el panel de notificaciones (la misma campana del topbar). */
+function abrirNotificaciones(event) {
+    // Evita que el clic original siga hacia document y cierre el panel que
+    // el clic sintético en la campana acaba de abrir (listener de "cerrar
+    // al hacer clic afuera" en setupNotificationsUI()).
+    event?.stopPropagation();
+    document.querySelector('.bell-wrapper')?.click();
+}
+
+/** Modal estático de ayuda y soporte. */
+function abrirAyuda() {
+    showModal(
+        'Ayuda y soporte',
+        `<div style="font-size:14px;color:var(--gray-700);line-height:1.6">
+            <p style="margin-bottom:10px">¿Tienes dudas o problemas usando la plataforma?</p>
+            <p style="margin-bottom:10px">
+                <i class="bi bi-envelope"></i> soporte@urbi.app<br>
+                <i class="bi bi-telephone"></i> +593 99 999 9999
+            </p>
+            <p style="margin:0">Horario de atención: Lunes a Viernes, 8:00 a.m. – 5:00 p.m.</p>
+        </div>`
+    );
+}
 </script>
 </body>
 </html>

@@ -197,6 +197,15 @@ function renderLista() {
 /**
  * Tarjeta móvil (usa catálogos dinámicos).
  */
+/**
+ * Recorta la descripción a un extracto corto para diferenciar incidencias
+ * similares (mismo título/categoría) a simple vista.
+ */
+function truncateDescripcion(desc, max = 55) {
+    if (!desc) return '';
+    return desc.length > max ? desc.slice(0, max).trimEnd() + '…' : desc;
+}
+
 function incidentCardHTMLCatalog(inc, href) {
     const priInfo = getPrioridadInfo(inc.prioridad);
     const estInfo = getEstadoInfo(inc.estado);
@@ -207,6 +216,7 @@ function incidentCardHTMLCatalog(inc, href) {
             <span style="font-size:14px;font-weight:600;color:var(--gray-900)">${inc.titulo}</span>
             <span class="badge-status ${priInfo.css_class}">${priInfo.label || inc.prioridad || 'Media'}</span>
         </div>
+        ${inc.descripcion ? `<div class="text-muted-sm" style="margin-bottom:4px">${truncateDescripcion(inc.descripcion)}</div>` : ''}
         <div class="text-muted-sm" style="margin-bottom:6px">
             <i class="bi bi-geo-alt" style="font-size:11px"></i>
             ${inc.ubicacion ? 'Ver ubicación' : 'Sin ubicación'} · ${timeAgo(inc.fecha_creacion)}
@@ -228,7 +238,10 @@ function incidentRowHTML(inc, href) {
         ? ' <span class="badge-status badge-urgente" style="font-size:10px">Sin asignar</span>' : '';
     return `
     <tr onclick="window.location.href='${href}'">
-        <td class="td-title">${inc.titulo}</td>
+        <td class="td-title">
+            ${inc.titulo}
+            ${inc.descripcion ? `<div class="text-muted-sm">${truncateDescripcion(inc.descripcion)}</div>` : ''}
+        </td>
         <td><span class="badge-status ${priInfo.css_class}">${priInfo.label || inc.prioridad || 'Media'}</span></td>
         <td><span class="badge-status ${estInfo.css_class}">${estInfo.label || inc.estado}</span>${sinAsig}</td>
         <td><i class="bi bi-geo-alt" style="font-size:11px"></i> ${inc.ubicacion ? 'Ver ubicación' : 'Sin ubicación'}</td>

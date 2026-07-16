@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['rbac', 'throttle:180,1'])->group(function () {
     // Consultas GET (Listar incidencias, ver detalles, stats)
     Route::get('dashboard/stats', [IncidenciaController::class, 'dashboardStats']);
+    Route::get('perfil/stats-tecnico', [IncidenciaController::class, 'perfilStatsTecnico']);
     Route::get('incidencias', [IncidenciaController::class, 'index']);
     Route::get('incidencias/{incidencia}', [IncidenciaController::class, 'show']);
 

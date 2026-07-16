@@ -68,8 +68,12 @@ class FirebaseStorageService
             if ($tempPath) {
                 $fileName = uniqid('ev_', true) . '.' . $file->getClientOriginalExtension();
                 $path = $folder . '/' . $fileName;
+                $destino = storage_path('app/public/' . $path);
+                if (!is_dir(dirname($destino))) {
+                    mkdir(dirname($destino), 0755, true);
+                }
                 // Mover archivo temporal al disco local público
-                copy($tempPath, storage_path('app/public/' . $path));
+                copy($tempPath, $destino);
             } else {
                 $path = $file->store($folder, 'public');
             }
@@ -106,7 +110,11 @@ class FirebaseStorageService
             if ($tempPath && file_exists($tempPath)) {
                 $fileName = uniqid('ev_', true) . '.' . $file->getClientOriginalExtension();
                 $path = $folder . '/' . $fileName;
-                copy($tempPath, storage_path('app/public/' . $path));
+                $destino = storage_path('app/public/' . $path);
+                if (!is_dir(dirname($destino))) {
+                    mkdir(dirname($destino), 0755, true);
+                }
+                copy($tempPath, $destino);
                 unlink($tempPath);
             } else {
                 $path = $file->store($folder, 'public');

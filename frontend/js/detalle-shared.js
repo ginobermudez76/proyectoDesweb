@@ -19,12 +19,12 @@ function buildEvidencias(evidencias) {
         <div class="section-title">Evidencia adjunta</div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
             ${evidencias.map(e => `
-                <a href="${e.ruta}" target="_blank"
-                   style="border:1.5px solid var(--gray-200);border-radius:10px;overflow:hidden;
-                          width:100px;height:100px;display:inline-block">
+                <div onclick="showImageModal('${e.ruta.replace(/'/g, "\\'")}')"
+                     style="border:1.5px solid var(--gray-200);border-radius:10px;overflow:hidden;
+                            width:100px;height:100px;display:inline-block;cursor:pointer">
                     <img src="${e.ruta}" alt="${e.nombre_archivo}"
                          style="width:100%;height:100%;object-fit:cover">
-                </a>
+                </div>
             `).join('')}
         </div>
     </div>`;
@@ -94,13 +94,15 @@ function initDetalleMap([lng, lat], mapId = 'detalleMap') {
  * @param {Function}      onSuccess - callback() tras éxito (normalmente recargar)
  */
 async function agregarNota(incidenciaId, onSuccess) {
-    const texto = document.getElementById('notaInput')?.value.trim();
+    const input = document.getElementById('notaEquipoInput');
+    const texto = input?.value.trim();
     if (!texto) return;
     try {
         await apiFetch(`/incidencias/${incidenciaId}/comentarios`, {
             method: 'POST',
             body: JSON.stringify({ texto }),
         });
+        input.value = '';
         showToast('Nota agregada con éxito', 'success');
         if (typeof onSuccess === 'function') onSuccess();
     } catch (e) {

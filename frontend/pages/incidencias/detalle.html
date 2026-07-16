@@ -84,7 +84,7 @@ async function render({ incidencia: inc, evidencias, historial_seguimiento, come
                     — gestionado por el técnico
                 </span>
             </div>
-            <div class="readonly-estado" id="estadoContainer"></div>
+            <div class="status-selector readonly-estado" id="estadoContainer"></div>
             <button onclick="rechazarResolucion('${id}', '${role.toLowerCase()}', cargar)"
                     style="margin-top:10px;width:100%;padding:11px;border-radius:12px;
                            border:1.5px solid var(--red);background:var(--bg-red-light);color:var(--red);
@@ -94,7 +94,7 @@ async function render({ incidencia: inc, evidencias, historial_seguimiento, come
         } else {
             estadoSection = `
             <div class="section-title">Estado actual</div>
-            <div id="estadoContainer"></div>
+            <div class="status-selector" id="estadoContainer"></div>
             <textarea class="form-input mt-2" id="notaInput"
                       placeholder="Observación del cambio de estado…"></textarea>
             <button class="btn-orange mt-2" onclick="guardarEstado()">
@@ -105,7 +105,7 @@ async function render({ incidencia: inc, evidencias, historial_seguimiento, come
         // Solo lectura (ciudadano)
         estadoSection = `
         <div class="section-title">Estado actual</div>
-        <div class="readonly-estado" id="estadoContainer"></div>`;
+        <div class="status-selector readonly-estado" id="estadoContainer"></div>`;
     }
 
     document.getElementById('content').innerHTML = `
@@ -123,6 +123,11 @@ async function render({ incidencia: inc, evidencias, historial_seguimiento, come
                         <i class="bi bi-geo-alt-fill" style="color:var(--orange)"></i>
                         ${inc.ubicacion.coordinates[1].toFixed(5)}, ${inc.ubicacion.coordinates[0].toFixed(5)}
                     </div>
+                    ${role === 'TECNICO' ? `
+                    <a href="https://www.google.com/maps/dir/?api=1&destination=${inc.ubicacion.coordinates[1]},${inc.ubicacion.coordinates[0]}&travelmode=driving"
+                       target="_blank" rel="noopener" class="btn-cambiar">
+                        <i class="bi bi-signpost-2"></i> Cómo llegar
+                    </a>` : ''}
                 </div>
             </div>` : ''}
 
@@ -188,7 +193,7 @@ async function render({ incidencia: inc, evidencias, historial_seguimiento, come
                 <div class="section-title">Notas del equipo</div>
                 ${buildComentarios(comentarios)}
                 ${puedeGestionar ? `
-                <textarea class="form-input mt-2" id="notaInput"
+                <textarea class="form-input mt-2" id="notaEquipoInput"
                           placeholder="Agregar observación…"></textarea>
                 <button class="btn-orange mt-2"
                         onclick="agregarNota('${id}', cargar)">

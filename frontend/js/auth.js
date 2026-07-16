@@ -19,12 +19,12 @@ function dashboardUrl(basePath = '') {
     const role = getRole();
     if (!role) return `${basePath}${sep}login.html`;
     
-    // El Administrador inicia en su Dashboard exclusivo
-    if (role === 'ADMIN') {
+    // Administrador y Ciudadano inician en su Panel de control (dashboard)
+    if (role === 'ADMIN' || role === 'CIUDADANO') {
         return `${basePath}${sep}pages/dashboard/dashboard.html`;
     }
-    
-    // Todos los demás roles van al panel de incidencias
+
+    // Técnico y Supervisor van al panel de incidencias
     return `${basePath}${sep}pages/incidencias/panel.html`;
 }
 
@@ -245,16 +245,19 @@ function getNavLinks() {
     const role = getRole();
     const links = [];
 
-    // Dashboard - solo para ADMIN
-    if (role === 'ADMIN') {
-        links.push({ href: 'pages/dashboard/dashboard.html', icon: 'bi-speedometer2', label: 'Panel de control', group: 'general' });
+    // Dashboard - ADMIN (global) y CIUDADANO (sus propias incidencias)
+    if (role === 'ADMIN' || role === 'CIUDADANO') {
+        links.push({ href: 'pages/dashboard/dashboard.html', icon: 'bi-speedometer2', label: 'Panel', group: 'general' });
     }
 
     // Incidencias — visible para roles autenticados (excepto ADMIN que no ve incidencias ni mapa)
+    // Para CIUDADANO, "Panel de control" ya incluye la lista completa + reportar, así que no
+    // duplicamos "Inicio" en su menú.
     const hasIncidencias = ops.some(o => o.includes('Incidencias'));
     if (hasIncidencias && role !== 'ADMIN') {
-        links.push({ href: 'pages/incidencias/panel.html',    icon: 'bi-house-fill', label: 'Inicio', group: 'general' });
-        if (role === 'CIUDADANO') {
+        if (role !== 'CIUDADANO') {
+            links.push({ href: 'pages/incidencias/panel.html', icon: 'bi-house-fill', label: 'Inicio', group: 'general' });
+        } else {
             links.push({ href: 'pages/incidencias/reportar.html', icon: 'bi-plus-circle', label: 'Reportar', group: 'general' });
         }
         links.push({ href: 'pages/incidencias/mapa.html',     icon: 'bi-map',        label: 'Mapa', group: 'general' });
@@ -380,8 +383,8 @@ async function checkRoutePermission() {
         await denyAccess();
     }
 
-    // 3. Dashboard de Administración (solo ADMIN)
-    if (p.includes('/pages/dashboard/') && role !== 'ADMIN') {
+    // 3. Dashboard (ADMIN ve datos globales, CIUDADANO ve solo sus propias incidencias)
+    if (p.includes('/pages/dashboard/') && role !== 'ADMIN' && role !== 'CIUDADANO') {
         await denyAccess();
     }
 

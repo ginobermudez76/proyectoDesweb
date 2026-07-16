@@ -245,6 +245,7 @@ class DatabaseSeeder extends Seeder
             ['nombre' => 'Enviar Mensaje',               'metodo' => 'POST',   'url' => 'api/incidencias/*/mensajes'],
             ['nombre' => 'Ver Mensajes',                 'metodo' => 'GET',    'url' => 'api/incidencias/*/mensajes'],
             ['nombre' => 'Estadísticas de Dashboard',    'metodo' => 'GET',    'url' => 'api/dashboard/stats'],
+            ['nombre' => 'Estadísticas Perfil Técnico',  'metodo' => 'GET',    'url' => 'api/perfil/stats-tecnico'],
             ['nombre' => 'Crear Publicación',            'metodo' => 'POST',   'url' => 'api/publicaciones'],
             ['nombre' => 'Ver Perfil',                   'metodo' => 'GET',    'url' => 'api/user'],
             ['nombre' => 'Listar Roles',                 'metodo' => 'GET',    'url' => 'api/roles'],
@@ -302,9 +303,11 @@ class DatabaseSeeder extends Seeder
         // Incidencias - Gestión Operativa
         $mapOpcionEndpoint('Incidencias - Gestión Operativa', 'POST', 'api/incidencias/*/estado');
         $mapOpcionEndpoint('Incidencias - Gestión Operativa', 'POST', 'api/incidencias/*/mensajes');
+        $mapOpcionEndpoint('Incidencias - Gestión Operativa', 'POST', 'api/incidencias/*/comentarios');
 
         // Perfil de Usuario
         $mapOpcionEndpoint('Perfil de Usuario', 'GET', 'api/user');
+        $mapOpcionEndpoint('Perfil de Usuario', 'GET', 'api/perfil/stats-tecnico');
 
         // Gestión de Usuarios
         $mapOpcionEndpoint('Gestión de Usuarios', 'GET',   'api/roles');
