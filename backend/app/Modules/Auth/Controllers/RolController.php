@@ -106,9 +106,11 @@ class RolController extends Controller
                 }
             }
 
-            // Limpiar cache de perfiles en Redis para aplicar cambios inmediatamente
-            $redis = \Illuminate\Support\Facades\Cache::store('redis');
-            $redis->flush();
+            // Limpiar cache de perfiles en Redis únicamente para los usuarios que tienen asignado este rol
+            $userIds = $rol->usuarios()->pluck('usuario.id');
+            foreach ($userIds as $uid) {
+                \Illuminate\Support\Facades\Cache::store('redis')->forget('user_profile:' . $uid);
+            }
 
             return response()->json($rol->load('opciones'), 200);
         });
