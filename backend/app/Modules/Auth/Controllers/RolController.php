@@ -108,7 +108,7 @@ class RolController extends Controller
 
             // Limpiar cache de perfiles en Redis para aplicar cambios inmediatamente
             $redis = \Illuminate\Support\Facades\Cache::store('redis');
-            $redis->flushDb();
+            $redis->flush();
 
             return response()->json($rol->load('opciones'), 200);
         });
