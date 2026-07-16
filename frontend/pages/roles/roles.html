@@ -266,7 +266,7 @@
         const tbody = document.getElementById('opcionesTbody');
         
         tbody.innerHTML = systemOptions.map(op => {
-            const assigned = assignedOptions.find(ao => ao.id === op.id);
+            const assigned = assignedOptions.find(ao => ao.uuid === op.uuid);
             const isReadChecked = assigned ? assigned.pivot.lectura : false;
             const isWriteChecked = assigned ? assigned.pivot.escritura : false;
 
@@ -274,10 +274,10 @@
                 <tr>
                     <td style="text-align:left;font-weight:600;color:var(--gray-800)">${op.nombre_opcion}</td>
                     <td style="text-align:center">
-                        <input type="checkbox" class="form-check-input option-read-chk" data-id="${op.id}" ${isReadChecked ? 'checked' : ''}>
+                        <input type="checkbox" class="form-check-input option-read-chk" data-uuid="${op.uuid}" ${isReadChecked ? 'checked' : ''}>
                     </td>
                     <td style="text-align:center">
-                        <input type="checkbox" class="form-check-input option-write-chk" data-id="${op.id}" ${isWriteChecked ? 'checked' : ''}>
+                        <input type="checkbox" class="form-check-input option-write-chk" data-uuid="${op.uuid}" ${isWriteChecked ? 'checked' : ''}>
                     </td>
                 </tr>`;
         }).join('');
@@ -306,14 +306,14 @@
         const writeChks = document.querySelectorAll('.option-write-chk');
 
         readChks.forEach((chk, idx) => {
-            const opId = parseInt(chk.getAttribute('data-id'));
+            const opUuid = chk.getAttribute('data-uuid');
             const lectura = chk.checked;
             const escritura = writeChks[idx].checked;
 
             // Solo asignamos si tiene al menos lectura o escritura activada
             if (lectura || escritura) {
                 opciones.push({
-                    id: opId,
+                    uuid: opUuid,
                     lectura,
                     escritura
                 });

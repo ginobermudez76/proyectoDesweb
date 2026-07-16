@@ -30,7 +30,7 @@ class RolController extends Controller
             'nombre_rol'  => 'required|string|max:100',
             'descripcion' => 'nullable|string|max:255',
             'opciones'    => 'nullable|array',
-            'opciones.*.id' => 'required|integer|exists:opcion,id',
+            'opciones.*.uuid' => 'required|string|exists:opcion,uuid',
             'opciones.*.lectura' => 'required|boolean',
             'opciones.*.escritura' => 'required|boolean',
         ]);
@@ -45,14 +45,20 @@ class RolController extends Controller
             ]);
 
             if (!empty($validated['opciones'])) {
+                $uuids = array_column($validated['opciones'], 'uuid');
+                $dbOpciones = Opcion::whereIn('uuid', $uuids)->get(['id', 'uuid'])->keyBy('uuid');
+
                 foreach ($validated['opciones'] as $op) {
-                    $rol->opciones()->attach($op['id'], [
-                        'uuid'       => (string) Str::uuid(),
-                        'lectura'    => $op['lectura'],
-                        'escritura'  => $op['escritura'],
-                        'deleted'    => false,
-                        'created_at' => now(),
-                    ]);
+                    $opt = $dbOpciones->get($op['uuid']);
+                    if ($opt) {
+                        $rol->opciones()->attach($opt->id, [
+                            'uuid'       => (string) Str::uuid(),
+                            'lectura'    => $op['lectura'],
+                            'escritura'  => $op['escritura'],
+                            'deleted'    => false,
+                            'created_at' => now(),
+                        ]);
+                    }
                 }
             }
 
@@ -68,7 +74,7 @@ class RolController extends Controller
             'nombre_rol'  => 'required|string|max:100',
             'descripcion' => 'nullable|string|max:255',
             'opciones'    => 'nullable|array',
-            'opciones.*.id' => 'required|integer|exists:opcion,id',
+            'opciones.*.uuid' => 'required|string|exists:opcion,uuid',
             'opciones.*.lectura' => 'required|boolean',
             'opciones.*.escritura' => 'required|boolean',
         ]);
@@ -83,21 +89,25 @@ class RolController extends Controller
             $rol->opciones()->detach();
 
             if (!empty($validated['opciones'])) {
+                $uuids = array_column($validated['opciones'], 'uuid');
+                $dbOpciones = Opcion::whereIn('uuid', $uuids)->get(['id', 'uuid'])->keyBy('uuid');
+
                 foreach ($validated['opciones'] as $op) {
-                    $rol->opciones()->attach($op['id'], [
-                        'uuid'       => (string) Str::uuid(),
-                        'lectura'    => $op['lectura'],
-                        'escritura'  => $op['escritura'],
-                        'deleted'    => false,
-                        'created_at' => now(),
-                    ]);
+                    $opt = $dbOpciones->get($op['uuid']);
+                    if ($opt) {
+                        $rol->opciones()->attach($opt->id, [
+                            'uuid'       => (string) Str::uuid(),
+                            'lectura'    => $op['lectura'],
+                            'escritura'  => $op['escritura'],
+                            'deleted'    => false,
+                            'created_at' => now(),
+                        ]);
+                    }
                 }
             }
 
             // Limpiar cache de perfiles en Redis para aplicar cambios inmediatamente
             $redis = \Illuminate\Support\Facades\Cache::store('redis');
-            // Obtener todas las claves del perfil de usuario y borrarlas si es necesario, o dejar que expire
-            // Para simplificar, limpiamos el caché de perfiles completo
             $redis->flushDb();
 
             return response()->json($rol->load('opciones'), 200);
