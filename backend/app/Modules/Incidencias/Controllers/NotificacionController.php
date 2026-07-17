@@ -22,6 +22,7 @@ class NotificacionController extends Controller
     public function marcarLeida(Request $request, $id)
     {
         $userUuid = $request->user()->uuid;
+        /** @var Notificacion $notificacion */
         $notificacion = Notificacion::where('usuario_id', $userUuid)->findOrFail($id);
         $notificacion->leida = true;
         $notificacion->save();

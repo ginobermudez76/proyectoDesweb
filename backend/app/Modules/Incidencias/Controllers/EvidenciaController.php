@@ -24,6 +24,7 @@ class EvidenciaController extends Controller
             'url' => 'nullable|url',
         ]);
 
+        /** @var Incidencia $incidencia */
         $incidencia = Incidencia::findOrFail($id);
         $rol = $request->user()->roles->first()->codigo ?? 'CIUDADANO';
         if ($rol === 'CIUDADANO' && $incidencia->usuario_id !== $request->user()->uuid) {

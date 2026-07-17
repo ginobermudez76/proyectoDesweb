@@ -57,6 +57,7 @@ class IncidenciaController extends Controller
 
     public function show(Request $request, $id)
     {
+        /** @var Incidencia $incidencia */
         $incidencia = Incidencia::findOrFail($id);
         $rol = $request->user()->roles->first()->codigo ?? 'CIUDADANO';
 
@@ -114,6 +115,7 @@ class IncidenciaController extends Controller
 
     public function update(Request $request, $id)
     {
+        /** @var Incidencia $incidencia */
         $incidencia = Incidencia::findOrFail($id);
         $rol = $request->user()->roles->first()->codigo ?? 'CIUDADANO';
 
@@ -203,6 +205,7 @@ class IncidenciaController extends Controller
 
     public function destroy(Request $request, $id)
     {
+        /** @var Incidencia $incidencia */
         $incidencia = Incidencia::findOrFail($id);
         $rol = $request->user()->roles->first()->codigo ?? 'CIUDADANO';
 

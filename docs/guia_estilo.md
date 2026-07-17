@@ -4,7 +4,7 @@ Esta guía documenta las herramientas de calidad de código, análisis estático
 
 ---
 
-## 🐘 Backend (PHP / Laravel)
+## Backend (PHP / Laravel)
 
 Para asegurar la homogeneidad y evitar errores de lógica en el backend, disponemos de dos herramientas integradas dentro del contenedor de la aplicación.
 
@@ -31,7 +31,7 @@ Larastan ejecuta análisis estático de código PHP en nivel 5 para detectar err
 
 ---
 
-## 🎨 Frontend (HTML, CSS, JS)
+## Frontend (HTML, CSS, JS)
 
 Dado que no utilizamos Node.js en producción para mantener el frontend estático y ligero, hemos preparado configuraciones que se integran directamente con los editores de código (IDE) de los desarrolladores.
 
@@ -65,7 +65,7 @@ Para que tu editor de código formatee y busque errores automáticamente al guar
 
 ---
 
-## 💻 Ejecución de comandos de Frontend (Opcional - Requiere Node.js Local)
+## Ejecución de comandos de Frontend (Opcional - Requiere Node.js Local)
 
 Si un desarrollador prefiere ejecutar los comandos desde consola localmente (fuera de Docker) o para la integración continua (CI), puede instalar Node.js y usar los siguientes comandos de forma manual:
 

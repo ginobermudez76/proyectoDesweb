@@ -27,6 +27,7 @@ class PublicacionController extends Controller
             'etiquetas' => 'nullable|array',
         ]);
 
+        /** @var Publicacion $publicacion */
         $publicacion = new Publicacion($validated);
 
         $publicacion->autor_id = $request->user()->id;

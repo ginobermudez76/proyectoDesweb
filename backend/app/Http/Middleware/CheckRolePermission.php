@@ -133,10 +133,13 @@ class CheckRolePermission
         }
 
         if (!$tienePermiso) {
+            /** @var \App\Modules\Auth\Entities\Rol|null $rol */
+            $rol = $usuario->roles->first();
+
             AccesoNoAutorizado::create([
                 'usuario_uuid'       => $usuario->uuid,
                 'correo_electronico' => $usuario->correo_electronico,
-                'rol'                => $usuario->roles->first()?->codigo ?? 'SIN_ROL',
+                'rol'                => $rol ? $rol->codigo : 'SIN_ROL',
                 'ip'                 => $request->ip(),
                 'user_agent'         => $request->userAgent(),
                 'metodo'             => $request->method(),

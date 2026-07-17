@@ -37,9 +37,11 @@ class AuthController extends Controller
 
         if ($failsIp >= self::MAX_FAILS || $failsEmail >= self::MAX_FAILS) {
             // Obtener TTL restante directamente desde la conexión Redis subyacente
-            $prefix    = config('cache.prefix', '');
+            $prefix     = config('cache.prefix', '');
             $blockedKey = $failsIp >= self::MAX_FAILS ? $keyIp : $keyEmail;
-            $ttl        = Cache::store('redis')->getRedis()->ttl($prefix.$blockedKey);
+            /** @var \Illuminate\Cache\RedisStore $redisStore */
+            $redisStore = Cache::store('redis')->getStore();
+            $ttl        = $redisStore->getRedis()->ttl($prefix.$blockedKey);
             $ttl        = ($ttl && $ttl > 0) ? $ttl : self::LOCKOUT_TTL;
 
             return response()->json([
@@ -163,18 +165,21 @@ class AuthController extends Controller
             }
         }
 
-        \App\Modules\Auth\Entities\AccesoNoAutorizado::create([
-            'usuario_uuid'       => $usuario?->uuid,
-            'correo_electronico' => $usuario?->correo_electronico,
-            'rol'                => $usuario?->roles->first()?->codigo ?? 'SIN_AUTENTICAR',
-            'ip'                 => $request->ip(),
-            'user_agent'         => $request->userAgent(),
-            'metodo'             => $request->input('metodo', 'GET'),
-            'url'                => $request->input('url'),
-            'tipo_violacion'     => $request->input('tipo_violacion'),
-            'detalle'            => $request->input('detalle'),
-            'fecha_hora'         => now(),
-        ]);
+            /** @var \App\Modules\Auth\Entities\Rol|null $rol */
+            $rol = $usuario?->roles->first();
+
+            \App\Modules\Auth\Entities\AccesoNoAutorizado::create([
+                'usuario_uuid'       => $usuario?->uuid,
+                'correo_electronico' => $usuario?->correo_electronico,
+                'rol'                => $rol ? $rol->codigo : 'SIN_AUTENTICAR',
+                'ip'                 => $request->ip(),
+                'user_agent'         => $request->userAgent(),
+                'metodo'             => $request->input('metodo', 'GET'),
+                'url'                => $request->input('url'),
+                'tipo_violacion'     => $request->input('tipo_violacion'),
+                'detalle'            => $request->input('detalle'),
+                'fecha_hora'         => now(),
+            ]);
 
         return response()->json(['message' => 'Acceso no autorizado registrado en MongoDB.'], 201);
     }
