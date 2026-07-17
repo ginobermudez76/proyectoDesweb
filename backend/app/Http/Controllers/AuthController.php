@@ -41,7 +41,9 @@ class AuthController extends Controller
             $blockedKey = $failsIp >= self::MAX_FAILS ? $keyIp : $keyEmail;
             /** @var \Illuminate\Cache\RedisStore $redisStore */
             $redisStore = Cache::store('redis')->getStore();
-            $ttl        = $redisStore->getRedis()->ttl($prefix.$blockedKey);
+            /** @var mixed $redisConnection */
+            $redisConnection = $redisStore->getRedis();
+            $ttl        = $redisConnection->ttl($prefix.$blockedKey);
             $ttl        = ($ttl && $ttl > 0) ? $ttl : self::LOCKOUT_TTL;
 
             return response()->json([
@@ -52,6 +54,7 @@ class AuthController extends Controller
         }
 
         // ── 2. Validar credenciales (correo_electronico o nombre_usuario) ──
+        /** @var Usuario|null $usuario */
         $usuario = Usuario::where('correo_electronico', $loginInput)
             ->orWhere('nombre_usuario', $loginInput)
             ->first();
