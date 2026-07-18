@@ -4,8 +4,8 @@
 COMMAND=$1
 ARG=$2
 
-if [ "$COMMAND" = "create" ]; then
-    if [ -z "$ARG" ]; then
+if [[ "$COMMAND" = "create" ]]; then
+    if [[ -z "$ARG" ]]; then
         echo "Error: Debes especificar el nombre de la migracion."
         echo "Ejemplo: ./db.sh create create_logins_table"
         exit 1
@@ -14,27 +14,27 @@ if [ "$COMMAND" = "create" ]; then
     exit 0
 fi
 
-if [ "$COMMAND" = "migrate" ]; then
+if [[ "$COMMAND" = "migrate" ]]; then
     php backend/artisan migrate
     exit 0
 fi
 
-if [ "$COMMAND" = "fresh" ]; then
+if [[ "$COMMAND" = "fresh" ]]; then
     php backend/artisan migrate:fresh --seed
     exit 0
 fi
 
-if [ "$COMMAND" = "rollback" ]; then
+if [[ "$COMMAND" = "rollback" ]]; then
     php backend/artisan migrate:rollback
     exit 0
 fi
 
-if [ "$COMMAND" = "status" ]; then
+if [[ "$COMMAND" = "status" ]]; then
     php backend/artisan migrate:status
     exit 0
 fi
 
-if [ "$COMMAND" = "seed" ]; then
+if [[ "$COMMAND" = "seed" ]]; then
     php backend/artisan db:seed
     exit 0
 fi

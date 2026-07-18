@@ -79,7 +79,7 @@ async function renderTiposGrid(containerId, onSelect) {
     window._onSelectTipo = function(el) {
         container.querySelectorAll('.category-item').forEach(i => i.classList.remove('selected'));
         el.classList.add('selected');
-        if (typeof onSelect === 'function') onSelect(el.dataset.val, parseInt(el.dataset.tipoId));
+        if (typeof onSelect === 'function') onSelect(el.dataset.val, Number.parseInt(el.dataset.tipoId, 10));
     };
 }
 

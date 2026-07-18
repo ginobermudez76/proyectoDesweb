@@ -106,7 +106,7 @@
         <div class="form-group">
             <label class="form-label" for="celular">Número de Celular</label>
             <div class="phone-group">
-                <select class="form-input phone-prefix" id="prefijo_celular">
+                <select class="form-input phone-prefix" id="prefijo_celular" aria-label="Prefijo telefónico del país">
                     <option value="">Cargando…</option>
                 </select>
                 <input class="form-input flex-1" id="celular" type="tel" placeholder="999999999" autocomplete="off">
@@ -172,7 +172,7 @@
     function onTipoDocChange() {
         const select = document.getElementById('tipo_doc');
         const docInput = document.getElementById('documento');
-        const selectedId = parseInt(select.value);
+        const selectedId = Number.parseInt(select.value, 10);
         const selected = tiposDoc.find(t => t.id === selectedId);
         
         if (selected && selected.validacion) {
@@ -325,7 +325,7 @@
         const correo = document.getElementById('correo').value.trim();
         const usuario = document.getElementById('usuario').value.trim();
         const password = document.getElementById('password').value;
-        const id_tipo_documento = parseInt(document.getElementById('tipo_doc').value);
+        const id_tipo_documento = Number.parseInt(document.getElementById('tipo_doc').value, 10);
         const documento = document.getElementById('documento').value.trim();
         const prefijo = document.getElementById('prefijo_celular').value;
         const celular = document.getElementById('celular').value.trim();

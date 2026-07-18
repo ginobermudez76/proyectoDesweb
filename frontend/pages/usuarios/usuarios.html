@@ -71,17 +71,17 @@
 <div id="modalOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:flex-end">
     <div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:430px;margin:0 auto;max-height:85vh;overflow-y:auto">
         <div style="font-size:16px;font-weight:700;margin-bottom:16px">Nuevo usuario</div>
-        <div class="form-group"><label class="form-label">Nombres *</label>
+        <div class="form-group"><label class="form-label" for="newNombres">Nombres *</label>
             <input class="form-input" id="newNombres" placeholder="Ej: Carlos"></div>
-        <div class="form-group"><label class="form-label">Apellidos *</label>
+        <div class="form-group"><label class="form-label" for="newApellidos">Apellidos *</label>
             <input class="form-input" id="newApellidos" placeholder="Ej: Méndez"></div>
-        <div class="form-group"><label class="form-label">Correo electrónico *</label>
+        <div class="form-group"><label class="form-label" for="newCorreo">Correo electrónico *</label>
             <input class="form-input" id="newCorreo" type="email" placeholder="correo@ejemplo.com"></div>
-        <div class="form-group"><label class="form-label">Nombre de usuario (opcional)</label>
+        <div class="form-group"><label class="form-label" for="newUsuario">Nombre de usuario (opcional)</label>
             <input class="form-input" id="newUsuario" placeholder="Ej: carlos.mendez"></div>
-        <div class="form-group"><label class="form-label">Contraseña temporal *</label>
+        <div class="form-group"><label class="form-label" for="newPass">Contraseña temporal *</label>
             <input class="form-input" id="newPass" type="password" placeholder="Mínimo 8 caracteres"></div>
-        <div class="form-group"><label class="form-label">Rol del usuario *</label>
+        <div class="form-group"><label class="form-label" for="newRol">Rol del usuario *</label>
             <select class="form-input" id="newRol" style="background-color:#fff">
                 <option value="ADMIN">Administrador</option>
                 <option value="SUPERVISOR">Supervisor</option>
@@ -101,17 +101,17 @@
     <div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:430px;margin:0 auto;max-height:85vh;overflow-y:auto">
         <div style="font-size:16px;font-weight:700;margin-bottom:16px">Editar usuario</div>
         <input type="hidden" id="editId">
-        <div class="form-group"><label class="form-label">Nombres *</label>
+        <div class="form-group"><label class="form-label" for="editNombres">Nombres *</label>
             <input class="form-input" id="editNombres"></div>
-        <div class="form-group"><label class="form-label">Apellidos *</label>
+        <div class="form-group"><label class="form-label" for="editApellidos">Apellidos *</label>
             <input class="form-input" id="editApellidos"></div>
-        <div class="form-group"><label class="form-label">Correo electrónico *</label>
+        <div class="form-group"><label class="form-label" for="editCorreo">Correo electrónico *</label>
             <input class="form-input" id="editCorreo" type="email"></div>
-        <div class="form-group"><label class="form-label">Nombre de usuario</label>
+        <div class="form-group"><label class="form-label" for="editUsuario">Nombre de usuario</label>
             <input class="form-input" id="editUsuario"></div>
-        <div class="form-group"><label class="form-label">Nueva contraseña (opcional)</label>
+        <div class="form-group"><label class="form-label" for="editPass">Nueva contraseña (opcional)</label>
             <input class="form-input" id="editPass" type="password" placeholder="Dejar en blanco para no cambiar"></div>
-        <div class="form-group"><label class="form-label">Rol del usuario *</label>
+        <div class="form-group"><label class="form-label" for="editRol">Rol del usuario *</label>
             <select class="form-input" id="editRol" style="background-color:#fff">
                 <option value="ADMIN">Administrador</option>
                 <option value="SUPERVISOR">Supervisor</option>
