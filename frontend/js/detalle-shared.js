@@ -23,6 +23,7 @@ function buildEvidencias(evidencias) {
                    style="border:1.5px solid var(--gray-200);border-radius:10px;overflow:hidden;
                           width:100px;height:100px;display:inline-block">
                     <img src="${e.ruta}" alt="${e.nombre_archivo}"
+                         width="100" height="100"
                          style="width:100%;height:100%;object-fit:cover">
                 </a>
             `).join('')}

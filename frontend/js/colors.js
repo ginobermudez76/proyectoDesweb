@@ -17,7 +17,7 @@ const APP_COLORS = {
     gray50:   '#F9FAFB',
     gray100:  '#F3F4F6', // Fondo principal
     gray200:  '#E5E7EB', // Bordes
-    gray400:  '#9CA3AF',
+    gray400:  '#6B7280',
     gray700:  '#374151',
     gray900:  '#111827',
     white:    '#FFFFFF',

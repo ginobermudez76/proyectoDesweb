@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /index.html
+Allow: /login.html
+Allow: /registro.html
+Allow: /css/
+Allow: /js/
+Disallow: /pages/
+Disallow: /admin/
+Disallow: /ciudadano/
+Disallow: /tecnico/
+Disallow: /supervisor/
+
+Sitemap: https://eldomoniodedesarrollo.dev/sitemap.xml
