@@ -29,8 +29,8 @@ Route::middleware(['rbac', 'throttle:180,1'])->group(function () {
     Route::post('notificaciones/leer-todas', [NotificacionController::class, 'marcarTodasLeidas']);
 });
 
-// 2. Grupo ULTRA PROTEGIDO contra bots/spam (Límite estricto: 9 peticiones por minuto)
-Route::middleware(['rbac', 'throttle:9,1'])->group(function () {
+// 2. Grupo ULTRA PROTEGIDO contra bots/spam (Límite: 60 peticiones por minuto)
+Route::middleware(['rbac', 'throttle:60,1'])->group(function () {
     // Crear una nueva incidencia (evita que llenen la base de datos de basura)
     Route::post('incidencias', [IncidenciaController::class, 'store']);
 
