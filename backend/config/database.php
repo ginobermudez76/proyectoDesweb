@@ -4,7 +4,7 @@ use Illuminate\Support\Str;
 use Pdo\Mysql;
 
 // Default localhost address used as fallback for database connections.
-const DB_LOCALHOST = '127.0.0.1';
+$dbLocalhost = '127.0.0.1';
 
 return [
 
@@ -50,7 +50,7 @@ return [
         'mysql' => [
             'driver' => 'mysql',
             'url' => env('DB_URL'),
-            'host' => env('DB_HOST', DB_LOCALHOST),
+            'host' => env('DB_HOST', $dbLocalhost),
             'port' => env('DB_PORT', '3306'),
             'database' => env('DB_DATABASE', 'laravel'),
             'username' => env('DB_USERNAME', 'root'),
@@ -70,7 +70,7 @@ return [
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),
-            'host' => env('DB_HOST', DB_LOCALHOST),
+            'host' => env('DB_HOST', $dbLocalhost),
             'port' => env('DB_PORT', '3306'),
             'database' => env('DB_DATABASE', 'laravel'),
             'username' => env('DB_USERNAME', 'root'),
@@ -170,7 +170,7 @@ return [
 
         'default' => [
             'url' => env('REDIS_URL'),
-            'host' => env('REDIS_HOST', DB_LOCALHOST),
+            'host' => env('REDIS_HOST', $dbLocalhost),
             'username' => env('REDIS_USERNAME'),
             'password' => env('REDIS_PASSWORD'),
             'port' => env('REDIS_PORT', '6379'),
@@ -183,7 +183,7 @@ return [
 
         'cache' => [
             'url' => env('REDIS_URL'),
-            'host' => env('REDIS_HOST', DB_LOCALHOST),
+            'host' => env('REDIS_HOST', $dbLocalhost),
             'username' => env('REDIS_USERNAME'),
             'password' => env('REDIS_PASSWORD'),
             'port' => env('REDIS_PORT', '6379'),
