@@ -104,7 +104,16 @@ async function renderSubtiposDesdeId(tipoId) {
 
 function onFotoChange(input) {
     if (input.files.length) {
-        fotoFile = input.files[0];
+        const file = input.files[0];
+        const maxSize = 20 * 1024 * 1024; // 20MB
+        if (file.size > maxSize) {
+            showToast('La imagen supera el límite permitido de 20MB.', 'error');
+            input.value = '';
+            fotoFile = null;
+            document.getElementById('photoLabel').textContent = 'Agregar foto';
+            return;
+        }
+        fotoFile = file;
         document.getElementById('photoLabel').textContent = fotoFile.name;
     }
 }
