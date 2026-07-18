@@ -12,6 +12,29 @@ use Illuminate\Http\Request;
 
 class IncidenciaController extends Controller
 {
+    private const NOT_OWNER_MSG = 'Acceso denegado. No eres el propietario de esta incidencia.';
+
+    /**
+     * Registers an unauthorized access attempt and returns a 403 JSON response.
+     */
+    private function denyOwnership(Request $request, string $detail, string $incidenciaId): \Illuminate\Http\JsonResponse
+    {
+        $rol = $request->user()->roles->first()?->codigo ?? 'CIUDADANO';
+        AccesoNoAutorizado::create([
+            'usuario_uuid'       => $request->user()->uuid,
+            'correo_electronico' => $request->user()->correo_electronico,
+            'rol'                => $rol,
+            'ip'                 => $request->ip(),
+            'user_agent'         => $request->userAgent(),
+            'metodo'             => $request->method(),
+            'url'                => $request->path(),
+            'tipo_violacion'     => 'IDOR',
+            'detalle'            => $detail . ' ID objetivo: ' . $incidenciaId,
+            'fecha_hora'         => now(),
+        ]);
+        return response()->json(['message' => self::NOT_OWNER_MSG], 403);
+    }
+
     public function index(Request $request)
     {
         $rol = $request->user()->roles->first()->codigo ?? 'CIUDADANO';
@@ -62,19 +85,7 @@ class IncidenciaController extends Controller
         $rol = $request->user()->roles->first()->codigo ?? 'CIUDADANO';
 
         if ($rol === 'CIUDADANO' && $incidencia->usuario_id !== $request->user()->uuid) {
-            AccesoNoAutorizado::create([
-                'usuario_uuid'       => $request->user()->uuid,
-                'correo_electronico' => $request->user()->correo_electronico,
-                'rol'                => $rol,
-                'ip'                 => $request->ip(),
-                'user_agent'         => $request->userAgent(),
-                'metodo'             => $request->method(),
-                'url'                => $request->path(),
-                'tipo_violacion'     => 'IDOR',
-                'detalle'            => 'Intento de lectura en incidencia ajena. ID objetivo: '.$incidencia->_id,
-                'fecha_hora'         => now(),
-            ]);
-            return response()->json(['message' => 'Acceso denegado. No eres el propietario de esta incidencia.'], 403);
+            return $this->denyOwnership($request, 'Intento de lectura en incidencia ajena.', $incidencia->_id);
         }
 
         $evidencias = Evidencia::where('incidencia_id', $id)->get();
@@ -121,19 +132,7 @@ class IncidenciaController extends Controller
 
         if ($rol === 'CIUDADANO') {
             if ($incidencia->usuario_id !== $request->user()->uuid) {
-                AccesoNoAutorizado::create([
-                    'usuario_uuid'       => $request->user()->uuid,
-                    'correo_electronico' => $request->user()->correo_electronico,
-                    'rol'                => $rol,
-                    'ip'                 => $request->ip(),
-                    'user_agent'         => $request->userAgent(),
-                    'metodo'             => $request->method(),
-                    'url'                => $request->path(),
-                    'tipo_violacion'     => 'IDOR',
-                    'detalle'            => 'Intento de actualización en incidencia ajena. ID objetivo: '.$incidencia->_id,
-                    'fecha_hora'         => now(),
-                ]);
-                return response()->json(['message' => 'Acceso denegado. No eres el propietario de esta incidencia.'], 403);
+                return $this->denyOwnership($request, 'Intento de actualización en incidencia ajena.', $incidencia->_id);
             }
             if ($incidencia->estado !== 'Pendiente') {
                 return response()->json(['message' => 'Solo se pueden editar incidencias en estado Pendiente.'], 403);
@@ -211,19 +210,7 @@ class IncidenciaController extends Controller
 
         if ($rol === 'CIUDADANO') {
             if ($incidencia->usuario_id !== $request->user()->uuid) {
-                AccesoNoAutorizado::create([
-                    'usuario_uuid'       => $request->user()->uuid,
-                    'correo_electronico' => $request->user()->correo_electronico,
-                    'rol'                => $rol,
-                    'ip'                 => $request->ip(),
-                    'user_agent'         => $request->userAgent(),
-                    'metodo'             => $request->method(),
-                    'url'                => $request->path(),
-                    'tipo_violacion'     => 'IDOR',
-                    'detalle'            => 'Intento de eliminación en incidencia ajena. ID objetivo: '.$incidencia->_id,
-                    'fecha_hora'         => now(),
-                ]);
-                return response()->json(['message' => 'Acceso denegado. No eres el propietario de esta incidencia.'], 403);
+                return $this->denyOwnership($request, 'Intento de eliminación en incidencia ajena.', $incidencia->_id);
             }
             if ($incidencia->estado !== 'Pendiente') {
                 return response()->json(['message' => 'Solo se pueden eliminar incidencias en estado Pendiente.'], 403);

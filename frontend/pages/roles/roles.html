@@ -306,7 +306,7 @@
         const writeChks = document.querySelectorAll('.option-write-chk');
 
         readChks.forEach((chk, idx) => {
-            const opUuid = chk.getAttribute('data-uuid');
+            const opUuid = chk.dataset.uuid;
             const lectura = chk.checked;
             const escritura = writeChks[idx].checked;
 
