@@ -13,9 +13,9 @@
     <div class="login-logo">📍</div>
     <div class="login-title">Bienvenido</div>
     <div class="login-subtitle">Sistema de Incidencias Georreferenciadas</div>
- 
+
     <div id="error-msg" class="error-msg"></div>
- 
+
     <div class="form-group">
         <label class="form-label" for="correo">Correo electrónico o Usuario</label>
         <input class="form-input" id="correo" type="text" placeholder="tu@correo.com o usuario" autocomplete="username">
@@ -24,7 +24,7 @@
         <label class="form-label" for="password">Contraseña</label>
         <input class="form-input" id="password" type="password" placeholder="••••••••" autocomplete="current-password">
     </div>
- 
+
     <button class="btn-orange mt-2" id="loginBtn" onclick="doLogin()">
         <i class="bi bi-box-arrow-in-right"></i> Ingresar
     </button>
@@ -68,7 +68,7 @@
         } catch (e) {
             // Intentar parsear el cuerpo JSON de la respuesta de error
             let data = {};
-            try { data = JSON.parse(e.responseText || '{}'); } catch (_) {}
+            try { data = JSON.parse(e.responseText || '{}'); } catch (_) { console.warn(_); }
 
             if (e.status === 429 && data.retry_after_seconds) {
                 // Bloqueo activo — mostrar cuenta regresiva

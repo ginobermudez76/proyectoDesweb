@@ -18,12 +18,12 @@ function dashboardUrl(basePath = '') {
     const sep = (basePath && !basePath.endsWith('/')) ? '/' : '';
     const role = getRole();
     if (!role) return `${basePath}${sep}login.html`;
-    
+
     // El Administrador inicia en su Dashboard exclusivo
     if (role === 'ADMIN') {
         return `${basePath}${sep}pages/dashboard/dashboard.html`;
     }
-    
+
     // Todos los demás roles van al panel de incidencias
     return `${basePath}${sep}pages/incidencias/panel.html`;
 }
@@ -367,14 +367,14 @@ async function checkRoutePermission() {
 async function denyAccess() {
     const prefix = _navPrefix();
     const sep = (prefix && prefix.endsWith('/')) ? '' : '/';
-    
+
     // Registrar en MongoDB antes de redirigir
     await sendClientUnauthorizedLog(
         'RBAC_CLIENT',
         window.location.pathname,
         `Acceso denegado client-side a la página actual. Rol: ${getRole()}`
     );
-    
+
     window.location.href = `${prefix}${sep}error.html?code=403&message=${encodeURIComponent('Acceso denegado (RBAC)')}`;
     throw new Error('Acceso no autorizado');
 }
@@ -552,7 +552,7 @@ function setupNotificationsUI() {
     wrapper.addEventListener('click', (e) => {
         e.stopPropagation();
         const isVisible = panel.style.display === 'flex';
-        
+
         // Cerrar otros paneles si los hay
         document.querySelectorAll('.notif-panel').forEach(p => p.style.display = 'none');
 
@@ -560,7 +560,7 @@ function setupNotificationsUI() {
             // Posicionar el panel debajo de la campana
             const rect = wrapper.getBoundingClientRect();
             panel.style.top = `${rect.bottom + window.scrollY + 8}px`;
-            
+
             // Alinear al borde derecho en pantallas grandes
             if (window.innerWidth >= 768) {
                 panel.style.left = 'auto';
@@ -589,7 +589,7 @@ async function fetchNotificaciones() {
     if (!getToken()) return;
     try {
         const notifs = await apiFetch('/notificaciones');
-        
+
         // Contar no leídas
         const unreadCount = notifs.filter(n => !n.leida).length;
         const badge = document.querySelector('.bell-badge');
@@ -662,10 +662,10 @@ window.abrirNotificacion = async function(id, incidenciaId) {
     } catch (e) {
         console.error('Error al marcar notificación como leída:', e);
     }
-    
+
     const panel = document.getElementById('_notifPanel');
     if (panel) panel.style.display = 'none';
-    
+
     // Determinar prefijo de página
     const prefix = _navPrefix();
     window.location.href = `${prefix}pages/incidencias/detalle.html?id=${incidenciaId}`;
@@ -675,7 +675,7 @@ window.marcarTodasLasNotificacionesLeidas = async function() {
     try {
         await apiFetch('/notificaciones/leer-todas', { method: 'POST' });
         showToast('Todas las notificaciones marcadas como leídas', 'success');
-        
+
         // Ocultar badge
         const badge = document.querySelector('.bell-badge');
         if (badge) badge.style.display = 'none';
@@ -691,16 +691,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     await checkRoutePermission();
 
     let nav = document.querySelector('.bottom-nav');
-    
+
     if (getToken()) {
         if (!nav) {
             nav = document.createElement('nav');
             nav.className = 'bottom-nav';
             document.body.appendChild(nav);
         }
-        
+
         _renderNavLinks(nav);
-        
+
         if (window.innerWidth >= 768) {
             document.body.style.paddingLeft  = '240px';
             document.body.style.paddingBottom = '0';
@@ -709,9 +709,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Configurar UI de notificaciones e iniciar sondeo/polling
         setupNotificationsUI();
         await fetchNotificaciones();
-        
+
         // Sondeo inteligente cada 5 segundos (casi instantáneo)
         setInterval(fetchNotificaciones, 5000);
     }
 });
-

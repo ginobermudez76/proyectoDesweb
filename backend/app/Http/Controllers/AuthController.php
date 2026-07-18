@@ -279,7 +279,7 @@ class AuthController extends Controller
                 return [];
             }
             $data = $response->json()['data'] ?? [];
-            
+
             $list = [];
             foreach ($data as $c) {
                 if (!empty($c['name'])) {
@@ -290,11 +290,11 @@ class AuthController extends Controller
                     ];
                 }
             }
-            
+
             usort($list, function ($a, $b) {
                 return strcasecmp($a['name'], $b['name']);
             });
-            
+
             return $list;
         });
 
@@ -318,14 +318,14 @@ class AuthController extends Controller
                 return [];
             }
             $states = $response->json()['data']['states'] ?? [];
-            
+
             $list = [];
             foreach ($states as $s) {
                 if (!empty($s['name'])) {
                     $list[] = $s['name'];
                 }
             }
-            
+
             $list = array_unique($list);
             natcasesort($list);
             return array_values($list);
@@ -354,7 +354,7 @@ class AuthController extends Controller
                 return [];
             }
             $cities = $response->json()['data'] ?? [];
-            
+
             natcasesort($cities);
             return array_values($cities);
         });

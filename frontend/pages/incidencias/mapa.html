@@ -81,7 +81,7 @@ if (navigator.geolocation) {
         map.setView(userPos, 14);
         L.circleMarker(userPos, { radius:8, color: APP_COLORS.white, fillColor: APP_COLORS.blue, fillOpacity:1, weight:2 })
             .addTo(map).bindPopup('Tu ubicación');
-        
+
         refrescarMasCercano();
     });
 }
@@ -125,7 +125,7 @@ async function cargar() {
         mapData.forEach(inc => {
             if (!inc.ubicacion?.coordinates) return;
             const [lng, lat] = inc.ubicacion.coordinates;
-            
+
             let color = '#9CA3AF';
             let descText = '';
 
@@ -159,7 +159,7 @@ async function cargar() {
 
   function refrescarMasCercano() {
       if (role !== 'TECNICO' || !userPos || !mapData.length) return;
-      
+
       let nearest = null, minDist = Infinity;
       mapData.forEach(inc => {
           if (!inc.ubicacion?.coordinates) return;

@@ -47,7 +47,7 @@ function buildHistorial(historial) {
                     ${h.estado_anterior || '—'} → ${h.estado_nuevo}
                 </div>
                 <div class="text-muted-sm">
-                    ${formatDate(h.fecha_cambio || h.fecha_hora)} · 
+                    ${formatDate(h.fecha_cambio || h.fecha_hora)} ·
                     ${h.tecnico_id ? `Por: ${h.tecnico_nombre || h.tecnico_id}` : 'Por: Supervisor/Admin'}
                 </div>
                 ${h.observacion && h.observacion !== 'Sin observaciones.'

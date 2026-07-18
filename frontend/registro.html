@@ -174,7 +174,7 @@
         const docInput = document.getElementById('documento');
         const selectedId = Number.parseInt(select.value, 10);
         const selected = tiposDoc.find(t => t.id === selectedId);
-        
+
         if (selected && selected.validacion) {
             docInput.placeholder = selected.validacion.error_msg || `Ingresa tu ${selected.label}`;
         }
@@ -184,7 +184,7 @@
         try {
             // Obtener países ordenados alfabéticamente desde el proxy del backend (Redis cache)
             countriesData = await apiFetch('/ubicaciones/paises');
-            
+
             if (countriesData && countriesData.length > 0) {
                 // Cargar datalist de país
                 const paisList = document.getElementById('paisList');
@@ -207,7 +207,7 @@
         try {
             const res = await fetch('https://freeipapi.com/api/json');
             const ipData = await res.json();
-            
+
             if (ipData && ipData.countryName) {
                 // Auto-seleccionar país
                 const paisInput = document.getElementById('pais');
@@ -259,9 +259,9 @@
         const estadoList = document.getElementById('estadoList');
         const ciudadInput = document.getElementById('ciudad');
         const ciudadList = document.getElementById('ciudadList');
-        
+
         if (!country) return;
-        
+
         estadoInput.value = '';
         ciudadInput.value = '';
         estadoList.innerHTML = '<option value="Cargando provincias…">';
@@ -270,10 +270,10 @@
         try {
             // Consultar estados desde el backend (Redis cache)
             const states = await apiFetch(`/ubicaciones/estados?country=${encodeURIComponent(country)}`);
-            
+
             if (states && states.length > 0) {
                 estadoList.innerHTML = states.map(s => `<option value="${s}"></option>`).join('');
-                
+
                 if (preSelectEstado && states.includes(preSelectEstado)) {
                     estadoInput.value = preSelectEstado;
                     onEstadoChange(preSelectCiudad);
@@ -293,7 +293,7 @@
         const ciudadList = document.getElementById('ciudadList');
 
         if (!state) return;
-        
+
         ciudadInput.value = '';
         ciudadList.innerHTML = '<option value="Cargando ciudades…">';
 
@@ -303,7 +303,7 @@
 
             if (cities && cities.length > 0) {
                 ciudadList.innerHTML = cities.map(c => `<option value="${c}"></option>`).join('');
-                
+
                 if (preSelectCiudad && cities.includes(preSelectCiudad)) {
                     ciudadInput.value = preSelectCiudad;
                 }
@@ -329,7 +329,7 @@
         const documento = document.getElementById('documento').value.trim();
         const prefijo = document.getElementById('prefijo_celular').value;
         const celular = document.getElementById('celular').value.trim();
-        
+
         const pais = document.getElementById('pais').value.trim();
         const estado = document.getElementById('estado').value.trim();
         const ciudad = document.getElementById('ciudad').value.trim();

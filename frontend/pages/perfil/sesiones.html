@@ -37,7 +37,7 @@ async function cargarHistorial() {
     const container = document.getElementById('sesionesContainer');
     try {
         const sesiones = await apiFetch('/usuarios/sesiones');
-        
+
         if (!sesiones || sesiones.length === 0) {
             container.innerHTML = '<div class="text-muted-sm text-center py-5">No se encontraron registros de sesión.</div>';
             return;
@@ -48,11 +48,11 @@ async function cargarHistorial() {
                 dateStyle: 'short',
                 timeStyle: 'short'
             }) : '—';
-            
+
             // Etiqueta bonita para la acción
             const isLogin = s.accion === 'LOGIN';
-            const actionBadge = isLogin 
-                ? '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="font-size:11px">Ingreso</span>' 
+            const actionBadge = isLogin
+                ? '<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="font-size:11px">Ingreso</span>'
                 : '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-1" style="font-size:11px">Salida</span>';
 
             return `
@@ -62,13 +62,13 @@ async function cargarHistorial() {
                         <span style="font-size:12px; color:var(--gray-400); font-weight:500">${dateStr}</span>
                     </div>
                     <div style="font-size:13px; color:var(--gray-700); margin-bottom:4px">
-                        <i class="bi bi-laptop text-muted" style="margin-right:6px"></i> 
-                        <span style="font-weight:500">Dispositivo:</span> 
+                        <i class="bi bi-laptop text-muted" style="margin-right:6px"></i>
+                        <span style="font-weight:500">Dispositivo:</span>
                         <span style="word-break:break-all">${s.dispositivo || 'Desconocido'}</span>
                     </div>
                     <div style="font-size:13px; color:var(--gray-700)">
-                        <i class="bi bi-globe text-muted" style="margin-right:6px"></i> 
-                        <span style="font-weight:500">Dirección IP:</span> 
+                        <i class="bi bi-globe text-muted" style="margin-right:6px"></i>
+                        <span style="font-weight:500">Dirección IP:</span>
                         <code>${s.ip || '—'}</code>
                     </div>
                 </div>
