@@ -1,6 +1,7 @@
 // Corregir automáticamente doble barra inicial en la URL para evitar que se propague en enlaces relativos
 if (window.location.pathname.startsWith('//')) {
-    window.location.replace(window.location.pathname.replace(/^\/+/, '/') + window.location.search + window.location.hash);
+    const safePath = '/' + window.location.pathname.replace(/^\/+/, '');
+    window.location.replace(safePath + window.location.search + window.location.hash);
 }
 
 const API_URL = '/api';

@@ -308,7 +308,7 @@ class AuthController extends Controller
         ]);
 
         $country = $request->input('country');
-        $cacheKey = 'ubicaciones:estados:' . md5($country);
+        $cacheKey = 'ubicaciones:estados:' . hash('sha256', $country);
 
         $estados = Cache::store('redis')->remember($cacheKey, now()->addDays(7), function () use ($country) {
             $response = \Illuminate\Support\Facades\Http::post('https://countriesnow.space/api/v0.1/countries/states', [
@@ -326,6 +326,7 @@ class AuthController extends Controller
                 }
             }
             
+            $list = array_unique($list);
             natcasesort($list);
             return array_values($list);
         });
@@ -342,7 +343,7 @@ class AuthController extends Controller
 
         $country = $request->input('country');
         $state   = $request->input('state');
-        $cacheKey = 'ubicaciones:ciudades:' . md5($country . '_' . $state);
+        $cacheKey = 'ubicaciones:ciudades:' . hash('sha256', $country . '_' . $state);
 
         $ciudades = Cache::store('redis')->remember($cacheKey, now()->addDays(7), function () use ($country, $state) {
             $response = \Illuminate\Support\Facades\Http::post('https://countriesnow.space/api/v0.1/countries/state/cities', [
