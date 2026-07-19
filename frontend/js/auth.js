@@ -1,194 +1,237 @@
 const TOKEN_KEY = 'auth_token';
-const USER_KEY  = 'auth_user';
+const USER_KEY = 'auth_user';
 
-function getToken() { return localStorage.getItem(TOKEN_KEY); }
-function getUser()  { try { return JSON.parse(localStorage.getItem(USER_KEY)); } catch { return null; } }
-function getRole()  {
-    const u = getUser();
-    return (u && u.roles && u.roles.length) ? u.roles[0].codigo : null;
+function joinUrl(basePath, fileName) {
+  const normalizedBase = basePath || '';
+  const separator = normalizedBase.endsWith('/') ? '' : '/';
+  return `${normalizedBase}${separator}${fileName}`;
 }
 
-function isCiudadano() { return getRole() === 'CIUDADANO'; }
-function isTecnico()   { return getRole() === 'TECNICO'; }
-function isSupervisor(){ return getRole() === 'SUPERVISOR'; }
-function isAdmin()     { return getRole() === 'ADMIN'; }
+function getFirstRoleCode(user) {
+  return user?.roles?.[0]?.codigo ?? null;
+}
+
+function getToken() {
+  return localStorage.getItem(TOKEN_KEY);
+}
+function getUser() {
+  try {
+    return JSON.parse(localStorage.getItem(USER_KEY));
+  } catch {
+    return null;
+  }
+}
+function getRole() {
+  return getFirstRoleCode(getUser());
+}
+
+function isCiudadano() {
+  return getRole() === 'CIUDADANO';
+}
+function isTecnico() {
+  return getRole() === 'TECNICO';
+}
+function isSupervisor() {
+  return getRole() === 'SUPERVISOR';
+}
+function isAdmin() {
+  return getRole() === 'ADMIN';
+}
 
 // Ruta de dashboard según rol → nueva estructura por opción
 function dashboardUrl(basePath = '') {
-    const sep = (basePath && !basePath.endsWith('/')) ? '/' : '';
-    const role = getRole();
-    if (!role) return `${basePath}${sep}login.html`;
+  const role = getRole();
+  if (!role) return joinUrl(basePath, 'login.html');
 
-    // El Administrador inicia en su Dashboard exclusivo
-    if (role === 'ADMIN') {
-        return `${basePath}${sep}pages/dashboard/dashboard.html`;
-    }
+  // El Administrador inicia en su Dashboard exclusivo
+  if (role === 'ADMIN') {
+    return joinUrl(basePath, 'pages/dashboard/dashboard.html');
+  }
 
-    // Todos los demás roles van al panel de incidencias
-    return `${basePath}${sep}pages/incidencias/panel.html`;
+  // Todos los demás roles van al panel de incidencias
+  return joinUrl(basePath, 'pages/incidencias/panel.html');
 }
 
 function saveAuth(token, user) {
-    localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
+  localStorage.setItem(TOKEN_KEY, token);
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
 }
 function clearAuth() {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
 }
 
 async function logout(basePath = '..') {
-    try { await apiFetch('/logout', { method: 'POST' }); } catch {}
-    clearAuth();
-    const sep = (basePath && basePath.endsWith('/')) ? '' : '/';
-    window.location.href = `${basePath}${sep}login.html`;
+  try {
+    await apiFetch('/logout', { method: 'POST' });
+  } catch {}
+  clearAuth();
+  window.location.href = joinUrl(basePath, 'login.html');
 }
 
 async function confirmLogout(basePath = '..') {
-    // Si no está bootstrap ni modal, los cargamos dinámicamente
-    if (typeof bootstrap === 'undefined') {
-        await new Promise((resolve) => {
-            const script = document.createElement('script');
-            script.src = "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js";
-            script.integrity = "sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz";
-            script.crossOrigin = "anonymous";
-            script.onload = resolve;
-            document.head.appendChild(script);
-        });
-    }
-    if (typeof showConfirmModal !== 'function') {
-        await new Promise((resolve) => {
-            const script = document.createElement('script');
-            script.src = "/js/modal.js";
-            script.onload = resolve;
-            document.head.appendChild(script);
-        });
-    }
+  // Si no está bootstrap ni modal, los cargamos dinámicamente
+  if (typeof bootstrap === 'undefined') {
+    await new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js';
+      script.integrity = 'sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz';
+      script.crossOrigin = 'anonymous';
+      script.onload = resolve;
+      document.head.appendChild(script);
+    });
+  }
+  if (typeof showConfirmModal !== 'function') {
+    await new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = '/js/modal.js';
+      script.onload = resolve;
+      document.head.appendChild(script);
+    });
+  }
 
-    const ok = await showConfirmModal(
-        'Cerrar sesión',
-        '¿Estás seguro de que deseas cerrar sesión?',
-        'Confirmar',
-        'btn-danger'
-    );
-    if (ok) logout(basePath);
+  const ok = await showConfirmModal(
+    'Cerrar sesión',
+    '¿Estás seguro de que deseas cerrar sesión?',
+    'Confirmar',
+    'btn-danger'
+  );
+  if (ok) logout(basePath);
 }
 
 async function sendClientUnauthorizedLog(tipoViolacion, url, detalle) {
-    try {
-        await apiFetch('/logs/unauthorized', {
-            method: 'POST',
-            body: JSON.stringify({
-                tipo_violacion: tipoViolacion,
-                url: url,
-                detalle: detalle,
-                metodo: 'GET'
-            })
-        });
-    } catch (e) {
-        console.error('Error al registrar acceso no autorizado en MongoDB:', e);
-    }
+  try {
+    await apiFetch('/logs/unauthorized', {
+      method: 'POST',
+      body: JSON.stringify({
+        tipo_violacion: tipoViolacion,
+        url: url,
+        detalle: detalle,
+        metodo: 'GET',
+      }),
+    });
+  } catch (e) {
+    console.error('Error al registrar acceso no autorizado en MongoDB:', e);
+  }
 }
 
 function requireAuth(basePath = null) {
-    const prefix = basePath !== null ? basePath : _navPrefix();
-    const sep = (prefix && prefix.endsWith('/')) ? '' : '/';
-    if (!getToken()) {
-        sendClientUnauthorizedLog(
-            'TOKEN_AUSENTE_CLIENT',
-            window.location.pathname,
-            'Intento de acceso a página protegida sin sesión activa (401 Client).'
-        ).then(() => {
-            window.location.href = `${prefix}${sep}login.html`;
-        });
-        return false;
-    }
-    return true;
+  const prefix = basePath !== null ? basePath : _navPrefix();
+  if (!getToken()) {
+    sendClientUnauthorizedLog(
+      'TOKEN_AUSENTE_CLIENT',
+      window.location.pathname,
+      'Intento de acceso a página protegida sin sesión activa (401 Client).'
+    ).then(() => {
+      window.location.href = joinUrl(prefix, 'login.html');
+    });
+    return false;
+  }
+  return true;
 }
 
 function requireRole(allowed) {
-    const prefix = _navPrefix();
-    if (!requireAuth(prefix)) return false;
-    if (!allowed.includes(getRole())) {
-        const sep = (prefix && prefix.endsWith('/')) ? '' : '/';
-        const errorPageUrl = `${prefix}${sep}error.html`;
-        sendClientUnauthorizedLog(
-            'RBAC_CLIENT',
-            window.location.pathname,
-            `Intento de acceso a página restringida para roles permitidos. Rol actual: ${getRole()}`
-        ).then(() => {
-            window.location.href = `${errorPageUrl}?code=403&message=${encodeURIComponent('Acceso denegado (403)')}`;
-        });
-        return false;
-    }
-    return true;
+  const prefix = _navPrefix();
+  if (!requireAuth(prefix)) return false;
+  if (!allowed.includes(getRole())) {
+    sendClientUnauthorizedLog(
+      'RBAC_CLIENT',
+      window.location.pathname,
+      `Intento de acceso a página restringida para roles permitidos. Rol actual: ${getRole()}`
+    ).then(() => {
+      window.location.href = `${joinUrl(prefix, 'error.html')}?code=403&message=${encodeURIComponent('Acceso denegado (403)')}`;
+    });
+    return false;
+  }
+  return true;
 }
 
-function requireCiudadano() { return requireRole(['CIUDADANO']); }
-function requireTecnico()   { return requireRole(['TECNICO']); }
-function requireSupervisor(){ return requireRole(['SUPERVISOR']); }
-function requireAdmin()     { return requireRole(['ADMIN']); }
-function requireOperador()  { return requireRole(['TECNICO', 'SUPERVISOR', 'ADMIN']); }
+function requireCiudadano() {
+  return requireRole(['CIUDADANO']);
+}
+function requireTecnico() {
+  return requireRole(['TECNICO']);
+}
+function requireSupervisor() {
+  return requireRole(['SUPERVISOR']);
+}
+function requireAdmin() {
+  return requireRole(['ADMIN']);
+}
+function requireOperador() {
+  return requireRole(['TECNICO', 'SUPERVISOR', 'ADMIN']);
+}
 
 function getUserName() {
-    const u = getUser();
-    if (!u) return '';
-    return `${u.nombres || ''} ${u.apellidos || ''}`.trim() || u.nombre_usuario || '';
+  const u = getUser();
+  if (!u) return '';
+  return `${u.nombres ?? ''} ${u.apellidos ?? ''}`.trim() || u.nombre_usuario || '';
 }
 function getUserInitials() {
-    const u = getUser();
-    if (!u) return '?';
-    const n = (u.nombres || u.nombre_usuario || '?')[0].toUpperCase();
-    const a = (u.apellidos || '')[0]?.toUpperCase() || '';
-    return n + a;
+  const u = getUser();
+  if (!u) return '?';
+  const n = (u.nombres ?? u.nombre_usuario ?? '?')[0].toUpperCase();
+  const a = u.apellidos?.[0]?.toUpperCase() ?? '';
+  return n + a;
 }
 
 function timeAgo(dateStr) {
-    if (!dateStr) return '';
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const m = Math.floor(diff / 60000);
-    if (m < 1)  return 'Ahora';
-    if (m < 60) return `Hace ${m} min`;
-    const h = Math.floor(m / 60);
-    if (h < 24) return `Hace ${h} h`;
-    return `Hace ${Math.floor(h / 24)} días`;
+  if (!dateStr) return '';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'Ahora';
+  if (m < 60) return `Hace ${m} min`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `Hace ${h} h`;
+  return `Hace ${Math.floor(h / 24)} días`;
 }
 
 function formatDate(d) {
-    if (!d) return '—';
-    return new Date(d).toLocaleString('es-MX', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+  if (!d) return '—';
+  return new Date(d).toLocaleString('es-MX', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 // Backend states: Pendiente | En Proceso | Resuelta | Rechazada
 const ESTADO_MAP = {
-    'Pendiente':  { label: 'Recibido',   cls: 'badge-recibido', step: 0 },
-    'En Proceso': { label: 'En proceso', cls: 'badge-proceso',  step: 1 },
-    'Resuelta':   { label: 'Resuelto',   cls: 'badge-resuelto', step: 2 },
-    'Rechazada':  { label: 'Rechazado',  cls: 'badge-urgente',  step: -1 },
+  Pendiente: { label: 'Recibido', cls: 'badge-recibido', step: 0 },
+  'En Proceso': { label: 'En proceso', cls: 'badge-proceso', step: 1 },
+  Resuelta: { label: 'Resuelto', cls: 'badge-resuelto', step: 2 },
+  Rechazada: { label: 'Rechazado', cls: 'badge-urgente', step: -1 },
 };
-function estadoInfo(e) { return ESTADO_MAP[e] || ESTADO_MAP['Pendiente']; }
+function estadoInfo(e) {
+  return ESTADO_MAP[e] || ESTADO_MAP['Pendiente'];
+}
 
 const PRIORIDAD_MAP = {
-    'Urgente': { cls: 'text-urgente', badgeCls: 'badge-urgente', borderCls: 'border-urgente' },
-    'Alta':    { cls: 'text-urgente', badgeCls: 'badge-urgente', borderCls: 'border-urgente' },
-    'Media':   { cls: 'text-media',   badgeCls: 'badge-media',   borderCls: 'border-media'   },
-    'Normal':  { cls: 'text-media',   badgeCls: 'badge-media',   borderCls: 'border-media'   },
-    'Baja':    { cls: 'text-baja',    badgeCls: 'badge-baja',    borderCls: 'border-baja'    },
+  Urgente: { cls: 'text-urgente', badgeCls: 'badge-urgente', borderCls: 'border-urgente' },
+  Alta: { cls: 'text-urgente', badgeCls: 'badge-urgente', borderCls: 'border-urgente' },
+  Media: { cls: 'text-media', badgeCls: 'badge-media', borderCls: 'border-media' },
+  Normal: { cls: 'text-media', badgeCls: 'badge-media', borderCls: 'border-media' },
+  Baja: { cls: 'text-baja', badgeCls: 'badge-baja', borderCls: 'border-baja' },
 };
-function prioridadInfo(p) { return PRIORIDAD_MAP[p] || PRIORIDAD_MAP['Media']; }
+function prioridadInfo(p) {
+  return PRIORIDAD_MAP[p] || PRIORIDAD_MAP['Media'];
+}
 
 function progressBars(estado) {
-    const step = estadoInfo(estado).step;
-    return ['Recibido', 'En proceso', 'Resuelto'].map((s, i) => {
-        let cls = 'step-bar' + (i < step ? ' done' : i === step ? ' active' : '');
-        return `<div class="step-bar-wrap"><div class="${cls}"></div><div class="step-label">${s}</div></div>`;
-    }).join('');
+  const step = estadoInfo(estado).step;
+  return ['Recibido', 'En proceso', 'Resuelto']
+    .map((s, i) => {
+      let cls = 'step-bar' + (i < step ? ' done' : i === step ? ' active' : '');
+      return `<div class="step-bar-wrap"><div class="${cls}"></div><div class="step-label">${s}</div></div>`;
+    })
+    .join('');
 }
 
 function incidentCardHTML(inc, href) {
-    const p = prioridadInfo(inc.prioridad);
-    const e = estadoInfo(inc.estado);
-    return `
+  const p = prioridadInfo(inc.prioridad);
+  const e = estadoInfo(inc.estado);
+  return `
     <div class="incident-card ${p.borderCls}" onclick="window.location.href='${href}'">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
             <span style="font-size:14px;font-weight:600;color:var(--gray-900)">${inc.titulo}</span>
@@ -203,191 +246,200 @@ function incidentCardHTML(inc, href) {
 }
 
 function tiempoResolucion(fechaCreacion, historial) {
-    const fin = historial?.find(h => h.estado_nuevo === 'Resuelta')?.fecha_cambio;
-    if (!fin || !fechaCreacion) return null;
-    const mins = Math.round((new Date(fin) - new Date(fechaCreacion)) / 60000);
-    if (mins < 60)   return `${mins} min`;
-    if (mins < 1440) return `${Math.round(mins / 60)} h`;
-    return `${Math.round(mins / 1440)} días`;
+  const fin = historial?.find((h) => h.estado_nuevo === 'Resuelta')?.fecha_cambio;
+  if (!fin || !fechaCreacion) return null;
+  const mins = Math.round((new Date(fin) - new Date(fechaCreacion)) / 60000);
+  if (mins < 60) return `${mins} min`;
+  if (mins < 1440) return `${Math.round(mins / 60)} h`;
+  return `${Math.round(mins / 1440)} días`;
 }
 
 function showNotifBadge(count) {
-    if (!count) return;
-    const bell = document.querySelector('.bi-bell');
-    if (!bell) return;
-    const wrap = document.createElement('span');
-    wrap.style.cssText = 'position:relative;display:inline-flex';
-    bell.parentNode.replaceChild(wrap, bell);
-    wrap.appendChild(bell);
-    const badge = document.createElement('span');
-    badge.className = 'badge bg-danger rounded-pill position-absolute';
-    badge.style.cssText = 'font-size:10px;top:-6px;right:-8px;min-width:18px;padding:2px 5px;line-height:1.2';
-    badge.textContent = count > 9 ? '9+' : String(count);
-    wrap.appendChild(badge);
+  if (!count) return;
+  const bell = document.querySelector('.bi-bell');
+  if (!bell) return;
+  const wrap = document.createElement('span');
+  wrap.style.cssText = 'position:relative;display:inline-flex';
+  bell.parentNode.replaceChild(wrap, bell);
+  wrap.appendChild(bell);
+  const badge = document.createElement('span');
+  badge.className = 'badge bg-danger rounded-pill position-absolute';
+  badge.style.cssText =
+    'font-size:10px;top:-6px;right:-8px;min-width:18px;padding:2px 5px;line-height:1.2';
+  badge.textContent = count > 9 ? '9+' : String(count);
+  wrap.appendChild(badge);
 }
 
 /* ===== DYNAMIC DATABASE-DRIVEN RBAC NAVEGACION ===== */
 
 function getOpciones() {
-    const u = getUser();
-    if (!u || !u.roles) return [];
-    const ops = [];
-    u.roles.forEach(r => {
-        if (r.opciones) {
-            r.opciones.forEach(o => {
-                if (!o.deleted) ops.push(o.nombre_opcion);
-            });
-        }
-    });
-    return ops;
+  const u = getUser();
+  return (
+    u?.roles?.flatMap((r) =>
+      (r.opciones ?? []).filter((o) => !o.deleted).map((o) => o.nombre_opcion)
+    ) ?? []
+  );
 }
 
 function getNavLinks() {
-    const ops  = getOpciones();
-    const role = getRole();
-    const links = [];
+  const ops = getOpciones();
+  const role = getRole();
+  const links = [];
 
-    // Dashboard - solo para ADMIN
-    if (role === 'ADMIN') {
-        links.push({ href: 'pages/dashboard/dashboard.html', icon: 'bi-speedometer2', label: 'Inicio' });
+  // Dashboard - solo para ADMIN
+  if (role === 'ADMIN') {
+    links.push({
+      href: 'pages/dashboard/dashboard.html',
+      icon: 'bi-speedometer2',
+      label: 'Inicio',
+    });
+  }
+
+  // Incidencias — visible para roles autenticados (excepto ADMIN que no ve incidencias ni mapa)
+  const hasIncidencias = ops.some((o) => o.includes('Incidencias'));
+  if (hasIncidencias && role !== 'ADMIN') {
+    links.push({ href: 'pages/incidencias/panel.html', icon: 'bi-house-fill', label: 'Inicio' });
+    if (role === 'CIUDADANO') {
+      links.push({
+        href: 'pages/incidencias/reportar.html',
+        icon: 'bi-plus-circle',
+        label: 'Reportar',
+      });
     }
+    links.push({ href: 'pages/incidencias/mapa.html', icon: 'bi-map', label: 'Mapa' });
+  }
 
-    // Incidencias — visible para roles autenticados (excepto ADMIN que no ve incidencias ni mapa)
-    const hasIncidencias = ops.some(o => o.includes('Incidencias'));
-    if (hasIncidencias && role !== 'ADMIN') {
-        links.push({ href: 'pages/incidencias/panel.html',    icon: 'bi-house-fill', label: 'Inicio' });
-        if (role === 'CIUDADANO') {
-            links.push({ href: 'pages/incidencias/reportar.html', icon: 'bi-plus-circle', label: 'Reportar' });
-        }
-        links.push({ href: 'pages/incidencias/mapa.html',     icon: 'bi-map',        label: 'Mapa' });
-    }
+  // Gestión de usuarios — Admin y Supervisor
+  const hasUsuarios = ops.some((o) => o.includes('Gestión de Usuarios'));
+  if (hasUsuarios) {
+    links.push({ href: 'pages/usuarios/usuarios.html', icon: 'bi-people', label: 'Usuarios' });
+  }
 
-    // Gestión de usuarios — Admin y Supervisor
-    const hasUsuarios = ops.some(o => o.includes('Gestión de Usuarios'));
-    if (hasUsuarios) {
-        links.push({ href: 'pages/usuarios/usuarios.html', icon: 'bi-people', label: 'Usuarios' });
-    }
+  // Gestión de Roles — Admin
+  const hasRoles = ops.some((o) => o.includes('Gestión de Roles'));
+  if (hasRoles) {
+    links.push({ href: 'pages/roles/roles.html', icon: 'bi-shield-lock', label: 'Roles' });
+  }
 
-    // Gestión de Roles — Admin
-    const hasRoles = ops.some(o => o.includes('Gestión de Roles'));
-    if (hasRoles) {
-        links.push({ href: 'pages/roles/roles.html', icon: 'bi-shield-lock', label: 'Roles' });
-    }
+  // Perfil — todos los roles
+  const hasPerfil = ops.some((o) => o.includes('Perfil de Usuario'));
+  if (hasPerfil) {
+    links.push({ href: 'pages/perfil/perfil.html', icon: 'bi-person', label: 'Perfil' });
+  }
 
-    // Perfil — todos los roles
-    const hasPerfil = ops.some(o => o.includes('Perfil de Usuario'));
-    if (hasPerfil) {
-        links.push({ href: 'pages/perfil/perfil.html', icon: 'bi-person', label: 'Perfil' });
-    }
-
-    return links;
+  return links;
 }
 
 function _navPrefix() {
-    const p = window.location.pathname;
-    // Páginas en pages/[opcion]/ → necesitan 2 niveles hacia arriba para llegar a la raíz
-    if (p.includes('/pages/')) return '../../';
-    // Páginas legacy en [rol]/ → 1 nivel
-    if (['/ciudadano/', '/tecnico/', '/supervisor/', '/admin/'].some(s => p.includes(s))) return '../';
-    return '';
+  const p = window.location.pathname;
+  // Páginas en pages/[opcion]/ → necesitan 2 niveles hacia arriba para llegar a la raíz
+  if (p.includes('/pages/')) return '../../';
+  // Páginas legacy en [rol]/ → 1 nivel
+  if (['/ciudadano/', '/tecnico/', '/supervisor/', '/admin/'].some((s) => p.includes(s)))
+    return '../';
+  return '';
 }
 
 function _roleFolder() {
-    // En la nueva estructura todas las páginas están en pages/[opcion]/
-    // No necesitamos resolver carpeta por rol, los hrefs ya son absolutos desde la raíz
-    return '';
+  // En la nueva estructura todas las páginas están en pages/[opcion]/
+  // No necesitamos resolver carpeta por rol, los hrefs ya son absolutos desde la raíz
+  return '';
 }
 
 function _renderNavLinks(navElement) {
-    const links     = getNavLinks();
-    const prefix    = _navPrefix();
-    const isDesktop = window.innerWidth >= 768;
+  const links = getNavLinks();
+  const prefix = _navPrefix();
+  const isDesktop = window.innerWidth >= 768;
 
-    let html = '';
-    if (isDesktop) {
-        html += '<div class="nav-brand"><span class="nav-brand-icon">📍</span> Incidencias</div>';
-    }
+  let html = '';
+  if (isDesktop) {
+    html += '<div class="nav-brand"><span class="nav-brand-icon">📍</span> Incidencias</div>';
+  }
 
-    html += links.map(l => {
-        // Los hrefs en getNavLinks() ya son relativos a la raíz del frontend
-        const fullHref   = prefix + l.href;
-        const activeClass = window.location.pathname.includes(l.href.split('/').pop()) ? 'active' : '';
-        return `<a href="${fullHref}" class="${activeClass}"><i class="bi ${l.icon}"></i><span>${l.label}</span></a>`;
-    }).join('');
+  html += links
+    .map((l) => {
+      // Los hrefs en getNavLinks() ya son relativos a la raíz del frontend
+      const fullHref = prefix + l.href;
+      const activeClass = window.location.pathname.includes(l.href.split('/').pop() ?? '')
+        ? 'active'
+        : '';
+      return `<a href="${fullHref}" class="${activeClass}"><i class="bi ${l.icon}"></i><span>${l.label}</span></a>`;
+    })
+    .join('');
 
-    html += '<div class="nav-divider"></div>';
-    html += `<a href="#" class="nav-logout-link" id="_sidebarLogout">
+  html += '<div class="nav-divider"></div>';
+  html += `<a href="#" class="nav-logout-link" id="_sidebarLogout">
         <i class="bi bi-box-arrow-right"></i><span>Cerrar sesión</span>
     </a>`;
 
-    navElement.innerHTML = html;
-    navElement.querySelector('#_sidebarLogout')?.addEventListener('click', e => {
-        e.preventDefault();
-        confirmLogout(prefix || '.');
-    });
+  navElement.innerHTML = html;
+  navElement.querySelector('#_sidebarLogout')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    confirmLogout(prefix || '.');
+  });
 }
 
 // Validar acceso a la página actual según opciones de la base de datos (rol_opcion)
 async function checkRoutePermission() {
-    const p = window.location.pathname;
+  const p = window.location.pathname;
 
-    // Si es la página de login, index o página de error, no validar
-    if (p.endsWith('login.html') || p.endsWith('error.html') || p === '/' || p.endsWith('/')) {
-        return;
+  // Si es la página de login, index o página de error, no validar
+  if (p.endsWith('login.html') || p.endsWith('error.html') || p === '/' || p.endsWith('/')) {
+    return;
+  }
+
+  // Si el usuario no tiene token y está en otra página, requireAuth() lo redirigirá a login.html
+  if (!getToken()) return;
+
+  const ops = getOpciones();
+  const role = getRole();
+
+  // 1. Gestión de Usuarios
+  if (p.includes('/pages/usuarios/') && !ops.includes('Gestión de Usuarios')) {
+    await denyAccess();
+  }
+
+  // 2. Gestión de Roles
+  if (p.includes('/pages/roles/') && !ops.includes('Gestión de Roles')) {
+    await denyAccess();
+  }
+
+  // 3. Dashboard de Administración (solo ADMIN)
+  if (p.includes('/pages/dashboard/') && role !== 'ADMIN') {
+    await denyAccess();
+  }
+
+  // 4. Incidencias y Mapa (requiere opciones de Incidencias, ADMIN no tiene permitido verlas ni mapa)
+  if (p.includes('/pages/incidencias/')) {
+    const tienePermisoIncidencias = ops.some((o) => o.includes('Incidencias'));
+    if (!tienePermisoIncidencias || role === 'ADMIN') {
+      await denyAccess();
     }
-
-    // Si el usuario no tiene token y está en otra página, requireAuth() lo redirigirá a login.html
-    if (!getToken()) return;
-
-    const ops  = getOpciones();
-    const role = getRole();
-
-    // 1. Gestión de Usuarios
-    if (p.includes('/pages/usuarios/') && !ops.includes('Gestión de Usuarios')) {
-        await denyAccess();
-    }
-
-    // 2. Gestión de Roles
-    if (p.includes('/pages/roles/') && !ops.includes('Gestión de Roles')) {
-        await denyAccess();
-    }
-
-    // 3. Dashboard de Administración (solo ADMIN)
-    if (p.includes('/pages/dashboard/') && role !== 'ADMIN') {
-        await denyAccess();
-    }
-
-    // 4. Incidencias y Mapa (requiere opciones de Incidencias, ADMIN no tiene permitido verlas ni mapa)
-    if (p.includes('/pages/incidencias/')) {
-        const tienePermisoIncidencias = ops.some(o => o.includes('Incidencias'));
-        if (!tienePermisoIncidencias || role === 'ADMIN') {
-            await denyAccess();
-        }
-    }
+  }
 }
 
 async function denyAccess() {
-    const prefix = _navPrefix();
-    const sep = (prefix && prefix.endsWith('/')) ? '' : '/';
+  const prefix = _navPrefix();
+  const sep = prefix && prefix.endsWith('/') ? '' : '/';
 
-    // Registrar en MongoDB antes de redirigir
-    await sendClientUnauthorizedLog(
-        'RBAC_CLIENT',
-        window.location.pathname,
-        `Acceso denegado client-side a la página actual. Rol: ${getRole()}`
-    );
+  // Registrar en MongoDB antes de redirigir
+  await sendClientUnauthorizedLog(
+    'RBAC_CLIENT',
+    window.location.pathname,
+    `Acceso denegado client-side a la página actual. Rol: ${getRole()}`
+  );
 
-    window.location.href = `${prefix}${sep}error.html?code=403&message=${encodeURIComponent('Acceso denegado (RBAC)')}`;
-    throw new Error('Acceso no autorizado');
+  window.location.href = `${prefix}${sep}error.html?code=403&message=${encodeURIComponent('Acceso denegado (RBAC)')}`;
+  throw new Error('Acceso no autorizado');
 }
 
 /* ===== NOTIFICACIONES EN TIEMPO REAL (POLLING & DROPDOWN) ===== */
 
 const NOTIF_STYLING_ID = '_notif_styles';
 if (!document.getElementById(NOTIF_STYLING_ID)) {
-    const s = document.createElement('style');
-    s.id = NOTIF_STYLING_ID;
-    s.textContent = `
+  const s = document.createElement('style');
+  s.id = NOTIF_STYLING_ID;
+  s.textContent = `
         .bell-wrapper {
             position: relative;
             display: inline-flex;
@@ -507,39 +559,39 @@ if (!document.getElementById(NOTIF_STYLING_ID)) {
             font-size: 13px;
         }
     `;
-    document.head.appendChild(s);
+  document.head.appendChild(s);
 }
 
 let lastNotifIds = new Set();
 let isFirstLoad = true;
 
 function setupNotificationsUI() {
-    const bell = document.querySelector('.bi-bell');
-    if (!bell) return;
+  const bell = document.querySelector('.bi-bell');
+  if (!bell) return;
 
-    // Si ya fue configurado el wrapper, no repetir
-    if (bell.parentNode.classList.contains('bell-wrapper')) return;
+  // Si ya fue configurado el wrapper, no repetir
+  if (bell.parentNode.classList.contains('bell-wrapper')) return;
 
-    // Solicitar permiso de notificaciones de escritorio al navegador
-    if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
-    }
+  // Solicitar permiso de notificaciones de escritorio al navegador
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
 
-    const wrapper = document.createElement('div');
-    wrapper.className = 'bell-wrapper';
-    bell.parentNode.replaceChild(wrapper, bell);
-    wrapper.appendChild(bell);
+  const wrapper = document.createElement('div');
+  wrapper.className = 'bell-wrapper';
+  bell.parentNode.replaceChild(wrapper, bell);
+  wrapper.appendChild(bell);
 
-    const badge = document.createElement('span');
-    badge.className = 'bell-badge';
-    badge.style.display = 'none';
-    wrapper.appendChild(badge);
+  const badge = document.createElement('span');
+  badge.className = 'bell-badge';
+  badge.style.display = 'none';
+  wrapper.appendChild(badge);
 
-    // Crear el panel de notificaciones e insertarlo en el body
-    const panel = document.createElement('div');
-    panel.id = '_notifPanel';
-    panel.className = 'notif-panel';
-    panel.innerHTML = `
+  // Crear el panel de notificaciones e insertarlo en el body
+  const panel = document.createElement('div');
+  panel.id = '_notifPanel';
+  panel.className = 'notif-panel';
+  panel.innerHTML = `
         <div class="notif-header">
             <span class="notif-title">Notificaciones</span>
             <button class="notif-clear-btn" onclick="marcarTodasLasNotificacionesLeidas()">Marcar todo como leído</button>
@@ -548,171 +600,178 @@ function setupNotificationsUI() {
             <div class="notif-empty">Cargando notificaciones…</div>
         </div>
     `;
-    document.body.appendChild(panel);
+  document.body.appendChild(panel);
 
-    // Manejar el toggle al hacer click en la campana
-    wrapper.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const isVisible = panel.style.display === 'flex';
+  // Manejar el toggle al hacer click en la campana
+  wrapper.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isVisible = panel.style.display === 'flex';
 
-        // Cerrar otros paneles si los hay
-        document.querySelectorAll('.notif-panel').forEach(p => p.style.display = 'none');
+    // Cerrar otros paneles si los hay
+    document.querySelectorAll('.notif-panel').forEach((p) => (p.style.display = 'none'));
 
-        if (!isVisible) {
-            // Posicionar el panel debajo de la campana
-            const rect = wrapper.getBoundingClientRect();
-            panel.style.top = `${rect.bottom + window.scrollY + 8}px`;
+    if (!isVisible) {
+      // Posicionar el panel debajo de la campana
+      const rect = wrapper.getBoundingClientRect();
+      panel.style.top = `${rect.bottom + window.scrollY + 8}px`;
 
-            // Alinear al borde derecho en pantallas grandes
-            if (window.innerWidth >= 768) {
-                panel.style.left = 'auto';
-                panel.style.right = `${window.innerWidth - rect.right - window.scrollX}px`;
-            } else {
-                panel.style.right = '16px';
-                panel.style.left = 'auto';
-            }
+      // Alinear al borde derecho en pantallas grandes
+      if (window.innerWidth >= 768) {
+        panel.style.left = 'auto';
+        panel.style.right = `${window.innerWidth - rect.right - window.scrollX}px`;
+      } else {
+        panel.style.right = '16px';
+        panel.style.left = 'auto';
+      }
 
-            panel.style.display = 'flex';
-            renderNotificacionesLista();
-        } else {
-            panel.style.display = 'none';
-        }
-    });
+      panel.style.display = 'flex';
+      renderNotificacionesLista();
+    } else {
+      panel.style.display = 'none';
+    }
+  });
 
-    // Cerrar al hacer click fuera
-    document.addEventListener('click', (e) => {
-        if (!panel.contains(e.target) && !wrapper.contains(e.target)) {
-            panel.style.display = 'none';
-        }
-    });
+  // Cerrar al hacer click fuera
+  document.addEventListener('click', (e) => {
+    if (!panel.contains(e.target) && !wrapper.contains(e.target)) {
+      panel.style.display = 'none';
+    }
+  });
 }
 
 async function fetchNotificaciones() {
-    if (!getToken()) return;
-    try {
-        const notifs = await apiFetch('/notificaciones');
+  if (!getToken()) return;
+  try {
+    const notifs = await apiFetch('/notificaciones');
 
-        // Contar no leídas
-        const unreadCount = notifs.filter(n => !n.leida).length;
-        const badge = document.querySelector('.bell-badge');
-        if (badge) {
-            if (unreadCount > 0) {
-                badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
-                badge.style.display = 'flex';
-            } else {
-                badge.style.display = 'none';
-            }
-        }
-
-        // Mostrar toasts y notificaciones de escritorio para nuevas no leídas
-        const newIds = new Set();
-        notifs.forEach(n => {
-            newIds.add(n.id);
-            if (!n.leida && !lastNotifIds.has(n.id)) {
-                // Si no es la primera carga de la página, mostrar toast y desktop notification
-                if (!isFirstLoad) {
-                    if (typeof showToast === 'function') {
-                        showToast(n.mensaje, 'info');
-                    }
-                    // Si la pestaña está en segundo plano o minimizada, lanzar notificación del OS
-                    if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
-                        new Notification(n.titulo, {
-                            body: n.mensaje,
-                            tag: n.id
-                        });
-                    }
-                }
-            }
-        });
-
-        lastNotifIds = newIds;
-        isFirstLoad = false;
-    } catch (e) {
-        console.error('Error al consultar notificaciones:', e);
+    // Contar no leídas
+    const unreadCount = notifs.filter((n) => !n.leida).length;
+    const badge = document.querySelector('.bell-badge');
+    if (badge) {
+      if (unreadCount > 0) {
+        badge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
     }
+
+    // Mostrar toasts y notificaciones de escritorio para nuevas no leídas
+    const newIds = new Set();
+    notifs.forEach((n) => {
+      newIds.add(n.id);
+      if (!n.leida && !lastNotifIds.has(n.id)) {
+        // Si no es la primera carga de la página, mostrar toast y desktop notification
+        if (!isFirstLoad) {
+          if (typeof showToast === 'function') {
+            showToast(n.mensaje, 'info');
+          }
+          // Si la pestaña está en segundo plano o minimizada, lanzar notificación del OS
+          if (
+            document.hidden &&
+            'Notification' in window &&
+            Notification.permission === 'granted'
+          ) {
+            new Notification(n.titulo, {
+              body: n.mensaje,
+              tag: n.id,
+            });
+          }
+        }
+      }
+    });
+
+    lastNotifIds = newIds;
+    isFirstLoad = false;
+  } catch (e) {
+    console.error('Error al consultar notificaciones:', e);
+  }
 }
 
 async function renderNotificacionesLista() {
-    const listContainer = document.getElementById('_notifList');
-    if (!listContainer) return;
+  const listContainer = document.getElementById('_notifList');
+  if (!listContainer) return;
 
-    try {
-        const notifs = await apiFetch('/notificaciones');
-        if (notifs.length === 0) {
-            listContainer.innerHTML = '<div class="notif-empty">No tienes notificaciones.</div>';
-            return;
-        }
+  try {
+    const notifs = await apiFetch('/notificaciones');
+    if (notifs.length === 0) {
+      listContainer.innerHTML = '<div class="notif-empty">No tienes notificaciones.</div>';
+      return;
+    }
 
-        listContainer.innerHTML = notifs.map(n => {
-            const relativeTime = typeof timeAgo === 'function' ? timeAgo(n.created_at) : 'Hace un momento';
-            return `
+    listContainer.innerHTML = notifs
+      .map((n) => {
+        const relativeTime =
+          typeof timeAgo === 'function' ? timeAgo(n.created_at) : 'Hace un momento';
+        return `
                 <div class="notif-item ${n.leida ? '' : 'unread'}" onclick="abrirNotificacion('${n.id}', '${n.incidencia_id}')">
                     <div class="notif-item-title">${n.titulo}</div>
                     <div class="notif-item-body">${n.mensaje}</div>
                     <div class="notif-item-time">${relativeTime}</div>
                 </div>
             `;
-        }).join('');
-    } catch (e) {
-        listContainer.innerHTML = '<div class="notif-empty">Error al cargar notificaciones.</div>';
-    }
+      })
+      .join('');
+  } catch (e) {
+    listContainer.innerHTML = '<div class="notif-empty">Error al cargar notificaciones.</div>';
+  }
 }
 
-window.abrirNotificacion = async function(id, incidenciaId) {
-    try {
-        await apiFetch(`/notificaciones/${id}/leer`, { method: 'PATCH' });
-    } catch (e) {
-        console.error('Error al marcar notificación como leída:', e);
-    }
+window.abrirNotificacion = async function (id, incidenciaId) {
+  try {
+    await apiFetch(`/notificaciones/${id}/leer`, { method: 'PATCH' });
+  } catch (e) {
+    console.error('Error al marcar notificación como leída:', e);
+  }
 
-    const panel = document.getElementById('_notifPanel');
-    if (panel) panel.style.display = 'none';
+  const panel = document.getElementById('_notifPanel');
+  if (panel) panel.style.display = 'none';
 
-    // Determinar prefijo de página
-    const prefix = _navPrefix();
-    window.location.href = `${prefix}pages/incidencias/detalle.html?id=${incidenciaId}`;
+  // Determinar prefijo de página
+  const prefix = _navPrefix();
+  window.location.href = `${prefix}pages/incidencias/detalle.html?id=${incidenciaId}`;
 };
 
-window.marcarTodasLasNotificacionesLeidas = async function() {
-    try {
-        await apiFetch('/notificaciones/leer-todas', { method: 'POST' });
-        showToast('Todas las notificaciones marcadas como leídas', 'success');
+window.marcarTodasLasNotificacionesLeidas = async function () {
+  try {
+    await apiFetch('/notificaciones/leer-todas', { method: 'POST' });
+    showToast('Todas las notificaciones marcadas como leídas', 'success');
 
-        // Ocultar badge
-        const badge = document.querySelector('.bell-badge');
-        if (badge) badge.style.display = 'none';
+    // Ocultar badge
+    const badge = document.querySelector('.bell-badge');
+    if (badge) badge.style.display = 'none';
 
-        // Re-render
-        renderNotificacionesLista();
-    } catch (e) {
-        showToast('No se pudieron marcar las notificaciones como leídas', 'error');
-    }
+    // Re-render
+    renderNotificacionesLista();
+  } catch (e) {
+    showToast('No se pudieron marcar las notificaciones como leídas', 'error');
+  }
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
-    await checkRoutePermission();
+  await checkRoutePermission();
 
-    let nav = document.querySelector('.bottom-nav');
+  let nav = document.querySelector('.bottom-nav');
 
-    if (getToken()) {
-        if (!nav) {
-            nav = document.createElement('nav');
-            nav.className = 'bottom-nav';
-            document.body.appendChild(nav);
-        }
-
-        _renderNavLinks(nav);
-
-        if (window.innerWidth >= 768) {
-            document.body.style.paddingLeft  = '240px';
-            document.body.style.paddingBottom = '0';
-        }
-
-        // Configurar UI de notificaciones e iniciar sondeo/polling
-        setupNotificationsUI();
-        await fetchNotificaciones();
-
-        // Sondeo inteligente cada 5 segundos (casi instantáneo)
-        setInterval(fetchNotificaciones, 5000);
+  if (getToken()) {
+    if (!nav) {
+      nav = document.createElement('nav');
+      nav.className = 'bottom-nav';
+      document.body.appendChild(nav);
     }
+
+    _renderNavLinks(nav);
+
+    if (window.innerWidth >= 768) {
+      document.body.style.paddingLeft = '240px';
+      document.body.style.paddingBottom = '0';
+    }
+
+    // Configurar UI de notificaciones e iniciar sondeo/polling
+    setupNotificationsUI();
+    await fetchNotificaciones();
+
+    // Sondeo inteligente cada 5 segundos (casi instantáneo)
+    setInterval(fetchNotificaciones, 5000);
+  }
 });

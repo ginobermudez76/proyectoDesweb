@@ -18,84 +18,63 @@ class AuthController extends Controller
     /** Segundos de bloqueo tras alcanzar MAX_FAILS */
     private const LOCKOUT_TTL = 300; // 5 minutos
 
-    public function login(Request $request)
+    private function loginCacheKeys(string $ip, string $loginInput): array
     {
-        $request->validate([
-            'correo_electronico' => 'required|string',
-            'password'           => 'required',
-        ]);
+        return [
+            'ip' => "login_fails:ip:{$ip}",
+            'email' => "login_fails:input:{$loginInput}",
+        ];
+    }
 
-        $ip    = $request->ip();
-        $loginInput = strtolower($request->correo_electronico);
-
-        $keyIp    = "login_fails:ip:{$ip}";
-        $keyEmail = "login_fails:input:{$loginInput}";
-
-        // ── 1. Verificar si hay un bloqueo activo ──────────────────────────
-        $failsIp    = (int) Cache::store('redis')->get($keyIp, 0);
+    private function getLoginAttempts(string $keyIp, string $keyEmail): array
+    {
+        $failsIp = (int) Cache::store('redis')->get($keyIp, 0);
         $failsEmail = (int) Cache::store('redis')->get($keyEmail, 0);
 
-        if ($failsIp >= self::MAX_FAILS || $failsEmail >= self::MAX_FAILS) {
-            // Obtener TTL restante directamente desde la conexión Redis subyacente
-            $prefix     = config('cache.prefix', '');
-            $blockedKey = $failsIp >= self::MAX_FAILS ? $keyIp : $keyEmail;
-            /** @var \Illuminate\Cache\RedisStore $redisStore */
-            $redisStore = Cache::store('redis')->getStore();
-            /** @var mixed $redisConnection */
-            $redisConnection = $redisStore->getRedis();
-            $ttl        = $redisConnection->ttl($prefix.$blockedKey);
-            $ttl        = ($ttl && $ttl > 0) ? $ttl : self::LOCKOUT_TTL;
+        return [
+            'fails_ip' => $failsIp,
+            'fails_email' => $failsEmail,
+            'blocked_key' => $failsIp >= self::MAX_FAILS ? $keyIp : $keyEmail,
+            'blocked' => $failsIp >= self::MAX_FAILS || $failsEmail >= self::MAX_FAILS,
+        ];
+    }
 
-            return response()->json([
-                'message'             => 'Cuenta bloqueada por múltiples intentos fallidos. '
-                                         .'Intenta de nuevo en '.ceil($ttl / 60).' minuto(s).',
-                'retry_after_seconds' => $ttl,
-            ], 429);
-        }
+    private function blockedLoginResponse(string $blockedKey): \Illuminate\Http\JsonResponse
+    {
+        $prefix = config('cache.prefix', '');
+        /** @var \Illuminate\Cache\RedisStore $redisStore */
+        $redisStore = Cache::store('redis')->getStore();
+        /** @var mixed $redisConnection */
+        $redisConnection = $redisStore->getRedis();
+        $ttl = $redisConnection->ttl($prefix . $blockedKey);
+        $ttl = ($ttl && $ttl > 0) ? $ttl : self::LOCKOUT_TTL;
 
-        // ── 2. Validar credenciales (correo_electronico o nombre_usuario) ──
-        /** @var Usuario|null $usuario */
-        $usuario = Usuario::where('correo_electronico', $loginInput)
-            ->orWhere('nombre_usuario', $loginInput)
-            ->first();
+        return response()->json([
+            'message' => 'Cuenta bloqueada por múltiples intentos fallidos. '
+                . 'Intenta de nuevo en ' . ceil($ttl / 60) . ' minuto(s).',
+            'retry_after_seconds' => $ttl,
+        ], 429);
+    }
 
-        if (!$usuario || !Hash::check($request->password, $usuario->password_hash)) {
+    private function registerFailedLogin(Request $request, string $loginInput, string $ip, int $attempts): void
+    {
+        IntentoLoginFallido::create([
+            'correo_electronico' => $loginInput,
+            'ip' => $ip,
+            'user_agent' => $request->userAgent(),
+            'intento_numero' => $attempts,
+            'bloqueado' => $attempts >= self::MAX_FAILS,
+            'fecha_hora' => now(),
+        ]);
+    }
 
-            // Incrementar contadores usando get+put para mantener TTL de 5 min
-            $numIp    = (int) Cache::store('redis')->get($keyIp, 0) + 1;
-            $numEmail = (int) Cache::store('redis')->get($keyEmail, 0) + 1;
-            Cache::store('redis')->put($keyIp,    $numIp,    self::LOCKOUT_TTL);
-            Cache::store('redis')->put($keyEmail, $numEmail, self::LOCKOUT_TTL);
+    private function buildLoginResponse(array $payload, int $status): \Illuminate\Http\JsonResponse
+    {
+        return response()->json($payload, $status);
+    }
 
-            $intento   = max($numIp, $numEmail);
-            $bloqueado = $intento >= self::MAX_FAILS;
-            $remaining = max(0, self::MAX_FAILS - $intento);
-
-            // ── Registrar en MongoDB ──────────────────────────────────────
-            IntentoLoginFallido::create([
-                'correo_electronico' => $loginInput,
-                'ip'                 => $ip,
-                'user_agent'         => $request->userAgent(),
-                'intento_numero'     => $intento,
-                'bloqueado'          => $bloqueado,
-                'fecha_hora'         => now(),
-            ]);
-
-            return response()->json([
-                'message'             => $bloqueado
-                    ? 'Cuenta bloqueada. Intenta de nuevo en '.self::LOCKOUT_TTL / 60 .' minuto(s).'
-                    : "Credenciales incorrectas. Te quedan {$remaining} intento(s) antes del bloqueo.",
-                'attempts_remaining'  => $remaining,
-                'retry_after_seconds' => $bloqueado ? self::LOCKOUT_TTL : null,
-            ], 401);
-        }
-
-        // ── 3. Verificar cuenta activa ─────────────────────────────────────
-        if (!$usuario->activo) {
-            return response()->json(['message' => 'Cuenta inactiva. Contacta al administrador.'], 403);
-        }
-
-        // ── 4. Login exitoso: limpiar contadores de Redis ─────────────────
+    private function successfulLoginResponse(Request $request, Usuario $usuario, string $ip, string $keyIp, string $keyEmail): \Illuminate\Http\JsonResponse
+    {
         Cache::store('redis')->forget($keyIp);
         Cache::store('redis')->forget($keyEmail);
 
@@ -111,11 +90,70 @@ class AuthController extends Controller
             'fecha_hora'         => now(),
         ]);
 
-        return response()->json([
+        return $this->buildLoginResponse([
             'access_token' => $token,
-            'token_type'   => 'Bearer',
-            'usuario'      => $usuario->load('roles.opciones'),
+            'token_type' => 'Bearer',
+            'usuario' => $usuario->load('roles.opciones'),
         ], 200);
+    }
+
+    public function login(Request $request)
+    {
+        $request->validate([
+            'correo_electronico' => 'required|string',
+            'password'           => 'required',
+        ]);
+
+        $ip    = $request->ip();
+        $loginInput = strtolower($request->correo_electronico);
+
+        $cacheKeys = $this->loginCacheKeys($ip, $loginInput);
+        $keyIp = $cacheKeys['ip'];
+        $keyEmail = $cacheKeys['email'];
+
+        // ── 1. Verificar si hay un bloqueo activo ──────────────────────────
+        $attempts = $this->getLoginAttempts($keyIp, $keyEmail);
+        if ($attempts['blocked']) {
+            return $this->blockedLoginResponse($attempts['blocked_key']);
+        }
+
+        // ── 2. Validar credenciales (correo_electronico o nombre_usuario) ──
+        /** @var Usuario|null $usuario */
+        $usuario = Usuario::where('correo_electronico', $loginInput)
+            ->orWhere('nombre_usuario', $loginInput)
+            ->first();
+
+        $response = null;
+
+        if (!$usuario || !Hash::check($request->password, $usuario->password_hash)) {
+
+            // Incrementar contadores usando get+put para mantener TTL de 5 min
+            $numIp    = (int) Cache::store('redis')->get($keyIp, 0) + 1;
+            $numEmail = (int) Cache::store('redis')->get($keyEmail, 0) + 1;
+            Cache::store('redis')->put($keyIp,    $numIp,    self::LOCKOUT_TTL);
+            Cache::store('redis')->put($keyEmail, $numEmail, self::LOCKOUT_TTL);
+
+            $intento   = max($numIp, $numEmail);
+            $bloqueado = $intento >= self::MAX_FAILS;
+            $remaining = max(0, self::MAX_FAILS - $intento);
+
+            // ── Registrar en MongoDB ──────────────────────────────────────
+            $this->registerFailedLogin($request, $loginInput, $ip, $intento);
+
+            $response = $this->buildLoginResponse([
+                'message' => $bloqueado
+                    ? 'Cuenta bloqueada. Intenta de nuevo en '.self::LOCKOUT_TTL / 60 .' minuto(s).'
+                    : "Credenciales incorrectas. Te quedan {$remaining} intento(s) antes del bloqueo.",
+                'attempts_remaining' => $remaining,
+                'retry_after_seconds' => $bloqueado ? self::LOCKOUT_TTL : null,
+            ], 401);
+        } elseif (!$usuario->activo) {
+            $response = $this->buildLoginResponse(['message' => 'Cuenta inactiva. Contacta al administrador.'], 403);
+        } else {
+            $response = $this->successfulLoginResponse($request, $usuario, $ip, $keyIp, $keyEmail);
+        }
+
+        return $response;
     }
 
     public function logout(Request $request)

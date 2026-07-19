@@ -8,11 +8,54 @@ use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
+    private const UUID = 'uuid_generate_v4()';
+
+    private const ROLE_ADMIN = 'ADMIN';
+    private const ROLE_SUPERVISOR = 'SUPERVISOR';
+    private const ROLE_TECNICO = 'TECNICO';
+    private const ROLE_CIUDADANO = 'CIUDADANO';
+
+    private const OPCION_INCIDENCIAS_LECTURA_REPORTE = 'Incidencias - Lectura y Reporte';
+    private const OPCION_INCIDENCIAS_GESTION_OPERATIVA = 'Incidencias - Gestión Operativa';
+    private const OPCION_INCIDENCIAS_EDICION_ESPECIAL = 'Incidencias - Edición Especial';
+    private const OPCION_INCIDENCIAS_ELIMINACION = 'Incidencias - Eliminación';
+    private const OPCION_PERFIL_USUARIO = 'Perfil de Usuario';
+    private const OPCION_GESTION_USUARIOS = 'Gestión de Usuarios';
+    private const OPCION_CATALOGOS = 'Catálogos';
+    private const OPCION_GESTION_ROLES = 'Gestión de Roles';
+
+    private const ENDPOINT_INCIDENCIAS = 'api/incidencias';
+    private const ENDPOINT_INCIDENCIAS_ANY = 'api/incidencias/*';
+    private const ENDPOINT_INCIDENCIAS_ESTADO = 'api/incidencias/*/estado';
+    private const ENDPOINT_INCIDENCIAS_COMENTARIOS = 'api/incidencias/*/comentarios';
+    private const ENDPOINT_INCIDENCIAS_EVIDENCIAS = 'api/incidencias/*/evidencias';
+    private const ENDPOINT_INCIDENCIAS_MENSAJES = 'api/incidencias/*/mensajes';
+    private const ENDPOINT_DASHBOARD_STATS = 'api/dashboard/stats';
+    private const ENDPOINT_PUBLICACIONES = 'api/publicaciones';
+    private const ENDPOINT_USER = 'api/user';
+    private const ENDPOINT_ROLES = 'api/roles';
+    private const ENDPOINT_USUARIOS = 'api/usuarios';
+    private const ENDPOINT_USUARIOS_TECNICOS = 'api/usuarios/tecnicos';
+    private const ENDPOINT_USUARIOS_TOGGLE = 'api/usuarios/*/toggle';
+    private const ENDPOINT_CATALOGOS = 'api/catalogos';
+    private const ENDPOINT_ADMIN_ROLES = 'api/admin/roles';
+    private const ENDPOINT_ADMIN_ROLES_ANY = 'api/admin/roles/*';
+    private const ENDPOINT_ADMIN_OPCIONES = 'api/admin/opciones';
+
     public function run(): void
     {
-        // =====================================================================
-        // 0. TIPOS DE DOCUMENTO
-        // =====================================================================
+        $this->seedTiposDocumento();
+        $this->seedRoles();
+        $this->seedOpciones();
+        $this->seedUsuarios();
+        $this->seedRolOpciones();
+        $this->seedEndpoints();
+        $this->seedOpcionEndpoints();
+        $this->seedCatalogosDominio();
+    }
+
+    private function seedTiposDocumento(): void
+    {
         $tiposDoc = [
             [
                 'codigo' => 'CEDULA',
@@ -21,8 +64,8 @@ class DatabaseSeeder extends Seeder
                     'regex' => '^[0-9]{10}$',
                     'min' => 10,
                     'max' => 10,
-                    'error_msg' => 'La cédula debe tener exactamente 10 dígitos numéricos.'
-                ])
+                    'error_msg' => 'La cédula debe tener exactamente 10 dígitos numéricos.',
+                ]),
             ],
             [
                 'codigo' => 'RUC',
@@ -31,8 +74,8 @@ class DatabaseSeeder extends Seeder
                     'regex' => '^[0-9]{13}$',
                     'min' => 13,
                     'max' => 13,
-                    'error_msg' => 'El RUC debe tener exactamente 13 dígitos numéricos.'
-                ])
+                    'error_msg' => 'El RUC debe tener exactamente 13 dígitos numéricos.',
+                ]),
             ],
             [
                 'codigo' => 'PASAPORTE',
@@ -41,387 +84,359 @@ class DatabaseSeeder extends Seeder
                     'regex' => '^[a-zA-Z0-9]{5,20}$',
                     'min' => 5,
                     'max' => 20,
-                    'error_msg' => 'El pasaporte debe tener entre 5 y 20 caracteres alfanuméricos.'
-                ])
+                    'error_msg' => 'El pasaporte debe tener entre 5 y 20 caracteres alfanuméricos.',
+                ]),
             ],
         ];
 
-        foreach ($tiposDoc as $td) {
+        foreach ($tiposDoc as $tipoDocumento) {
             DB::table('tipo_documento')->updateOrInsert(
-                ['codigo' => $td['codigo']],
+                ['codigo' => $tipoDocumento['codigo']],
                 [
-                    'label' => $td['label'],
-                    'validacion' => $td['validacion'],
+                    'label' => $tipoDocumento['label'],
+                    'validacion' => $tipoDocumento['validacion'],
                     'deleted' => false,
                     'created_at' => now(),
                 ]
             );
         }
+    }
 
-        // =====================================================================
-        // 1. ROLES
-        // =====================================================================
+    private function seedRoles(): void
+    {
         $roles = [
-            ['codigo' => 'ADMIN',      'nombre_rol' => 'Administrador', 'descripcion' => 'Acceso total.'],
-            ['codigo' => 'SUPERVISOR', 'nombre_rol' => 'Supervisor',    'descripcion' => 'Supervisor de incidencias.'],
-            ['codigo' => 'TECNICO',    'nombre_rol' => 'Técnico',       'descripcion' => 'Resolutor de incidencias.'],
-            ['codigo' => 'CIUDADANO',  'nombre_rol' => 'Ciudadano',     'descripcion' => 'Reporta incidencias.'],
+            ['codigo' => self::ROLE_ADMIN, 'nombre_rol' => 'Administrador', 'descripcion' => 'Acceso total.'],
+            ['codigo' => self::ROLE_SUPERVISOR, 'nombre_rol' => 'Supervisor', 'descripcion' => 'Supervisor de incidencias.'],
+            ['codigo' => self::ROLE_TECNICO, 'nombre_rol' => 'Técnico', 'descripcion' => 'Resolutor de incidencias.'],
+            ['codigo' => self::ROLE_CIUDADANO, 'nombre_rol' => 'Ciudadano', 'descripcion' => 'Reporta incidencias.'],
         ];
 
         foreach ($roles as $rol) {
             DB::table('rol')->updateOrInsert(
                 ['codigo' => $rol['codigo']],
                 [
-                    'uuid'        => DB::raw('uuid_generate_v4()'),
-                    'nombre_rol'  => $rol['nombre_rol'],
+                    'uuid' => DB::raw(self::UUID),
+                    'nombre_rol' => $rol['nombre_rol'],
                     'descripcion' => $rol['descripcion'],
-                    'deleted'     => false,
-                    'created_at'  => now(),
-                ],
+                    'deleted' => false,
+                    'created_at' => now(),
+                ]
             );
         }
+    }
 
-        // =====================================================================
-        // 2. OPCIONES (Menús Visuales y Permisos)
-        // =====================================================================
+    private function seedOpciones(): void
+    {
         $opciones = [
-            ['nombre_opcion' => 'Incidencias - Lectura y Reporte',  'descripcion' => 'Acceso básico para ver, reportar y comentar incidencias.', 'ruta' => '/incidencias/panel'],
-            ['nombre_opcion' => 'Incidencias - Gestión Operativa',   'descripcion' => 'Permiso para cambiar estado y enviar mensajes oficiales.', 'ruta' => '/incidencias/gestion'],
-            ['nombre_opcion' => 'Incidencias - Edición Especial',    'descripcion' => 'Permiso para actualizar detalles de la incidencia.', 'ruta' => '/incidencias/editar'],
-            ['nombre_opcion' => 'Incidencias - Eliminación',         'descripcion' => 'Permiso para eliminar incidencias.', 'ruta' => '/incidencias/eliminar'],
-            ['nombre_opcion' => 'Perfil de Usuario',                 'descripcion' => 'Acceso a la información personal del usuario logueado.', 'ruta' => '/perfil'],
-            ['nombre_opcion' => 'Gestión de Usuarios',               'descripcion' => 'Administración y creación de usuarios y listar roles.', 'ruta' => '/usuarios'],
-            ['nombre_opcion' => 'Catálogos',                         'descripcion' => 'Consulta de catálogos del sistema (estados, prioridades, tipos).', 'ruta' => '/catalogos'],
-            ['nombre_opcion' => 'Gestión de Roles',                  'descripcion' => 'Administración y asignación de menús y permisos a roles.', 'ruta' => '/roles'],
+            ['nombre_opcion' => self::OPCION_INCIDENCIAS_LECTURA_REPORTE, 'descripcion' => 'Acceso básico para ver, reportar y comentar incidencias.', 'ruta' => '/incidencias/panel'],
+            ['nombre_opcion' => self::OPCION_INCIDENCIAS_GESTION_OPERATIVA, 'descripcion' => 'Permiso para cambiar estado y enviar mensajes oficiales.', 'ruta' => '/incidencias/gestion'],
+            ['nombre_opcion' => self::OPCION_INCIDENCIAS_EDICION_ESPECIAL, 'descripcion' => 'Permiso para actualizar detalles de la incidencia.', 'ruta' => '/incidencias/editar'],
+            ['nombre_opcion' => self::OPCION_INCIDENCIAS_ELIMINACION, 'descripcion' => 'Permiso para eliminar incidencias.', 'ruta' => '/incidencias/eliminar'],
+            ['nombre_opcion' => self::OPCION_PERFIL_USUARIO, 'descripcion' => 'Acceso a la información personal del usuario logueado.', 'ruta' => '/perfil'],
+            ['nombre_opcion' => self::OPCION_GESTION_USUARIOS, 'descripcion' => 'Administración y creación de usuarios y listar roles.', 'ruta' => '/usuarios'],
+            ['nombre_opcion' => self::OPCION_CATALOGOS, 'descripcion' => 'Consulta de catálogos del sistema (estados, prioridades, tipos).', 'ruta' => '/catalogos'],
+            ['nombre_opcion' => self::OPCION_GESTION_ROLES, 'descripcion' => 'Administración y asignación de menús y permisos a roles.', 'ruta' => '/roles'],
         ];
 
         foreach ($opciones as $opcion) {
             DB::table('opcion')->updateOrInsert(
                 ['nombre_opcion' => $opcion['nombre_opcion']],
                 [
-                    'uuid'        => DB::raw('uuid_generate_v4()'),
+                    'uuid' => DB::raw(self::UUID),
                     'descripcion' => $opcion['descripcion'],
-                    'ruta'        => $opcion['ruta'],
-                    'deleted'     => false,
-                    'created_at'  => now(),
-                ],
+                    'ruta' => $opcion['ruta'],
+                    'deleted' => false,
+                    'created_at' => now(),
+                ]
             );
         }
+    }
 
-        // =====================================================================
-        // 3. USUARIOS (Admin principal + usuarios de prueba por rol)
-        // =====================================================================
+    private function seedUsuarios(): void
+    {
         $usuarios = [
-            [
-                'correo'         => 'said@admin.com',
-                'nombre_usuario' => 'said.pinto',
-                'password'       => 'password123',
-                'nombres'        => 'Said',
-                'apellidos'      => 'Pinto',
-                'rol_codigo'     => 'ADMIN',
-            ],
-            [
-                'correo'         => 'supervisor@test.com',
-                'nombre_usuario' => 'supervisor.test',
-                'password'       => 'password123',
-                'nombres'        => 'Supervisor',
-                'apellidos'      => 'Test',
-                'rol_codigo'     => 'SUPERVISOR',
-            ],
-            [
-                'correo'         => 'tecnico@test.com',
-                'nombre_usuario' => 'tecnico.test',
-                'password'       => 'password123',
-                'nombres'        => 'Técnico',
-                'apellidos'      => 'Test',
-                'rol_codigo'     => 'TECNICO',
-            ],
-            [
-                'correo'         => 'ciudadano@test.com',
-                'nombre_usuario' => 'ciudadano.test',
-                'password'       => 'password123',
-                'nombres'        => 'Ciudadano',
-                'apellidos'      => 'Test',
-                'rol_codigo'     => 'CIUDADANO',
-            ],
+            ['correo' => 'said@admin.com', 'nombre_usuario' => 'said.pinto', 'password' => 'password123', 'nombres' => 'Said', 'apellidos' => 'Pinto', 'rol_codigo' => self::ROLE_ADMIN],
+            ['correo' => 'supervisor@test.com', 'nombre_usuario' => 'supervisor.test', 'password' => 'password123', 'nombres' => 'Supervisor', 'apellidos' => 'Test', 'rol_codigo' => self::ROLE_SUPERVISOR],
+            ['correo' => 'tecnico@test.com', 'nombre_usuario' => 'tecnico.test', 'password' => 'password123', 'nombres' => 'Técnico', 'apellidos' => 'Test', 'rol_codigo' => self::ROLE_TECNICO],
+            ['correo' => 'ciudadano@test.com', 'nombre_usuario' => 'ciudadano.test', 'password' => 'password123', 'nombres' => 'Ciudadano', 'apellidos' => 'Test', 'rol_codigo' => self::ROLE_CIUDADANO],
         ];
 
-        foreach ($usuarios as $u) {
+        foreach ($usuarios as $usuario) {
             DB::table('usuario')->updateOrInsert(
-                ['correo_electronico' => $u['correo']],
+                ['correo_electronico' => $usuario['correo']],
                 [
-                    'uuid'           => DB::raw('uuid_generate_v4()'),
-                    'nombre_usuario' => $u['nombre_usuario'],
-                    'password_hash'  => Hash::make($u['password']),
-                    'nombres'        => $u['nombres'],
-                    'apellidos'      => $u['apellidos'],
-                    'activo'         => true,
-                    'deleted'        => false,
-                    'created_at'     => now(),
-                ],
+                    'uuid' => DB::raw(self::UUID),
+                    'nombre_usuario' => $usuario['nombre_usuario'],
+                    'password_hash' => Hash::make($usuario['password']),
+                    'nombres' => $usuario['nombres'],
+                    'apellidos' => $usuario['apellidos'],
+                    'activo' => true,
+                    'deleted' => false,
+                    'created_at' => now(),
+                ]
             );
 
-            $rolId     = DB::table('rol')->where('codigo', $u['rol_codigo'])->value('id');
-            $usuarioId = DB::table('usuario')->where('correo_electronico', $u['correo'])->value('id');
+            $rolId = DB::table('rol')->where('codigo', $usuario['rol_codigo'])->value('id');
+            $usuarioId = DB::table('usuario')->where('correo_electronico', $usuario['correo'])->value('id');
 
             if ($rolId && $usuarioId) {
                 DB::table('rol_usuario')->updateOrInsert(
                     ['id_rol' => $rolId, 'id_usuario' => $usuarioId],
-                    ['uuid' => DB::raw('uuid_generate_v4()'), 'deleted' => false, 'created_at' => now()],
+                    ['uuid' => DB::raw(self::UUID), 'deleted' => false, 'created_at' => now()]
                 );
             }
         }
+    }
 
-        // =====================================================================
-        // 4. MAPEO ROL → OPCIONES
-        // =====================================================================
-        $rolAdmin      = DB::table('rol')->where('codigo', 'ADMIN')->first();
-        $rolSupervisor = DB::table('rol')->where('codigo', 'SUPERVISOR')->first();
-        $rolTecnico    = DB::table('rol')->where('codigo', 'TECNICO')->first();
-        $rolCiudadano  = DB::table('rol')->where('codigo', 'CIUDADANO')->first();
+    private function seedRolOpciones(): void
+    {
+        $rolAdmin = DB::table('rol')->where('codigo', self::ROLE_ADMIN)->first();
+        $rolSupervisor = DB::table('rol')->where('codigo', self::ROLE_SUPERVISOR)->first();
+        $rolTecnico = DB::table('rol')->where('codigo', self::ROLE_TECNICO)->first();
+        $rolCiudadano = DB::table('rol')->where('codigo', self::ROLE_CIUDADANO)->first();
 
-        $mapRolOpcion = function ($rolId, $opcionNombre, $lectura = true, $escritura = false) {
-            $opcionId = DB::table('opcion')->where('nombre_opcion', $opcionNombre)->value('id');
-            if ($rolId && $opcionId) {
-                DB::table('rol_opcion')->updateOrInsert(
-                    ['id_rol' => $rolId, 'id_opcion' => $opcionId],
-                    [
-                        'uuid'       => DB::raw('uuid_generate_v4()'),
-                        'lectura'    => $lectura,
-                        'escritura'  => $escritura,
-                        'deleted'    => false,
-                        'created_at' => now(),
-                    ]
-                );
-            }
-        };
-
-        // Ciudadano: Lectura/reporte, perfil, catálogos (escritura en reporte)
         if ($rolCiudadano) {
-            $mapRolOpcion($rolCiudadano->id, 'Incidencias - Lectura y Reporte', true, true);
-            $mapRolOpcion($rolCiudadano->id, 'Perfil de Usuario', true, true);
-            $mapRolOpcion($rolCiudadano->id, 'Catálogos', true, false);
+            $this->mapRolOpcion($rolCiudadano->id, self::OPCION_INCIDENCIAS_LECTURA_REPORTE, true, true);
+            $this->mapRolOpcion($rolCiudadano->id, self::OPCION_PERFIL_USUARIO, true, true);
+            $this->mapRolOpcion($rolCiudadano->id, self::OPCION_CATALOGOS, true, false);
         }
 
-        // Técnico: Lectura, gestión operativa, perfil, catálogos
         if ($rolTecnico) {
-            $mapRolOpcion($rolTecnico->id, 'Incidencias - Lectura y Reporte', true, false);
-            $mapRolOpcion($rolTecnico->id, 'Incidencias - Gestión Operativa', true, true);
-            $mapRolOpcion($rolTecnico->id, 'Perfil de Usuario', true, true);
-            $mapRolOpcion($rolTecnico->id, 'Catálogos', true, false);
+            $this->mapRolOpcion($rolTecnico->id, self::OPCION_INCIDENCIAS_LECTURA_REPORTE, true, false);
+            $this->mapRolOpcion($rolTecnico->id, self::OPCION_INCIDENCIAS_GESTION_OPERATIVA, true, true);
+            $this->mapRolOpcion($rolTecnico->id, self::OPCION_PERFIL_USUARIO, true, true);
+            $this->mapRolOpcion($rolTecnico->id, self::OPCION_CATALOGOS, true, false);
         }
 
-        // Supervisor: Todo sobre incidencias + perfil + catálogos + gestión de usuarios (ver técnicos)
         if ($rolSupervisor) {
-            $mapRolOpcion($rolSupervisor->id, 'Incidencias - Lectura y Reporte', true, true);
-            $mapRolOpcion($rolSupervisor->id, 'Incidencias - Gestión Operativa', true, true);
-            $mapRolOpcion($rolSupervisor->id, 'Incidencias - Edición Especial', true, true);
-            $mapRolOpcion($rolSupervisor->id, 'Incidencias - Eliminación', true, true);
-            $mapRolOpcion($rolSupervisor->id, 'Perfil de Usuario', true, true);
-            $mapRolOpcion($rolSupervisor->id, 'Catálogos', true, false);
-            $mapRolOpcion($rolSupervisor->id, 'Gestión de Usuarios', true, true);
+            $this->mapRolOpcion($rolSupervisor->id, self::OPCION_INCIDENCIAS_LECTURA_REPORTE, true, true);
+            $this->mapRolOpcion($rolSupervisor->id, self::OPCION_INCIDENCIAS_GESTION_OPERATIVA, true, true);
+            $this->mapRolOpcion($rolSupervisor->id, self::OPCION_INCIDENCIAS_EDICION_ESPECIAL, true, true);
+            $this->mapRolOpcion($rolSupervisor->id, self::OPCION_INCIDENCIAS_ELIMINACION, true, true);
+            $this->mapRolOpcion($rolSupervisor->id, self::OPCION_PERFIL_USUARIO, true, true);
+            $this->mapRolOpcion($rolSupervisor->id, self::OPCION_CATALOGOS, true, false);
+            $this->mapRolOpcion($rolSupervisor->id, self::OPCION_GESTION_USUARIOS, true, true);
         }
 
-        // Administrador: Sistema completo (excepto ver o gestionar incidencias individuales)
         if ($rolAdmin) {
-            $mapRolOpcion($rolAdmin->id, 'Perfil de Usuario', true, true);
-            $mapRolOpcion($rolAdmin->id, 'Gestión de Usuarios', true, true);
-            $mapRolOpcion($rolAdmin->id, 'Catálogos', true, true);
-            $mapRolOpcion($rolAdmin->id, 'Gestión de Roles', true, true);
+            $this->mapRolOpcion($rolAdmin->id, self::OPCION_PERFIL_USUARIO, true, true);
+            $this->mapRolOpcion($rolAdmin->id, self::OPCION_GESTION_USUARIOS, true, true);
+            $this->mapRolOpcion($rolAdmin->id, self::OPCION_CATALOGOS, true, true);
+            $this->mapRolOpcion($rolAdmin->id, self::OPCION_GESTION_ROLES, true, true);
         }
+    }
 
-        // =====================================================================
-        // 5. ENDPOINTS FÍSICOS DE LA API
-        // =====================================================================
+    private function seedEndpoints(): void
+    {
         $endpoints = [
-            ['nombre' => 'Listar Incidencias',          'metodo' => 'GET',    'url' => 'api/incidencias'],
-            ['nombre' => 'Ver Detalle Incidencia',       'metodo' => 'GET',    'url' => 'api/incidencias/*'],
-            ['nombre' => 'Crear Incidencia',             'metodo' => 'POST',   'url' => 'api/incidencias'],
-            ['nombre' => 'Actualizar Incidencia',        'metodo' => 'PUT',    'url' => 'api/incidencias/*'],
-            ['nombre' => 'Eliminar Incidencia',          'metodo' => 'DELETE', 'url' => 'api/incidencias/*'],
-            ['nombre' => 'Cambiar Estado Incidencia',    'metodo' => 'POST',   'url' => 'api/incidencias/*/estado'],
-            ['nombre' => 'Agregar Comentario',           'metodo' => 'POST',   'url' => 'api/incidencias/*/comentarios'],
-            ['nombre' => 'Subir Evidencia',              'metodo' => 'POST',   'url' => 'api/incidencias/*/evidencias'],
-            ['nombre' => 'Enviar Mensaje',               'metodo' => 'POST',   'url' => 'api/incidencias/*/mensajes'],
-            ['nombre' => 'Ver Mensajes',                 'metodo' => 'GET',    'url' => 'api/incidencias/*/mensajes'],
-            ['nombre' => 'Estadísticas de Dashboard',    'metodo' => 'GET',    'url' => 'api/dashboard/stats'],
-            ['nombre' => 'Crear Publicación',            'metodo' => 'POST',   'url' => 'api/publicaciones'],
-            ['nombre' => 'Ver Perfil',                   'metodo' => 'GET',    'url' => 'api/user'],
-            ['nombre' => 'Listar Roles',                 'metodo' => 'GET',    'url' => 'api/roles'],
-            ['nombre' => 'Listar Usuarios',              'metodo' => 'GET',    'url' => 'api/usuarios'],
-            ['nombre' => 'Listar Técnicos',              'metodo' => 'GET',    'url' => 'api/usuarios/tecnicos'],
-            ['nombre' => 'Crear Usuario',                'metodo' => 'POST',   'url' => 'api/usuarios'],
-            ['nombre' => 'Actualizar Usuario',           'metodo' => 'PUT',    'url' => 'api/usuarios/*'],
-            ['nombre' => 'Activar/Desactivar Usuario',   'metodo' => 'PATCH',  'url' => 'api/usuarios/*/toggle'],
-            ['nombre' => 'Consultar Catálogos',          'metodo' => 'GET',    'url' => 'api/catalogos'],
-            ['nombre' => 'Listar Roles Admin',           'metodo' => 'GET',    'url' => 'api/admin/roles'],
-            ['nombre' => 'Crear Rol',                    'metodo' => 'POST',   'url' => 'api/admin/roles'],
-            ['nombre' => 'Actualizar Rol',               'metodo' => 'PUT',    'url' => 'api/admin/roles/*'],
-            ['nombre' => 'Eliminar Rol',                 'metodo' => 'DELETE', 'url' => 'api/admin/roles/*'],
-            ['nombre' => 'Listar Opciones Sistema',      'metodo' => 'GET',    'url' => 'api/admin/opciones'],
+            ['nombre' => 'Listar Incidencias', 'metodo' => 'GET', 'url' => self::ENDPOINT_INCIDENCIAS],
+            ['nombre' => 'Ver Detalle Incidencia', 'metodo' => 'GET', 'url' => self::ENDPOINT_INCIDENCIAS_ANY],
+            ['nombre' => 'Crear Incidencia', 'metodo' => 'POST', 'url' => self::ENDPOINT_INCIDENCIAS],
+            ['nombre' => 'Actualizar Incidencia', 'metodo' => 'PUT', 'url' => self::ENDPOINT_INCIDENCIAS_ANY],
+            ['nombre' => 'Eliminar Incidencia', 'metodo' => 'DELETE', 'url' => self::ENDPOINT_INCIDENCIAS_ANY],
+            ['nombre' => 'Cambiar Estado Incidencia', 'metodo' => 'POST', 'url' => self::ENDPOINT_INCIDENCIAS_ESTADO],
+            ['nombre' => 'Agregar Comentario', 'metodo' => 'POST', 'url' => self::ENDPOINT_INCIDENCIAS_COMENTARIOS],
+            ['nombre' => 'Subir Evidencia', 'metodo' => 'POST', 'url' => self::ENDPOINT_INCIDENCIAS_EVIDENCIAS],
+            ['nombre' => 'Enviar Mensaje', 'metodo' => 'POST', 'url' => self::ENDPOINT_INCIDENCIAS_MENSAJES],
+            ['nombre' => 'Ver Mensajes', 'metodo' => 'GET', 'url' => self::ENDPOINT_INCIDENCIAS_MENSAJES],
+            ['nombre' => 'Estadísticas de Dashboard', 'metodo' => 'GET', 'url' => self::ENDPOINT_DASHBOARD_STATS],
+            ['nombre' => 'Crear Publicación', 'metodo' => 'POST', 'url' => self::ENDPOINT_PUBLICACIONES],
+            ['nombre' => 'Ver Perfil', 'metodo' => 'GET', 'url' => self::ENDPOINT_USER],
+            ['nombre' => 'Listar Roles', 'metodo' => 'GET', 'url' => self::ENDPOINT_ROLES],
+            ['nombre' => 'Listar Usuarios', 'metodo' => 'GET', 'url' => self::ENDPOINT_USUARIOS],
+            ['nombre' => 'Listar Técnicos', 'metodo' => 'GET', 'url' => self::ENDPOINT_USUARIOS_TECNICOS],
+            ['nombre' => 'Crear Usuario', 'metodo' => 'POST', 'url' => self::ENDPOINT_USUARIOS],
+            ['nombre' => 'Actualizar Usuario', 'metodo' => 'PUT', 'url' => self::ENDPOINT_USUARIOS_ANY()],
+            ['nombre' => 'Activar/Desactivar Usuario', 'metodo' => 'PATCH', 'url' => self::ENDPOINT_USUARIOS_TOGGLE],
+            ['nombre' => 'Consultar Catálogos', 'metodo' => 'GET', 'url' => self::ENDPOINT_CATALOGOS],
+            ['nombre' => 'Listar Roles Admin', 'metodo' => 'GET', 'url' => self::ENDPOINT_ADMIN_ROLES],
+            ['nombre' => 'Crear Rol', 'metodo' => 'POST', 'url' => self::ENDPOINT_ADMIN_ROLES],
+            ['nombre' => 'Actualizar Rol', 'metodo' => 'PUT', 'url' => self::ENDPOINT_ADMIN_ROLES_ANY],
+            ['nombre' => 'Eliminar Rol', 'metodo' => 'DELETE', 'url' => self::ENDPOINT_ADMIN_ROLES_ANY],
+            ['nombre' => 'Listar Opciones Sistema', 'metodo' => 'GET', 'url' => self::ENDPOINT_ADMIN_OPCIONES],
         ];
 
         foreach ($endpoints as $endpoint) {
             DB::table('endpoint')->updateOrInsert(
                 ['url' => $endpoint['url'], 'metodo' => $endpoint['metodo']],
                 [
-                    'uuid'            => DB::raw('uuid_generate_v4()'),
+                    'uuid' => DB::raw(self::UUID),
                     'nombre_endpoint' => $endpoint['nombre'],
-                    'rbac_enabled'    => true,
-                    'deleted'         => false,
-                    'created_at'      => now(),
-                ],
+                    'rbac_enabled' => true,
+                    'deleted' => false,
+                    'created_at' => now(),
+                ]
             );
         }
+    }
 
-        // =====================================================================
-        // 6. MAPEO OPCIÓN → ENDPOINTS
-        // =====================================================================
-        $mapOpcionEndpoint = function ($opcionNombre, $metodo, $url) {
-            $opcionId   = DB::table('opcion')->where('nombre_opcion', $opcionNombre)->value('id');
-            $endpointId = DB::table('endpoint')->where('metodo', $metodo)->where('url', $url)->value('id');
-            if ($opcionId && $endpointId) {
-                DB::table('opcion_endpoint')->updateOrInsert(
-                    ['id_opcion' => $opcionId, 'id_endpoint' => $endpointId],
-                    ['uuid' => DB::raw('uuid_generate_v4()'), 'deleted' => false, 'created_at' => now()]
-                );
-            }
-        };
+    private function seedOpcionEndpoints(): void
+    {
+        $this->mapOpcionEndpoint(self::OPCION_INCIDENCIAS_LECTURA_REPORTE, 'GET', self::ENDPOINT_INCIDENCIAS);
+        $this->mapOpcionEndpoint(self::OPCION_INCIDENCIAS_LECTURA_REPORTE, 'GET', self::ENDPOINT_INCIDENCIAS_ANY);
+        $this->mapOpcionEndpoint(self::OPCION_INCIDENCIAS_LECTURA_REPORTE, 'POST', self::ENDPOINT_INCIDENCIAS);
+        $this->mapOpcionEndpoint(self::OPCION_INCIDENCIAS_LECTURA_REPORTE, 'PUT', self::ENDPOINT_INCIDENCIAS_ANY);
+        $this->mapOpcionEndpoint(self::OPCION_INCIDENCIAS_LECTURA_REPORTE, 'DELETE', self::ENDPOINT_INCIDENCIAS_ANY);
+        $this->mapOpcionEndpoint(self::OPCION_INCIDENCIAS_LECTURA_REPORTE, 'POST', self::ENDPOINT_INCIDENCIAS_COMENTARIOS);
+        $this->mapOpcionEndpoint(self::OPCION_INCIDENCIAS_LECTURA_REPORTE, 'POST', self::ENDPOINT_INCIDENCIAS_EVIDENCIAS);
+        $this->mapOpcionEndpoint(self::OPCION_INCIDENCIAS_LECTURA_REPORTE, 'GET', self::ENDPOINT_INCIDENCIAS_MENSAJES);
+        $this->mapOpcionEndpoint(self::OPCION_INCIDENCIAS_LECTURA_REPORTE, 'POST', self::ENDPOINT_PUBLICACIONES);
 
-        // Incidencias - Lectura y Reporte
-        $mapOpcionEndpoint('Incidencias - Lectura y Reporte', 'GET',    'api/incidencias');
-        $mapOpcionEndpoint('Incidencias - Lectura y Reporte', 'GET',    'api/incidencias/*');
-        $mapOpcionEndpoint('Incidencias - Lectura y Reporte', 'POST',   'api/incidencias');
-        $mapOpcionEndpoint('Incidencias - Lectura y Reporte', 'PUT',    'api/incidencias/*');
-        $mapOpcionEndpoint('Incidencias - Lectura y Reporte', 'DELETE', 'api/incidencias/*');
-        $mapOpcionEndpoint('Incidencias - Lectura y Reporte', 'POST',   'api/incidencias/*/comentarios');
-        $mapOpcionEndpoint('Incidencias - Lectura y Reporte', 'POST',   'api/incidencias/*/evidencias');
-        $mapOpcionEndpoint('Incidencias - Lectura y Reporte', 'GET',    'api/incidencias/*/mensajes');
-        $mapOpcionEndpoint('Incidencias - Lectura y Reporte', 'POST',   'api/publicaciones');
+        $this->mapOpcionEndpoint(self::OPCION_INCIDENCIAS_GESTION_OPERATIVA, 'POST', self::ENDPOINT_INCIDENCIAS_ESTADO);
+        $this->mapOpcionEndpoint(self::OPCION_INCIDENCIAS_GESTION_OPERATIVA, 'POST', self::ENDPOINT_INCIDENCIAS_MENSAJES);
 
-        // Incidencias - Gestión Operativa
-        $mapOpcionEndpoint('Incidencias - Gestión Operativa', 'POST', 'api/incidencias/*/estado');
-        $mapOpcionEndpoint('Incidencias - Gestión Operativa', 'POST', 'api/incidencias/*/mensajes');
+        $this->mapOpcionEndpoint(self::OPCION_PERFIL_USUARIO, 'GET', self::ENDPOINT_USER);
 
-        // Perfil de Usuario
-        $mapOpcionEndpoint('Perfil de Usuario', 'GET', 'api/user');
+        $this->mapOpcionEndpoint(self::OPCION_GESTION_USUARIOS, 'GET', self::ENDPOINT_ROLES);
+        $this->mapOpcionEndpoint(self::OPCION_GESTION_USUARIOS, 'GET', self::ENDPOINT_USUARIOS);
+        $this->mapOpcionEndpoint(self::OPCION_GESTION_USUARIOS, 'GET', self::ENDPOINT_USUARIOS_TECNICOS);
+        $this->mapOpcionEndpoint(self::OPCION_GESTION_USUARIOS, 'POST', self::ENDPOINT_USUARIOS);
+        $this->mapOpcionEndpoint(self::OPCION_GESTION_USUARIOS, 'PUT', self::ENDPOINT_USUARIOS_ANY());
+        $this->mapOpcionEndpoint(self::OPCION_GESTION_USUARIOS, 'PATCH', self::ENDPOINT_USUARIOS_TOGGLE);
 
-        // Gestión de Usuarios
-        $mapOpcionEndpoint('Gestión de Usuarios', 'GET',   'api/roles');
-        $mapOpcionEndpoint('Gestión de Usuarios', 'GET',   'api/usuarios');
-        $mapOpcionEndpoint('Gestión de Usuarios', 'GET',   'api/usuarios/tecnicos');
-        $mapOpcionEndpoint('Gestión de Usuarios', 'POST',  'api/usuarios');
-        $mapOpcionEndpoint('Gestión de Usuarios', 'PUT',   'api/usuarios/*');
-        $mapOpcionEndpoint('Gestión de Usuarios', 'PATCH', 'api/usuarios/*/toggle');
+        $this->mapOpcionEndpoint(self::OPCION_CATALOGOS, 'GET', self::ENDPOINT_CATALOGOS);
+        $this->mapOpcionEndpoint(self::OPCION_CATALOGOS, 'GET', self::ENDPOINT_USUARIOS_TECNICOS);
+        $this->mapOpcionEndpoint(self::OPCION_CATALOGOS, 'GET', self::ENDPOINT_DASHBOARD_STATS);
 
-        // Catálogos — accesible para todos los roles autenticados
-        $mapOpcionEndpoint('Catálogos', 'GET', 'api/catalogos');
-        $mapOpcionEndpoint('Catálogos', 'GET', 'api/usuarios/tecnicos');
-        $mapOpcionEndpoint('Catálogos', 'GET', 'api/dashboard/stats');
+        $this->mapOpcionEndpoint(self::OPCION_GESTION_ROLES, 'GET', self::ENDPOINT_ADMIN_ROLES);
+        $this->mapOpcionEndpoint(self::OPCION_GESTION_ROLES, 'POST', self::ENDPOINT_ADMIN_ROLES);
+        $this->mapOpcionEndpoint(self::OPCION_GESTION_ROLES, 'PUT', self::ENDPOINT_ADMIN_ROLES_ANY);
+        $this->mapOpcionEndpoint(self::OPCION_GESTION_ROLES, 'DELETE', self::ENDPOINT_ADMIN_ROLES_ANY);
+        $this->mapOpcionEndpoint(self::OPCION_GESTION_ROLES, 'GET', self::ENDPOINT_ADMIN_OPCIONES);
+    }
 
-        // Gestión de Roles
-        $mapOpcionEndpoint('Gestión de Roles', 'GET',    'api/admin/roles');
-        $mapOpcionEndpoint('Gestión de Roles', 'POST',   'api/admin/roles');
-        $mapOpcionEndpoint('Gestión de Roles', 'PUT',    'api/admin/roles/*');
-        $mapOpcionEndpoint('Gestión de Roles', 'DELETE', 'api/admin/roles/*');
-        $mapOpcionEndpoint('Gestión de Roles', 'GET',    'api/admin/opciones');
+    private function seedCatalogosDominio(): void
+    {
+        $this->seedEstados();
+        $this->seedPrioridades();
+        $this->seedTiposConSubtipos();
+    }
 
-        // =====================================================================
-        // 7. CATÁLOGOS DE DOMINIO
-        // =====================================================================
-
-        // Estados (código = valor exacto de MongoDB, label = texto UI)
+    private function seedEstados(): void
+    {
         $estados = [
-            ['codigo' => 'Pendiente',  'label' => 'Recibido',   'orden' => 1, 'css_class' => 'badge-recibido', 'color_hex' => '#3B82F6'],
-            ['codigo' => 'En Proceso', 'label' => 'En proceso', 'orden' => 2, 'css_class' => 'badge-proceso',  'color_hex' => '#F97316'],
-            ['codigo' => 'Resuelta',   'label' => 'Resuelto',   'orden' => 3, 'css_class' => 'badge-resuelto', 'color_hex' => '#22C55E'],
-            ['codigo' => 'Rechazada',  'label' => 'Rechazado',  'orden' => 4, 'css_class' => 'badge-urgente',  'color_hex' => '#EF4444'],
+            ['codigo' => 'Pendiente', 'label' => 'Recibido', 'orden' => 1, 'css_class' => 'badge-recibido', 'color_hex' => '#3B82F6'],
+            ['codigo' => 'En Proceso', 'label' => 'En proceso', 'orden' => 2, 'css_class' => 'badge-proceso', 'color_hex' => '#F97316'],
+            ['codigo' => 'Resuelta', 'label' => 'Resuelto', 'orden' => 3, 'css_class' => 'badge-resuelto', 'color_hex' => '#22C55E'],
+            ['codigo' => 'Rechazada', 'label' => 'Rechazado', 'orden' => 4, 'css_class' => 'badge-urgente', 'color_hex' => '#EF4444'],
         ];
 
-        foreach ($estados as $e) {
+        foreach ($estados as $estado) {
             DB::table('catalogo_estado')->updateOrInsert(
-                ['codigo' => $e['codigo']],
+                ['codigo' => $estado['codigo']],
                 [
-                    'uuid'       => DB::raw('uuid_generate_v4()'),
-                    'label'      => $e['label'],
-                    'orden'      => $e['orden'],
-                    'css_class'  => $e['css_class'],
-                    'color_hex'  => $e['color_hex'],
-                    'activo'     => true,
-                    'deleted'    => false,
+                    'uuid' => DB::raw(self::UUID),
+                    'label' => $estado['label'],
+                    'orden' => $estado['orden'],
+                    'css_class' => $estado['css_class'],
+                    'color_hex' => $estado['color_hex'],
+                    'activo' => true,
+                    'deleted' => false,
                     'created_at' => now(),
                 ]
             );
         }
+    }
 
-        // Prioridades
+    private function seedPrioridades(): void
+    {
         $prioridades = [
-            ['codigo' => 'Baja',    'label' => 'Baja',    'orden' => 1, 'css_class' => 'badge-baja',    'color_hex' => '#6B7280'],
-            ['codigo' => 'Normal',  'label' => 'Normal',  'orden' => 2, 'css_class' => 'badge-media',   'color_hex' => '#8B5CF6'],
-            ['codigo' => 'Media',   'label' => 'Media',   'orden' => 3, 'css_class' => 'badge-media',   'color_hex' => '#F97316'],
-            ['codigo' => 'Alta',    'label' => 'Alta',    'orden' => 4, 'css_class' => 'badge-urgente',  'color_hex' => '#EF4444'],
-            ['codigo' => 'Urgente', 'label' => 'Urgente', 'orden' => 5, 'css_class' => 'badge-urgente',  'color_hex' => '#B91C1C'],
+            ['codigo' => 'Baja', 'label' => 'Baja', 'orden' => 1, 'css_class' => 'badge-baja', 'color_hex' => '#6B7280'],
+            ['codigo' => 'Normal', 'label' => 'Normal', 'orden' => 2, 'css_class' => 'badge-media', 'color_hex' => '#8B5CF6'],
+            ['codigo' => 'Media', 'label' => 'Media', 'orden' => 3, 'css_class' => 'badge-media', 'color_hex' => '#F97316'],
+            ['codigo' => 'Alta', 'label' => 'Alta', 'orden' => 4, 'css_class' => 'badge-urgente', 'color_hex' => '#EF4444'],
+            ['codigo' => 'Urgente', 'label' => 'Urgente', 'orden' => 5, 'css_class' => 'badge-urgente', 'color_hex' => '#B91C1C'],
         ];
 
-        foreach ($prioridades as $p) {
+        foreach ($prioridades as $prioridad) {
             DB::table('catalogo_prioridad')->updateOrInsert(
-                ['codigo' => $p['codigo']],
+                ['codigo' => $prioridad['codigo']],
                 [
-                    'uuid'       => DB::raw('uuid_generate_v4()'),
-                    'label'      => $p['label'],
-                    'orden'      => $p['orden'],
-                    'css_class'  => $p['css_class'],
-                    'color_hex'  => $p['color_hex'],
-                    'activo'     => true,
-                    'deleted'    => false,
+                    'uuid' => DB::raw(self::UUID),
+                    'label' => $prioridad['label'],
+                    'orden' => $prioridad['orden'],
+                    'css_class' => $prioridad['css_class'],
+                    'color_hex' => $prioridad['color_hex'],
+                    'activo' => true,
+                    'deleted' => false,
                     'created_at' => now(),
                 ]
             );
         }
+    }
 
-        // Tipos con sus subtipos
+    private function seedTiposConSubtipos(): void
+    {
         $tiposSubtipos = [
-            ['nombre' => 'Infraestructura', 'icono' => 'bi-building', 'orden' => 1, 'subs' => [
-                'Alumbrado', 'Vialidad', 'Agua potable', 'Alcantarillado',
-            ]],
-            ['nombre' => 'Seguridad', 'icono' => 'bi-shield', 'orden' => 2, 'subs' => [
-                'Robo', 'Vandalismo', 'Iluminación',
-            ]],
-            ['nombre' => 'Medio ambiente', 'icono' => 'bi-tree', 'orden' => 3, 'subs' => [
-                'Basura', 'Contaminación', 'Áreas verdes',
-            ]],
-            ['nombre' => 'Servicios', 'icono' => 'bi-tools', 'orden' => 4, 'subs' => [
-                'Otro',
-            ]],
+            ['nombre' => 'Infraestructura', 'icono' => 'bi-building', 'orden' => 1, 'subs' => ['Alumbrado', 'Vialidad', 'Agua potable', 'Alcantarillado']],
+            ['nombre' => 'Seguridad', 'icono' => 'bi-shield', 'orden' => 2, 'subs' => ['Robo', 'Vandalismo', 'Iluminación']],
+            ['nombre' => 'Medio ambiente', 'icono' => 'bi-tree', 'orden' => 3, 'subs' => ['Basura', 'Contaminación', 'Áreas verdes']],
+            ['nombre' => 'Servicios', 'icono' => 'bi-tools', 'orden' => 4, 'subs' => ['Otro']],
         ];
 
         foreach ($tiposSubtipos as $tipo) {
             DB::table('catalogo_tipo_incidencia')->updateOrInsert(
                 ['nombre' => $tipo['nombre']],
                 [
-                    'uuid'        => DB::raw('uuid_generate_v4()'),
+                    'uuid' => DB::raw(self::UUID),
                     'icono_clase' => $tipo['icono'],
-                    'orden'       => $tipo['orden'],
-                    'activo'      => true,
-                    'deleted'     => false,
-                    'created_at'  => now(),
+                    'orden' => $tipo['orden'],
+                    'activo' => true,
+                    'deleted' => false,
+                    'created_at' => now(),
                 ]
             );
 
             $tipoId = DB::table('catalogo_tipo_incidencia')->where('nombre', $tipo['nombre'])->value('id');
 
-            foreach ($tipo['subs'] as $idx => $sub) {
+            foreach ($tipo['subs'] as $idx => $subtipo) {
                 DB::table('catalogo_subtipo_incidencia')->updateOrInsert(
-                    ['id_tipo' => $tipoId, 'nombre' => $sub],
+                    ['id_tipo' => $tipoId, 'nombre' => $subtipo],
                     [
-                        'uuid'       => DB::raw('uuid_generate_v4()'),
-                        'orden'      => $idx + 1,
-                        'activo'     => true,
-                        'deleted'    => false,
+                        'uuid' => DB::raw(self::UUID),
+                        'orden' => $idx + 1,
+                        'activo' => true,
+                        'deleted' => false,
                         'created_at' => now(),
                     ]
                 );
             }
         }
+    }
+
+    private function mapRolOpcion(int $rolId, string $opcionNombre, bool $lectura = true, bool $escritura = false): void
+    {
+        $opcionId = DB::table('opcion')->where('nombre_opcion', $opcionNombre)->value('id');
+
+        if ($opcionId) {
+            DB::table('rol_opcion')->updateOrInsert(
+                ['id_rol' => $rolId, 'id_opcion' => $opcionId],
+                [
+                    'uuid' => DB::raw(self::UUID),
+                    'lectura' => $lectura,
+                    'escritura' => $escritura,
+                    'deleted' => false,
+                    'created_at' => now(),
+                ]
+            );
+        }
+    }
+
+    private function mapOpcionEndpoint(string $opcionNombre, string $metodo, string $url): void
+    {
+        $opcionId = DB::table('opcion')->where('nombre_opcion', $opcionNombre)->value('id');
+        $endpointId = DB::table('endpoint')->where('metodo', $metodo)->where('url', $url)->value('id');
+
+        if ($opcionId && $endpointId) {
+            DB::table('opcion_endpoint')->updateOrInsert(
+                ['id_opcion' => $opcionId, 'id_endpoint' => $endpointId],
+                ['uuid' => DB::raw(self::UUID), 'deleted' => false, 'created_at' => now()]
+            );
+        }
+    }
+
+    private static function ENDPOINT_USUARIOS_ANY(): string
+    {
+        return 'api/usuarios/*';
     }
 }

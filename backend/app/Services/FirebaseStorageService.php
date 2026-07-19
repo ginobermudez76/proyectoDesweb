@@ -66,7 +66,7 @@ class FirebaseStorageService
     private function getOptimizedFilePath($file): ?string
     {
         try {
-            return $this->optimizeImage($file->getRealPath(), $file->getClientMimeType());
+            return $this->optimizeImage($file->getRealPath());
         } catch (\Exception $e) {
             Log::warning('No se pudo optimizar la imagen, se subirá el archivo original: ' . $e->getMessage());
             return null;
@@ -128,7 +128,7 @@ class FirebaseStorageService
      * @param int $quality
      * @return string|null Ruta del archivo temporal optimizado, o null si falla
      */
-    private function optimizeImage($sourcePath, $mimeType, $maxWidth = 1200, $maxHeight = 1200, $quality = 75)
+    private function optimizeImage($sourcePath, $maxWidth = 1200, $maxHeight = 1200, $quality = 75)
     {
         if (!file_exists($sourcePath)) {
             return null;

@@ -33,6 +33,11 @@ class CheckRolePermission
 
     public function handle(Request $request, Closure $next): Response
     {
+        return $this->authorizeRequest($request, $next);
+    }
+
+    private function authorizeRequest(Request $request, Closure $next): Response
+    {
         if ($this->isPublicRoute($request)) {
             return $next($request);
         }
