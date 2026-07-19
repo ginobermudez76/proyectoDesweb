@@ -30,7 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (Throwable $e, Request $request) {
             
-            dd($e->getMessage());
+            
 
             if ($request->is('api/*') || $request->expectsJson()) {
                 // 1. Excepción de Validación (422 Unprocessable Entity)

@@ -8,15 +8,16 @@ use App\Modules\Auth\Entities\Usuario;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
-    /** Número máximo de intentos fallidos antes del bloqueo */
+    
     private const MAX_FAILS = 5;
 
-    /** Segundos de bloqueo tras alcanzar MAX_FAILS */
-    private const LOCKOUT_TTL = 300; // 5 minutos
+    
+    private const LOCKOUT_TTL = 300; 
 
     public function login(Request $request)
     {
@@ -31,12 +32,12 @@ class AuthController extends Controller
         $keyIp    = "login_fails:ip:{$ip}";
         $keyEmail = "login_fails:input:{$loginInput}";
 
-        // ── 1. Verificar si hay un bloqueo activo ──────────────────────────
+        
         $failsIp    = (int) Cache::store('redis')->get($keyIp, 0);
         $failsEmail = (int) Cache::store('redis')->get($keyEmail, 0);
 
         if ($failsIp >= self::MAX_FAILS || $failsEmail >= self::MAX_FAILS) {
-            // Obtener TTL restante directamente desde la conexión Redis subyacente
+            
             $prefix    = config('cache.prefix', '');
             $blockedKey = $failsIp >= self::MAX_FAILS ? $keyIp : $keyEmail;
             $ttl        = Cache::store('redis')->getRedis()->ttl($prefix.$blockedKey);
@@ -49,14 +50,14 @@ class AuthController extends Controller
             ], 429);
         }
 
-        // ── 2. Validar credenciales (correo_electronico o nombre_usuario) ──
+        
         $usuario = Usuario::where('correo_electronico', $loginInput)
             ->orWhere('nombre_usuario', $loginInput)
             ->first();
 
         if (!$usuario || !Hash::check($request->password, $usuario->password_hash)) {
 
-            // Incrementar contadores usando get+put para mantener TTL de 5 min
+            
             $numIp    = (int) Cache::store('redis')->get($keyIp, 0) + 1;
             $numEmail = (int) Cache::store('redis')->get($keyEmail, 0) + 1;
             Cache::store('redis')->put($keyIp,    $numIp,    self::LOCKOUT_TTL);
@@ -66,7 +67,7 @@ class AuthController extends Controller
             $bloqueado = $intento >= self::MAX_FAILS;
             $remaining = max(0, self::MAX_FAILS - $intento);
 
-            // ── Registrar en MongoDB ──────────────────────────────────────
+          
             IntentoLoginFallido::create([
                 'correo_electronico' => $loginInput,
                 'ip'                 => $ip,
@@ -85,12 +86,12 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // ── 3. Verificar cuenta activa ─────────────────────────────────────
+        
         if (!$usuario->activo) {
-            return response()->json(['message' => 'Cuenta inactiva. Contacta al administrador.'], 403);
+            return response()->json(['message' => 'Cuenta inactiva o pendiente de verificación. Por favor, revisa tu correo o contacta al administrador.'], 403);
         }
 
-        // ── 4. Login exitoso: limpiar contadores de Redis ─────────────────
+        
         Cache::store('redis')->forget($keyIp);
         Cache::store('redis')->forget($keyEmail);
 
@@ -132,7 +133,7 @@ class AuthController extends Controller
                     'fecha_hora'         => now(),
                 ]);
 
-                // Invalidar la caché de permisos de Redis al cerrar sesión
+                
                 Cache::store('redis')->forget('user_profile:'.$usuarioId);
             }
 
@@ -196,13 +197,13 @@ class AuthController extends Controller
             'id_tipo_documento'  => 'required|integer|exists:tipo_documento,id',
             'documento'          => 'required|string|max:50',
             'celular'            => 'required|string|max:30',
-            // Campos de ubicación para MongoDB
+            
             'prefijo_celular'    => 'required|string|max:10',
             'codigo_pais'        => 'required|string|max:10',
             'ubicacion'          => 'required|array',
         ]);
 
-        // Validar el documento dinámicamente usando regex del tipo de documento
+        
         $tipoDoc = \App\Modules\Auth\Entities\TipoDocumento::findOrFail($validated['id_tipo_documento']);
         $reglas  = $tipoDoc->validacion;
         if (!empty($reglas['regex'])) {
@@ -213,7 +214,7 @@ class AuthController extends Controller
             }
         }
 
-        // Crear usuario en SQL
+       
         $usuario = new Usuario();
         $usuario->nombres            = $validated['nombres'];
         $usuario->apellidos          = $validated['apellidos'];
@@ -223,18 +224,20 @@ class AuthController extends Controller
         $usuario->id_tipo_documento  = $validated['id_tipo_documento'];
         $usuario->documento          = $validated['documento'];
         $usuario->celular            = $validated['celular'];
-        $usuario->activo             = true; // Activo por defecto
+        
+     
+        $usuario->activo             = false; 
         $usuario->deleted            = false;
         $usuario->save();
 
-        // Asociar el rol CIUDADANO
+        
         $rol = \App\Modules\Auth\Entities\Rol::where('codigo', 'CIUDADANO')->firstOrFail();
         $usuario->roles()->attach($rol->id, [
             'deleted'    => false,
             'created_at' => now(),
         ]);
 
-        // Crear el perfil en MongoDB
+       
         \App\Modules\Auth\Entities\CiudadanoPerfil::create([
             'usuario_uuid'    => $usuario->uuid,
             'prefijo_celular' => $validated['prefijo_celular'],
@@ -242,24 +245,23 @@ class AuthController extends Controller
             'ubicacion'       => $validated['ubicacion'],
         ]);
 
-        // Autenticar: generar token y registrar en MongoDB
-        $token = Str::random(60);
-        Cache::store('redis')->put('auth_token:'.$token, $usuario->id, now()->addDays(7));
+        
+        $codigoVerificacion = random_int(100000, 999999);
 
-        HistorialSesion::create([
-            'usuario_id'         => $usuario->uuid,
-            'correo_electronico' => $usuario->correo_electronico,
-            'accion'             => 'LOGIN',
-            'ip'                 => $request->ip(),
-            'dispositivo'        => $request->userAgent(),
-            'fecha_hora'         => now(),
-        ]);
+        
+        Cache::store('redis')->put('codigo_verificacion:' . $usuario->correo_electronico, $codigoVerificacion, now()->addMinutes(15));
 
+        
+        Mail::raw("Bienvenido al Sistema de Incidencias. Tu código de verificación de 6 dígitos es: {$codigoVerificacion}\n\nEste código expirará en 15 minutos.", function ($message) use ($usuario) {
+            $message->to($usuario->correo_electronico)
+                    ->subject('Código de Verificación - Sistema de Incidencias');
+        });
+
+        
         return response()->json([
-            'message'      => 'Usuario registrado e ingresado con éxito',
-            'access_token' => $token,
-            'token_type'   => 'Bearer',
-            'usuario'      => $usuario->load('roles.opciones'),
+            'message'              => 'Usuario registrado. Por favor, revisa tu correo electrónico para verificar tu cuenta.',
+            'require_verification' => true,
+            'correo'               => $usuario->correo_electronico
         ], 201);
     }
 
@@ -351,5 +353,59 @@ class AuthController extends Controller
         });
 
         return response()->json($ciudades, 200);
+    }
+
+    
+    public function verificarCodigo(Request $request)
+    {
+        $request->validate([
+            'correo_electronico' => 'required|email',
+            'codigo'             => 'required|numeric'
+        ]);
+
+        $correo = strtolower($request->correo_electronico);
+        $codigoIngresado = $request->codigo;
+        $key = 'codigo_verificacion:' . $correo;
+
+       
+        $codigoGuardado = Cache::store('redis')->get($key);
+
+        if (!$codigoGuardado || $codigoGuardado != $codigoIngresado) {
+            return response()->json([
+                'message' => 'Código inválido o ha expirado. Por favor, regístrate nuevamente o solicita un nuevo código.'
+            ], 400);
+        }
+
+        
+        $usuario = Usuario::where('correo_electronico', $correo)->first();
+        if (!$usuario) {
+            return response()->json(['message' => 'Usuario no encontrado.'], 404);
+        }
+
+        $usuario->activo = true;
+        $usuario->save();
+
+       
+        Cache::store('redis')->forget($key);
+
+        
+        $token = Str::random(60);
+        Cache::store('redis')->put('auth_token:'.$token, $usuario->id, now()->addDays(7));
+
+        HistorialSesion::create([
+            'usuario_id'         => $usuario->uuid,
+            'correo_electronico' => $usuario->correo_electronico,
+            'accion'             => 'VERIFICACION_Y_LOGIN',
+            'ip'                 => $request->ip(),
+            'dispositivo'        => $request->userAgent(),
+            'fecha_hora'         => now(),
+        ]);
+
+        return response()->json([
+            'message'      => 'Cuenta verificada y activada exitosamente.',
+            'access_token' => $token,
+            'token_type'   => 'Bearer',
+            'usuario'      => $usuario->load('roles.opciones'),
+        ], 200);
     }
 }
