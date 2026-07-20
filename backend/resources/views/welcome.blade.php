@@ -19,10 +19,8 @@
                     @auth
                         <li class="nav-item"><a class="nav-link" href="{{ url('/dashboard') }}">Dashboard</a></li>
                     @else
-                        <li class="nav-item"><a class="nav-link" href="{{ route('login') }}">Ingresar</a></li>
-                        @if (Route::has('register'))
-                            <li class="nav-item"><a class="nav-link" href="{{ route('register') }}">Registrarse</a></li>
-                        @endif
+                        <li class="nav-item"><a class="nav-link" href="{{ url('/login') }}">Ingresar</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url('/register') }}">Registrarse</a></li>
                     @endauth
                 </ul>
             </div>
