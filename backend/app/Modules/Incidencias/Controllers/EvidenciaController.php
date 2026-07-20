@@ -20,10 +20,11 @@ class EvidenciaController extends Controller
     public function store(Request $request, $id)
     {
         $request->validate([
-            'archivo' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:51200',
+            'archivo' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:20480',
             'url' => 'nullable|url',
         ]);
 
+        /** @var Incidencia $incidencia */
         $incidencia = Incidencia::findOrFail($id);
         $rol = $request->user()->roles->first()->codigo ?? 'CIUDADANO';
         if ($rol === 'CIUDADANO' && $incidencia->usuario_id !== $request->user()->uuid) {

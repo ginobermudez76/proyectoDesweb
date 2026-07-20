@@ -45,73 +45,76 @@ class FirebaseStorageService
     public function upload($file, $folder = 'evidencias')
     {
         $mimeType = $file->getClientMimeType();
-        $isImage = strpos($mimeType, 'image/') === 0;
+        $isImage  = strpos($mimeType, 'image/') === 0;
 
-        $tempPath = null;
-        $uploadFilePath = $file->getRealPath();
+        $tempPath = ($isImage && extension_loaded('gd'))
+            ? $this->getOptimizedFilePath($file)
+            : null;
 
-        // Si es una imagen y la extensión GD está activa, la optimizamos
-        if ($isImage && extension_loaded('gd')) {
-            try {
-                $optimized = $this->optimizeImage($file->getRealPath(), $mimeType);
-                if ($optimized) {
-                    $tempPath = $optimized;
-                    $uploadFilePath = $optimized;
-                }
-            } catch (\Exception $e) {
-                Log::warning('No se pudo optimizar la imagen, se subirá el archivo original: ' . $e->getMessage());
-            }
-        }
+        $uploadFilePath = $tempPath ?? $file->getRealPath();
 
         if (!$this->isConfigured || !$this->bucket) {
-            // Fallback: almacenar en disco public local de Laravel
-            if ($tempPath) {
-                $fileName = uniqid('ev_', true) . '.' . $file->getClientOriginalExtension();
-                $path = $folder . '/' . $fileName;
-                // Mover archivo temporal al disco local público
-                copy($tempPath, storage_path('app/public/' . $path));
-            } else {
-                $path = $file->store($folder, 'public');
-            }
-
-            if ($tempPath && file_exists($tempPath)) {
-                unlink($tempPath);
-            }
-            return asset('storage/' . $path);
+            return $this->storeLocally($file, $folder, $tempPath);
         }
 
+        return $this->uploadToFirebase($file, $folder, $uploadFilePath, $tempPath);
+    }
+
+    /**
+     * Tries to create an optimized temp file for images; returns null on failure.
+     */
+    private function getOptimizedFilePath($file): ?string
+    {
+        try {
+            return $this->optimizeImage($file->getRealPath());
+        } catch (\Exception $e) {
+            Log::warning('No se pudo optimizar la imagen, se subirá el archivo original: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Stores a file locally in Laravel's public disk and returns its URL.
+     */
+    private function storeLocally($file, string $folder, ?string $tempPath): string
+    {
+        if ($tempPath) {
+            $fileName = uniqid('ev_', true) . '.' . $file->getClientOriginalExtension();
+            $path     = $folder . '/' . $fileName;
+            copy($tempPath, storage_path('app/public/' . $path));
+        } else {
+            $path = $file->store($folder, 'public');
+        }
+
+        if ($tempPath && file_exists($tempPath)) {
+            unlink($tempPath);
+        }
+
+        return asset('storage/' . $path);
+    }
+
+    /**
+     * Uploads the file to Firebase Storage; falls back to local on error.
+     */
+    private function uploadToFirebase($file, string $folder, string $uploadFilePath, ?string $tempPath): string
+    {
         try {
             $extension = $file->getClientOriginalExtension();
-            $fileName = $folder . '/' . uniqid('ev_', true) . ($extension ? '.' . $extension : '');
+            $fileName  = $folder . '/' . uniqid('ev_', true) . ($extension ? '.' . $extension : '');
 
-            // Subir a Firebase Storage usando stream
-            $this->bucket->upload(
-                fopen($uploadFilePath, 'r'),
-                [
-                    'name' => $fileName,
-                ]
-            );
+            $this->bucket->upload(fopen($uploadFilePath, 'r'), ['name' => $fileName]);
 
             if ($tempPath && file_exists($tempPath)) {
                 unlink($tempPath);
             }
 
-            // Firebase Storage utiliza este formato de URL para acceso de lectura pública sin firma
-            $bucketName = config('services.firebase.storage_bucket');
+            $bucketName  = config('services.firebase.storage_bucket');
             $encodedName = urlencode($fileName);
 
             return "https://firebasestorage.googleapis.com/v0/b/{$bucketName}/o/{$encodedName}?alt=media";
         } catch (\Exception $e) {
             Log::error('Fallo al subir archivo a Firebase Storage: ' . $e->getMessage() . '. Usando local.');
-            if ($tempPath && file_exists($tempPath)) {
-                $fileName = uniqid('ev_', true) . '.' . $file->getClientOriginalExtension();
-                $path = $folder . '/' . $fileName;
-                copy($tempPath, storage_path('app/public/' . $path));
-                unlink($tempPath);
-            } else {
-                $path = $file->store($folder, 'public');
-            }
-            return asset('storage/' . $path);
+            return $this->storeLocally($file, $folder, $tempPath);
         }
     }
 
@@ -125,7 +128,7 @@ class FirebaseStorageService
      * @param int $quality
      * @return string|null Ruta del archivo temporal optimizado, o null si falla
      */
-    private function optimizeImage($sourcePath, $mimeType, $maxWidth = 1200, $maxHeight = 1200, $quality = 75)
+    private function optimizeImage($sourcePath, $maxWidth = 1200, $maxHeight = 1200, $quality = 75)
     {
         if (!file_exists($sourcePath)) {
             return null;

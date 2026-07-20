@@ -21,6 +21,7 @@ class SeguimientoController extends Controller
             'observacion' => 'nullable|string|max:500',
         ]);
 
+        /** @var Incidencia $incidencia */
         $incidencia = Incidencia::findOrFail($id);
 
         $estadoAnterior = $incidencia->estado;

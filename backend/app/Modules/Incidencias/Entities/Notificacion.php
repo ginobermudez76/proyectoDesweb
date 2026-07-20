@@ -4,6 +4,13 @@ namespace App\Modules\Incidencias\Entities;
 
 use MongoDB\Laravel\Eloquent\Model;
 
+/**
+ * @property string $usuario_id
+ * @property string $incidencia_id
+ * @property string $titulo
+ * @property string $mensaje
+ * @property bool $leida
+ */
 class Notificacion extends Model
 {
     protected $connection = 'mongodb';

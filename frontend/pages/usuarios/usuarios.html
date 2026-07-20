@@ -1,207 +1,382 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Gestión de usuarios y roles del sistema">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Gestión de usuarios y roles del sistema" />
     <title>Usuarios y roles</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/css/style.css" rel="stylesheet">
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+      integrity="sha384-XVE0LqdyWESihx0laEzd3gYh4gI9YLsp5MTNQeSEvlZy1MIPUdVADmaCwgbqi3Hz"
+      crossorigin="anonymous"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+      rel="stylesheet"
+    />
+    <link href="/css/style.css" rel="stylesheet" />
     <script src="/js/colors.js"></script>
     <script src="/js/toast.js"></script>
     <style>
-        .user-card {
-            background:#fff; border-radius:14px; padding:14px 16px;
-            margin-bottom:10px; display:flex; align-items:center; gap:12px;
-            box-shadow:0 1px 3px rgba(0,0,0,.06);
-        }
-        .user-avatar {
-            width:44px; height:44px; border-radius:50%;
-            display:flex; align-items:center; justify-content:center;
-            font-size:16px; font-weight:700; color:#fff; flex-shrink:0;
-        }
-        .role-badge {
-            display:inline-block; padding:2px 10px; border-radius:20px;
-            font-size:10px; font-weight:700; letter-spacing:.3px;
-        }
-        .role-ADMIN      { background:#EDE9FE; color:#5B21B6; }
-        .role-SUPERVISOR { background:#FEF3C7; color:#92400E; }
-        .role-TECNICO    { background:#DBEAFE; color:#1D4ED8; }
-        .role-CIUDADANO  { background:#D1FAE5; color:#065F46; }
-        .toggle-btn {
-            padding:6px 12px; border-radius:8px; border:1.5px solid;
-            font-size:12px; font-weight:600; cursor:pointer; background:#fff;
-        }
-        .toggle-active   { border-color:#EF4444; color:#EF4444; }
-        .toggle-inactive { border-color:var(--green); color:var(--green); }
+      .user-card {
+        background: #fff;
+        border-radius: 14px;
+        padding: 14px 16px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      }
+      .user-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        font-weight: 700;
+        color: #fff;
+        flex-shrink: 0;
+      }
+      .role-badge {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 20px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+      }
+      .role-ADMIN {
+        background: #ede9fe;
+        color: #5b21b6;
+      }
+      .role-SUPERVISOR {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .role-TECNICO {
+        background: #dbeafe;
+        color: #1d4ed8;
+      }
+      .role-CIUDADANO {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      .toggle-btn {
+        padding: 6px 12px;
+        border-radius: 8px;
+        border: 1.5px solid;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        background: #fff;
+      }
+      .toggle-active {
+        border-color: #ef4444;
+        color: #ef4444;
+      }
+      .toggle-inactive {
+        border-color: var(--green);
+        color: var(--green);
+      }
     </style>
-</head>
-<body>
-<div class="app-container">
-
-    <div class="app-header">
-        <button class="back-btn" onclick="history.back()"><i class="bi bi-chevron-left"></i></button>
+  </head>
+  <body>
+    <div class="app-container">
+      <div class="app-header">
+        <button class="back-btn" onclick="history.back()">
+          <i class="bi bi-chevron-left"></i>
+        </button>
         <h5>Usuarios y roles</h5>
         <div></div>
-    </div>
+      </div>
 
-    <!-- Filtros por rol (dinámicos) -->
-    <div class="filter-tabs" id="filterTabs">
-        <button class="filter-tab active" data-filter="todos" onclick="setFiltro(this)">Todos</button>
+      <!-- Filtros por rol (dinámicos) -->
+      <div class="filter-tabs" id="filterTabs">
+        <button class="filter-tab active" data-filter="todos" onclick="setFiltro(this)">
+          Todos
+        </button>
         <!-- Tabs adicionales se inyectan desde JS según roles disponibles -->
-    </div>
+      </div>
 
-    <div class="section">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <div class="section-title" style="margin-bottom:0" id="countLabel">Usuarios</div>
-            <!-- Botón "Nuevo" solo para ADMIN -->
-            <button id="btnNuevo" class="btn-orange"
-                    style="display:none;width:auto;padding:8px 16px;font-size:13px;border-radius:10px"
-                    onclick="nuevoUsuario()">
-                <i class="bi bi-plus"></i> Nuevo
-            </button>
+      <div class="section">
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+          "
+        >
+          <div class="section-title" style="margin-bottom: 0" id="countLabel">Usuarios</div>
+          <!-- Botón "Nuevo" solo para ADMIN -->
+          <button
+            id="btnNuevo"
+            class="btn-orange"
+            style="
+              display: none;
+              width: auto;
+              padding: 8px 16px;
+              font-size: 13px;
+              border-radius: 10px;
+            "
+            onclick="nuevoUsuario()"
+          >
+            <i class="bi bi-plus"></i> Nuevo
+          </button>
         </div>
         <div id="lista"><div class="text-muted-sm text-center py-3">Cargando…</div></div>
+      </div>
     </div>
 
-</div>
-
-<!-- Modal nuevo usuario -->
-<div id="modalOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:flex-end">
-    <div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:430px;margin:0 auto;max-height:85vh;overflow-y:auto">
-        <div style="font-size:16px;font-weight:700;margin-bottom:16px">Nuevo usuario</div>
-        <div class="form-group"><label class="form-label">Nombres *</label>
-            <input class="form-input" id="newNombres" placeholder="Ej: Carlos"></div>
-        <div class="form-group"><label class="form-label">Apellidos *</label>
-            <input class="form-input" id="newApellidos" placeholder="Ej: Méndez"></div>
-        <div class="form-group"><label class="form-label">Correo electrónico *</label>
-            <input class="form-input" id="newCorreo" type="email" placeholder="correo@ejemplo.com"></div>
-        <div class="form-group"><label class="form-label">Nombre de usuario (opcional)</label>
-            <input class="form-input" id="newUsuario" placeholder="Ej: carlos.mendez"></div>
-        <div class="form-group"><label class="form-label">Contraseña temporal *</label>
-            <input class="form-input" id="newPass" type="password" placeholder="Mínimo 8 caracteres"></div>
-        <div class="form-group"><label class="form-label">Rol del usuario *</label>
-            <select class="form-input" id="newRol" style="background-color:#fff">
-                <option value="ADMIN">Administrador</option>
-                <option value="SUPERVISOR">Supervisor</option>
-                <option value="TECNICO">Técnico</option>
-                <option value="CIUDADANO">Ciudadano</option>
-            </select></div>
-        <div id="modalError" class="error-msg" style="display:none;color:#EF4444;font-size:12px;margin-bottom:10px"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
-            <button class="btn btn-light" onclick="cerrarModal()">Cancelar</button>
-            <button class="btn-orange" style="border-radius:12px" onclick="crearUsuario()">Crear</button>
+    <!-- Modal nuevo usuario -->
+    <div
+      id="modalOverlay"
+      style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 300;
+        align-items: flex-end;
+      "
+    >
+      <div
+        style="
+          background: #fff;
+          border-radius: 20px 20px 0 0;
+          padding: 24px;
+          width: 100%;
+          max-width: 430px;
+          margin: 0 auto;
+          max-height: 85vh;
+          overflow-y: auto;
+        "
+      >
+        <div style="font-size: 16px; font-weight: 700; margin-bottom: 16px">Nuevo usuario</div>
+        <div class="form-group">
+          <label class="form-label" for="newNombres">Nombres *</label>
+          <input class="form-input" id="newNombres" placeholder="Ej: Carlos" />
         </div>
-    </div>
-</div>
-
-<!-- Modal editar usuario -->
-<div id="editModalOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;align-items:flex-end">
-    <div style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:430px;margin:0 auto;max-height:85vh;overflow-y:auto">
-        <div style="font-size:16px;font-weight:700;margin-bottom:16px">Editar usuario</div>
-        <input type="hidden" id="editId">
-        <div class="form-group"><label class="form-label">Nombres *</label>
-            <input class="form-input" id="editNombres"></div>
-        <div class="form-group"><label class="form-label">Apellidos *</label>
-            <input class="form-input" id="editApellidos"></div>
-        <div class="form-group"><label class="form-label">Correo electrónico *</label>
-            <input class="form-input" id="editCorreo" type="email"></div>
-        <div class="form-group"><label class="form-label">Nombre de usuario</label>
-            <input class="form-input" id="editUsuario"></div>
-        <div class="form-group"><label class="form-label">Nueva contraseña (opcional)</label>
-            <input class="form-input" id="editPass" type="password" placeholder="Dejar en blanco para no cambiar"></div>
-        <div class="form-group"><label class="form-label">Rol del usuario *</label>
-            <select class="form-input" id="editRol" style="background-color:#fff">
-                <option value="ADMIN">Administrador</option>
-                <option value="SUPERVISOR">Supervisor</option>
-                <option value="TECNICO">Técnico</option>
-                <option value="CIUDADANO">Ciudadano</option>
-            </select></div>
-        <div id="editModalError" class="error-msg" style="display:none;color:#EF4444;font-size:12px;margin-bottom:10px"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
-            <button class="btn btn-light" onclick="cerrarEdicion()">Cancelar</button>
-            <button class="btn-orange" style="border-radius:12px" onclick="guardarEdicion()">Guardar</button>
+        <div class="form-group">
+          <label class="form-label" for="newApellidos">Apellidos *</label>
+          <input class="form-input" id="newApellidos" placeholder="Ej: Méndez" />
         </div>
+        <div class="form-group">
+          <label class="form-label" for="newCorreo">Correo electrónico *</label>
+          <input class="form-input" id="newCorreo" type="email" placeholder="correo@ejemplo.com" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="newUsuario">Nombre de usuario (opcional)</label>
+          <input class="form-input" id="newUsuario" placeholder="Ej: carlos.mendez" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="newPass">Contraseña temporal *</label>
+          <input
+            class="form-input"
+            id="newPass"
+            type="password"
+            placeholder="Mínimo 8 caracteres"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="newRol">Rol del usuario *</label>
+          <select class="form-input" id="newRol" style="background-color: #fff">
+            <option value="ADMIN">Administrador</option>
+            <option value="SUPERVISOR">Supervisor</option>
+            <option value="TECNICO">Técnico</option>
+            <option value="CIUDADANO">Ciudadano</option>
+          </select>
+        </div>
+        <div
+          id="modalError"
+          class="error-msg"
+          style="display: none; color: #ef4444; font-size: 12px; margin-bottom: 10px"
+        ></div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px">
+          <button class="btn btn-light" onclick="cerrarModal()">Cancelar</button>
+          <button class="btn-orange" style="border-radius: 12px" onclick="crearUsuario()">
+            Crear
+          </button>
+        </div>
+      </div>
     </div>
-</div>
 
-<script src="/js/app.js"></script>
-<script src="/js/auth.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-// Solo ADMIN y SUPERVISOR pueden ver esta página
-if (!requireRole(['ADMIN', 'SUPERVISOR'])) throw new Error('Redirigiendo');
+    <!-- Modal editar usuario -->
+    <div
+      id="editModalOverlay"
+      style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: 300;
+        align-items: flex-end;
+      "
+    >
+      <div
+        style="
+          background: #fff;
+          border-radius: 20px 20px 0 0;
+          padding: 24px;
+          width: 100%;
+          max-width: 430px;
+          margin: 0 auto;
+          max-height: 85vh;
+          overflow-y: auto;
+        "
+      >
+        <div style="font-size: 16px; font-weight: 700; margin-bottom: 16px">Editar usuario</div>
+        <input type="hidden" id="editId" />
+        <div class="form-group">
+          <label class="form-label" for="editNombres">Nombres *</label>
+          <input class="form-input" id="editNombres" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="editApellidos">Apellidos *</label>
+          <input class="form-input" id="editApellidos" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="editCorreo">Correo electrónico *</label>
+          <input class="form-input" id="editCorreo" type="email" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="editUsuario">Nombre de usuario</label>
+          <input class="form-input" id="editUsuario" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="editPass">Nueva contraseña (opcional)</label>
+          <input
+            class="form-input"
+            id="editPass"
+            type="password"
+            placeholder="Dejar en blanco para no cambiar"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="editRol">Rol del usuario *</label>
+          <select class="form-input" id="editRol" style="background-color: #fff">
+            <option value="ADMIN">Administrador</option>
+            <option value="SUPERVISOR">Supervisor</option>
+            <option value="TECNICO">Técnico</option>
+            <option value="CIUDADANO">Ciudadano</option>
+          </select>
+        </div>
+        <div
+          id="editModalError"
+          class="error-msg"
+          style="display: none; color: #ef4444; font-size: 12px; margin-bottom: 10px"
+        ></div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px">
+          <button class="btn btn-light" onclick="cerrarEdicion()">Cancelar</button>
+          <button class="btn-orange" style="border-radius: 12px" onclick="guardarEdicion()">
+            Guardar
+          </button>
+        </div>
+      </div>
+    </div>
 
-const role = getRole();
+    <script src="/js/app.js"></script>
+    <script src="/js/auth.js"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+      crossorigin="anonymous"
+    ></script>
+    <script>
+      // Solo ADMIN y SUPERVISOR pueden ver esta página
+      if (!requireRole(['ADMIN', 'SUPERVISOR'])) throw new Error('Redirigiendo');
 
-// El botón "Nuevo" solo aparece para ADMIN
-if (role === 'ADMIN') {
-    document.getElementById('btnNuevo').style.display = '';
-}
+      const role = getRole();
 
-const AVATAR_COLORS = APP_COLORS.roles;
+      // El botón "Nuevo" solo aparece para ADMIN
+      if (role === 'ADMIN') {
+        document.getElementById('btnNuevo').style.display = '';
+      }
 
-let usuarios     = [];
-let filtroActual = 'todos';
-let DB_ROLES     = [];
+      const AVATAR_COLORS = APP_COLORS.roles;
 
-async function cargar() {
-    try {
-        [usuarios, DB_ROLES] = await Promise.all([
-            apiFetch('/usuarios'),
-            apiFetch('/roles'),
-        ]);
-        renderRolesSelects();
-        renderFiltroTabs();
-        renderLista();
-    } catch (err) {
-        document.getElementById('lista').innerHTML =
+      function getUserRoleCode(user) {
+        return user?.roles?.[0]?.codigo ?? 'CIUDADANO';
+      }
+
+      function getUserInitials(user) {
+        const firstName = user?.nombres ?? user?.nombre_usuario ?? '?';
+        const lastName = user?.apellidos ?? '';
+        return `${firstName[0] ?? '?'}${lastName[0]?.toUpperCase() ?? ''}`.toUpperCase();
+      }
+
+      let usuarios = [];
+      let filtroActual = 'todos';
+      let DB_ROLES = [];
+
+      async function cargar() {
+        try {
+          [usuarios, DB_ROLES] = await Promise.all([apiFetch('/usuarios'), apiFetch('/roles')]);
+          renderRolesSelects();
+          renderFiltroTabs();
+          renderLista();
+        } catch (err) {
+          document.getElementById('lista').innerHTML =
             `<div class="text-danger text-center py-3">Error al cargar usuarios: ${err.message}</div>`;
-    }
-}
+        }
+      }
 
-function renderFiltroTabs() {
-    const tabs = document.getElementById('filterTabs');
-    const extra = DB_ROLES.map(r =>
-        `<button class="filter-tab" data-filter="${r.codigo}" onclick="setFiltro(this)">${r.nombre_rol}</button>`
-    ).join('');
-    // Mantener "Todos" y agregar los demás
-    tabs.innerHTML = `<button class="filter-tab active" data-filter="todos" onclick="setFiltro(this)">Todos</button>${extra}`;
-}
+      function renderFiltroTabs() {
+        const tabs = document.getElementById('filterTabs');
+        const extra = DB_ROLES.map(
+          (r) =>
+            `<button class="filter-tab" data-filter="${r.codigo}" onclick="setFiltro(this)">${r.nombre_rol}</button>`
+        ).join('');
+        // Mantener "Todos" y agregar los demás
+        tabs.innerHTML = `<button class="filter-tab active" data-filter="todos" onclick="setFiltro(this)">Todos</button>${extra}`;
+      }
 
-function renderRolesSelects() {
-    const optHtml = DB_ROLES.map(r => `<option value="${r.codigo}">${r.nombre_rol}</option>`).join('');
-    ['newRol', 'editRol'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.innerHTML = optHtml;
-    });
-}
+      function renderRolesSelects() {
+        const optHtml = DB_ROLES.map(
+          (r) => `<option value="${r.codigo}">${r.nombre_rol}</option>`
+        ).join('');
+        ['newRol', 'editRol'].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.innerHTML = optHtml;
+        });
+      }
 
-function setFiltro(btn) {
-    document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    filtroActual = btn.dataset.filter;
-    renderLista();
-}
+      function setFiltro(btn) {
+        document.querySelectorAll('.filter-tab').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        filtroActual = btn.dataset.filter;
+        renderLista();
+      }
 
-function filtrar(lista) {
-    if (filtroActual === 'todos') return lista;
-    return lista.filter(u => u.roles?.[0]?.codigo === filtroActual);
-}
+      function filtrar(lista) {
+        if (filtroActual === 'todos') return lista;
+        return lista.filter((u) => getUserRoleCode(u) === filtroActual);
+      }
 
-function renderLista() {
-    const lista = filtrar(usuarios);
-    document.getElementById('countLabel').textContent = `Usuarios (${lista.length})`;
+      function renderLista() {
+        const lista = filtrar(usuarios);
+        document.getElementById('countLabel').textContent = `Usuarios (${lista.length})`;
 
-    // SUPERVISOR solo puede ver (no editar ni crear)
-    const puedeEditar = role === 'ADMIN';
+        // SUPERVISOR solo puede ver (no editar ni crear)
+        const puedeEditar = role === 'ADMIN';
 
-    document.getElementById('lista').innerHTML = lista.map(u => {
-        const rol      = u.roles?.[0];
-        const initials = ((u.nombres || '?')[0] + (u.apellidos || '')[0]).toUpperCase();
-        const color    = AVATAR_COLORS[rol?.codigo] || '#9CA3AF';
-        return `
+        document.getElementById('lista').innerHTML =
+          lista
+            .map((u) => {
+              const rol = u.roles?.[0];
+              const initials = getUserInitials(u);
+              const color = AVATAR_COLORS[rol?.codigo] || '#9CA3AF';
+              return `
         <div class="user-card">
             <div class="user-avatar" style="background:${color}">${initials}</div>
             <div style="flex:1;min-width:0">
@@ -211,7 +386,9 @@ function renderLista() {
                 <div class="text-muted-sm" style="margin-bottom:4px">${u.correo_electronico}</div>
                 ${rol ? `<span class="role-badge role-${rol.codigo}">${rol.nombre_rol}</span>` : ''}
             </div>
-            ${puedeEditar ? `
+            ${
+              puedeEditar
+                ? `
             <div style="display:flex;flex-direction:column;gap:6px">
                 <button class="toggle-btn" style="border-color:#6B7280;color:#6B7280"
                         onclick="abrirEdicion('${u.uuid}')">Editar</button>
@@ -219,123 +396,134 @@ function renderLista() {
                         onclick="toggleActivo('${u.uuid}')">
                     ${u.activo ? 'Desactivar' : 'Activar'}
                 </button>
-            </div>` : `
+            </div>`
+                : `
             <span style="font-size:12px;color:${u.activo ? 'var(--green)' : '#EF4444'}">
                 ${u.activo ? 'Activo' : 'Inactivo'}
-            </span>`}
+            </span>`
+            }
         </div>`;
-    }).join('') || '<div class="text-muted-sm text-center py-3">Sin usuarios en este filtro.</div>';
-}
+            })
+            .join('') ||
+          '<div class="text-muted-sm text-center py-3">Sin usuarios en este filtro.</div>';
+      }
 
-async function toggleActivo(uuid) {
-    try {
-        await apiFetch(`/usuarios/${uuid}/toggle`, { method: 'PATCH' });
-        showToast('Estado del usuario actualizado', 'success');
-        await cargar();
-    } catch (err) {
-        showToast(err.message || 'No se pudo cambiar el estado del usuario.', 'error');
-    }
-}
+      async function toggleActivo(uuid) {
+        try {
+          await apiFetch(`/usuarios/${uuid}/toggle`, { method: 'PATCH' });
+          showToast('Estado del usuario actualizado', 'success');
+          await cargar();
+        } catch (err) {
+          showToast(err.message || 'No se pudo cambiar el estado del usuario.', 'error');
+        }
+      }
 
-function abrirEdicion(uuid) {
-    const u = usuarios.find(x => x.uuid === uuid);
-    if (!u) return;
-    document.getElementById('editId').value       = u.uuid;
-    document.getElementById('editNombres').value  = u.nombres || '';
-    document.getElementById('editApellidos').value = u.apellidos || '';
-    document.getElementById('editCorreo').value   = u.correo_electronico || '';
-    document.getElementById('editUsuario').value  = u.nombre_usuario || '';
-    document.getElementById('editPass').value     = '';
-    document.getElementById('editRol').value      = u.roles?.[0]?.codigo || 'CIUDADANO';
-    document.getElementById('editModalOverlay').style.display = 'flex';
-}
+      function abrirEdicion(uuid) {
+        const u = usuarios.find((x) => x.uuid === uuid);
+        if (!u) return;
+        document.getElementById('editId').value = u.uuid;
+        document.getElementById('editNombres').value = u.nombres || '';
+        document.getElementById('editApellidos').value = u.apellidos || '';
+        document.getElementById('editCorreo').value = u.correo_electronico || '';
+        document.getElementById('editUsuario').value = u.nombre_usuario || '';
+        document.getElementById('editPass').value = '';
+        document.getElementById('editRol').value = getUserRoleCode(u);
+        document.getElementById('editModalOverlay').style.display = 'flex';
+      }
 
-function cerrarEdicion() {
-    document.getElementById('editModalOverlay').style.display = 'none';
-    document.getElementById('editModalError').style.display   = 'none';
-}
+      function cerrarEdicion() {
+        document.getElementById('editModalOverlay').style.display = 'none';
+        document.getElementById('editModalError').style.display = 'none';
+      }
 
-async function guardarEdicion() {
-    const errEl = document.getElementById('editModalError');
-    errEl.style.display = 'none';
-    const uuid            = document.getElementById('editId').value;
-    const nombres         = document.getElementById('editNombres').value.trim();
-    const apellidos       = document.getElementById('editApellidos').value.trim();
-    const correo          = document.getElementById('editCorreo').value.trim();
-    const nombre_usuario  = document.getElementById('editUsuario').value.trim();
-    const password        = document.getElementById('editPass').value;
-    const rol_codigo      = document.getElementById('editRol').value;
+      async function guardarEdicion() {
+        const errEl = document.getElementById('editModalError');
+        errEl.style.display = 'none';
+        const uuid = document.getElementById('editId').value;
+        const nombres = document.getElementById('editNombres').value.trim();
+        const apellidos = document.getElementById('editApellidos').value.trim();
+        const correo = document.getElementById('editCorreo').value.trim();
+        const nombre_usuario = document.getElementById('editUsuario').value.trim();
+        const password = document.getElementById('editPass').value;
+        const rol_codigo = document.getElementById('editRol').value;
 
-    if (!nombres || !apellidos || !correo) {
-        errEl.textContent = 'Completa todos los campos obligatorios.';
-        errEl.style.display = 'block';
-        return;
-    }
-    try {
-        await apiFetch(`/usuarios/${uuid}`, {
+        if (!nombres || !apellidos || !correo) {
+          errEl.textContent = 'Completa todos los campos obligatorios.';
+          errEl.style.display = 'block';
+          return;
+        }
+        try {
+          await apiFetch(`/usuarios/${uuid}`, {
             method: 'PUT',
             body: JSON.stringify({
-                nombres, apellidos, correo_electronico: correo,
-                nombre_usuario: nombre_usuario || null,
-                password: password || null, rol_codigo,
+              nombres,
+              apellidos,
+              correo_electronico: correo,
+              nombre_usuario: nombre_usuario || null,
+              password: password || null,
+              rol_codigo,
             }),
+          });
+          cerrarEdicion();
+          showToast('Usuario actualizado correctamente', 'success');
+          await cargar();
+        } catch (err) {
+          errEl.textContent = err.message || 'Error al editar el usuario.';
+          errEl.style.display = 'block';
+        }
+      }
+
+      function nuevoUsuario() {
+        ['newNombres', 'newApellidos', 'newCorreo', 'newUsuario', 'newPass'].forEach((id) => {
+          document.getElementById(id).value = '';
         });
-        cerrarEdicion();
-        showToast('Usuario actualizado correctamente', 'success');
-        await cargar();
-    } catch (err) {
-        errEl.textContent = err.message || 'Error al editar el usuario.';
-        errEl.style.display = 'block';
-    }
-}
+        if (DB_ROLES.length) document.getElementById('newRol').value = DB_ROLES[0].codigo;
+        document.getElementById('modalError').style.display = 'none';
+        document.getElementById('modalOverlay').style.display = 'flex';
+      }
 
-function nuevoUsuario() {
-    ['newNombres','newApellidos','newCorreo','newUsuario','newPass'].forEach(id => {
-        document.getElementById(id).value = '';
-    });
-    if (DB_ROLES.length) document.getElementById('newRol').value = DB_ROLES[0].codigo;
-    document.getElementById('modalError').style.display = 'none';
-    document.getElementById('modalOverlay').style.display = 'flex';
-}
+      function cerrarModal() {
+        document.getElementById('modalOverlay').style.display = 'none';
+        document.getElementById('modalError').style.display = 'none';
+      }
 
-function cerrarModal() {
-    document.getElementById('modalOverlay').style.display = 'none';
-    document.getElementById('modalError').style.display   = 'none';
-}
+      async function crearUsuario() {
+        const errEl = document.getElementById('modalError');
+        errEl.style.display = 'none';
+        const nombres = document.getElementById('newNombres').value.trim();
+        const apellidos = document.getElementById('newApellidos').value.trim();
+        const correo = document.getElementById('newCorreo').value.trim();
+        const password = document.getElementById('newPass').value;
+        const rol_codigo = document.getElementById('newRol').value;
+        const nombre_usuario = document.getElementById('newUsuario').value.trim();
 
-async function crearUsuario() {
-    const errEl = document.getElementById('modalError');
-    errEl.style.display = 'none';
-    const nombres        = document.getElementById('newNombres').value.trim();
-    const apellidos      = document.getElementById('newApellidos').value.trim();
-    const correo         = document.getElementById('newCorreo').value.trim();
-    const password       = document.getElementById('newPass').value;
-    const rol_codigo     = document.getElementById('newRol').value;
-    const nombre_usuario = document.getElementById('newUsuario').value.trim();
-
-    if (!nombres || !apellidos || !correo || !password) {
-        errEl.textContent = 'Completa todos los campos obligatorios.';
-        errEl.style.display = 'block';
-        return;
-    }
-    try {
-        await apiFetch('/usuarios', {
+        if (!nombres || !apellidos || !correo || !password) {
+          errEl.textContent = 'Completa todos los campos obligatorios.';
+          errEl.style.display = 'block';
+          return;
+        }
+        try {
+          await apiFetch('/usuarios', {
             method: 'POST',
             body: JSON.stringify({
-                nombres, apellidos, correo_electronico: correo,
-                password, rol_codigo, nombre_usuario: nombre_usuario || null,
+              nombres,
+              apellidos,
+              correo_electronico: correo,
+              password,
+              rol_codigo,
+              nombre_usuario: nombre_usuario || null,
             }),
-        });
-        cerrarModal();
-        showToast('Usuario creado correctamente', 'success');
-        await cargar();
-    } catch (err) {
-        errEl.textContent = err.message || 'Error al crear el usuario.';
-        errEl.style.display = 'block';
-    }
-}
+          });
+          cerrarModal();
+          showToast('Usuario creado correctamente', 'success');
+          await cargar();
+        } catch (err) {
+          errEl.textContent = err.message || 'Error al crear el usuario.';
+          errEl.style.display = 'block';
+        }
+      }
 
-cargar();
-</script>
-</body>
+      cargar();
+    </script>
+  </body>
 </html>

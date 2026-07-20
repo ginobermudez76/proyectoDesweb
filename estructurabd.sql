@@ -11,9 +11,9 @@ CREATE TABLE rol(
     deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamp with time zone,
     CHECK (
-        (deleted = false AND deleted_at IS NULL)
+        (NOT deleted AND deleted_at IS NULL)
         OR
-        (deleted = true AND deleted_at IS NOT NULL)
+        (deleted AND deleted_at IS NOT NULL)
     )
 );
 
@@ -31,9 +31,9 @@ CREATE TABLE usuario(
     deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamp with time zone,
     CHECK (
-        (deleted = false AND deleted_at IS NULL)
+        (NOT deleted AND deleted_at IS NULL)
         OR
-        (deleted = true AND deleted_at IS NOT NULL)
+        (deleted AND deleted_at IS NOT NULL)
     )
 );
 
@@ -47,9 +47,9 @@ CREATE TABLE opcion(
     deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamp with time zone,
     CHECK (
-        (deleted = false AND deleted_at IS NULL)
+        (NOT deleted AND deleted_at IS NULL)
         OR
-        (deleted = true AND deleted_at IS NOT NULL)
+        (deleted AND deleted_at IS NOT NULL)
     )
 );
 
@@ -66,9 +66,9 @@ CREATE TABLE endpoint(
     rbac_enabled boolean NOT NULL DEFAULT false,
     CONSTRAINT uq_endpoint_url_metodo UNIQUE (url, metodo),
     CHECK (
-        (deleted = false AND deleted_at IS NULL)
+        (NOT deleted AND deleted_at IS NULL)
         OR
-        (deleted = true AND deleted_at IS NOT NULL)
+        (deleted AND deleted_at IS NOT NULL)
     )
 );
 
@@ -82,9 +82,9 @@ CREATE TABLE rol_opcion(
     deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamp with time zone,
     CHECK (
-        (deleted = false AND deleted_at IS NULL)
+        (NOT deleted AND deleted_at IS NULL)
         OR
-        (deleted = true AND deleted_at IS NOT NULL)
+        (deleted AND deleted_at IS NOT NULL)
     ),
     FOREIGN KEY (id_rol) REFERENCES rol(id) ON DELETE RESTRICT,
     FOREIGN KEY (id_opcion) REFERENCES opcion(id) ON DELETE RESTRICT,
@@ -104,9 +104,9 @@ CREATE TABLE opcion_endpoint(
     deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamp with time zone,
     CHECK (
-        (deleted = false AND deleted_at IS NULL)
+        (NOT deleted AND deleted_at IS NULL)
         OR
-        (deleted = true AND deleted_at IS NOT NULL)
+        (deleted AND deleted_at IS NOT NULL)
     ),
 
     CONSTRAINT uq_opcion_endpoint UNIQUE(id_opcion, id_endpoint)
@@ -124,9 +124,9 @@ CREATE TABLE rol_usuario(
     deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamp with time zone,
     CHECK (
-        (deleted = false AND deleted_at IS NULL)
+        (NOT deleted AND deleted_at IS NULL)
         OR
-        (deleted = true AND deleted_at IS NOT NULL)
+        (deleted AND deleted_at IS NOT NULL)
     ),
 
     CONSTRAINT uq_rol_usuario UNIQUE(id_rol, id_usuario)
@@ -143,9 +143,9 @@ CREATE TABLE configuracion(
     deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamp with time zone,
     CHECK (
-        (deleted = false AND deleted_at IS NULL)
+        (NOT deleted AND deleted_at IS NULL)
         OR
-        (deleted = true AND deleted_at IS NOT NULL)
+        (deleted AND deleted_at IS NOT NULL)
     )
 );
 
@@ -223,8 +223,8 @@ BEGIN
     IF TG_OP = 'UPDATE' THEN
 
         -- Detectar borrado lógico
-        IF OLD.deleted = false
-           AND NEW.deleted = true THEN
+          IF NOT OLD.deleted
+              AND NEW.deleted THEN
 
             INSERT INTO auditoria(
                 entidad,
@@ -243,8 +243,8 @@ BEGIN
                 COALESCE(current_setting('app.current_user_id', true), CURRENT_USER)
             );
 
-        ELSIF OLD.deleted = true
-              AND NEW.deleted = false THEN
+          ELSIF OLD.deleted
+              AND NOT NEW.deleted THEN
 
             INSERT INTO auditoria(
                 entidad,
@@ -335,11 +335,11 @@ CREATE TRIGGER trg_update_updated_at_configuracion BEFORE UPDATE ON configuracio
 
 CREATE UNIQUE INDEX uq_usuario_nombre_deleted
 ON usuario(nombre_usuario)
-WHERE deleted = false;
+WHERE NOT deleted;
 
 CREATE UNIQUE INDEX uq_usuario_correo_deleted
 ON usuario(correo_electronico)
-WHERE deleted = false;
+WHERE NOT deleted;
 
 CREATE TRIGGER trg_auditoria_rol
 AFTER INSERT OR UPDATE OR DELETE

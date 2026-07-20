@@ -12,22 +12,22 @@ const APP_COLORS = {
     blue:     '#3B82F6',
     green:    '#22C55E',
     red:      '#EF4444',
-    
+
     // Tonos Neutros / Grises
     gray50:   '#F9FAFB',
     gray100:  '#F3F4F6', // Fondo principal
     gray200:  '#E5E7EB', // Bordes
-    gray400:  '#9CA3AF',
+    gray400:  '#6B7280',
     gray700:  '#374151',
     gray900:  '#111827',
     white:    '#FFFFFF',
-    
+
     // Fondos de estado/interacción (alertas, hovers, botones)
     bgOrangeLight: '#FFF7ED', // Hover / seleccionado naranja
     bgRedLight:    '#FEF2F2', // Fondo alerta / rechazo rojo
     bgGreenLight:  '#F0FDF4', // Fondo verde resuelto
     bgBlueLight:   '#EFF6FF', // Fondo azul pendiente/recibido
-    
+
     // Colores por Rol
     roles: {
         ADMIN:      '#5B21B6',
@@ -35,7 +35,7 @@ const APP_COLORS = {
         TECNICO:    '#1D4ED8',
         CIUDADANO:  '#065F46',
     },
-    
+
     // Colores por Prioridad
     prioridades: {
         Urgente: '#EF4444',
@@ -62,13 +62,13 @@ const APP_COLORS = {
         '--gray-700': APP_COLORS.gray700,
         '--gray-900': APP_COLORS.gray900,
         '--white': APP_COLORS.white,
-        
+
         // Fondos claros / Variables de estado
         '--bg-orange-light': APP_COLORS.bgOrangeLight,
         '--bg-red-light': APP_COLORS.bgRedLight,
         '--bg-green-light': APP_COLORS.bgGreenLight,
         '--bg-blue-light': APP_COLORS.bgBlueLight,
-        
+
         // Variables de Rol
         '--role-admin': APP_COLORS.roles.ADMIN,
         '--role-supervisor': APP_COLORS.roles.SUPERVISOR,

@@ -5,12 +5,12 @@
 
 ---
 
-## 🎯 OBJETIVO DEL ENTREGABLE
+## OBJETIVO DEL ENTREGABLE
 Identificar de forma temprana los riesgos potenciales arquitectónicos, funcionales y de seguridad que puedan afectar la estabilidad y calidad del sistema, ejecutando una revisión técnica estructurada sobre los artefactos desarrollados hasta la fecha. A través de la aplicación de metodologías de Aseguramiento de Calidad Preventivo (Preventive QA), se busca detectar defectos, inconsistencias estructurales y oportunidades de refactorización antes de la fase formal de pruebas dinámicas.
 
 ---
 
-## ⚙️ CICLO DE VIDA DEL ASEGURAMIENTO DE CALIDAD (SQE)
+## CICLO DE VIDA DEL ASEGURAMIENTO DE CALIDAD (SQE)
 En el presente hito técnico no se ejecutan pruebas dinámicas ni funcionales de caja negra o blanca. El equipo de Ingeniería de Software opera bajo una fase de inspección estática, verificación de artefactos y mitigación de riesgos, alineada con el siguiente flujo secuencial:
 
 $$\text{Planificación (E1)} \longrightarrow \mathbf{\text{Análisis de Riesgos y Revisión Técnica (E2)}} \longrightarrow \text{Diseño de Pruebas (E3)} \longrightarrow \text{Ejecución (E4)} \longrightarrow \text{Métricas (E5)} \longrightarrow \text{Análisis de Código (E6)} \longrightarrow \text{Rendimiento (E7)} \longrightarrow \text{Auditoría Final (E8)}$$

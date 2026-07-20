@@ -19,79 +19,63 @@ class AuthController extends Controller
     
     private const LOCKOUT_TTL = 300; 
 
-    public function login(Request $request)
+    private function loginCacheKeys(string $ip, string $loginInput): array
     {
-        $request->validate([
-            'correo_electronico' => 'required|string',
-            'password'           => 'required',
-        ]);
+        return [
+            'ip' => "login_fails:ip:{$ip}",
+            'email' => "login_fails:input:{$loginInput}",
+        ];
+    }
 
-        $ip    = $request->ip();
-        $loginInput = strtolower($request->correo_electronico);
-
-        $keyIp    = "login_fails:ip:{$ip}";
-        $keyEmail = "login_fails:input:{$loginInput}";
-
-        
-        $failsIp    = (int) Cache::store('redis')->get($keyIp, 0);
+    private function getLoginAttempts(string $keyIp, string $keyEmail): array
+    {
+        $failsIp = (int) Cache::store('redis')->get($keyIp, 0);
         $failsEmail = (int) Cache::store('redis')->get($keyEmail, 0);
 
-        if ($failsIp >= self::MAX_FAILS || $failsEmail >= self::MAX_FAILS) {
-            
-            $prefix    = config('cache.prefix', '');
-            $blockedKey = $failsIp >= self::MAX_FAILS ? $keyIp : $keyEmail;
-            $ttl        = Cache::store('redis')->getRedis()->ttl($prefix.$blockedKey);
-            $ttl        = ($ttl && $ttl > 0) ? $ttl : self::LOCKOUT_TTL;
+        return [
+            'fails_ip' => $failsIp,
+            'fails_email' => $failsEmail,
+            'blocked_key' => $failsIp >= self::MAX_FAILS ? $keyIp : $keyEmail,
+            'blocked' => $failsIp >= self::MAX_FAILS || $failsEmail >= self::MAX_FAILS,
+        ];
+    }
 
-            return response()->json([
-                'message'             => 'Cuenta bloqueada por múltiples intentos fallidos. '
-                                         .'Intenta de nuevo en '.ceil($ttl / 60).' minuto(s).',
-                'retry_after_seconds' => $ttl,
-            ], 429);
-        }
+    private function blockedLoginResponse(string $blockedKey): \Illuminate\Http\JsonResponse
+    {
+        $prefix = config('cache.prefix', '');
+        /** @var \Illuminate\Cache\RedisStore $redisStore */
+        $redisStore = Cache::store('redis')->getStore();
+        /** @var mixed $redisConnection */
+        $redisConnection = $redisStore->getRedis();
+        $ttl = $redisConnection->ttl($prefix . $blockedKey);
+        $ttl = ($ttl && $ttl > 0) ? $ttl : self::LOCKOUT_TTL;
 
-        
-        $usuario = Usuario::where('correo_electronico', $loginInput)
-            ->orWhere('nombre_usuario', $loginInput)
-            ->first();
+        return response()->json([
+            'message' => 'Cuenta bloqueada por múltiples intentos fallidos. '
+                . 'Intenta de nuevo en ' . ceil($ttl / 60) . ' minuto(s).',
+            'retry_after_seconds' => $ttl,
+        ], 429);
+    }
 
-        if (!$usuario || !Hash::check($request->password, $usuario->password_hash)) {
+    private function registerFailedLogin(Request $request, string $loginInput, string $ip, int $attempts): void
+    {
+        IntentoLoginFallido::create([
+            'correo_electronico' => $loginInput,
+            'ip' => $ip,
+            'user_agent' => $request->userAgent(),
+            'intento_numero' => $attempts,
+            'bloqueado' => $attempts >= self::MAX_FAILS,
+            'fecha_hora' => now(),
+        ]);
+    }
 
-            
-            $numIp    = (int) Cache::store('redis')->get($keyIp, 0) + 1;
-            $numEmail = (int) Cache::store('redis')->get($keyEmail, 0) + 1;
-            Cache::store('redis')->put($keyIp,    $numIp,    self::LOCKOUT_TTL);
-            Cache::store('redis')->put($keyEmail, $numEmail, self::LOCKOUT_TTL);
+    private function buildLoginResponse(array $payload, int $status): \Illuminate\Http\JsonResponse
+    {
+        return response()->json($payload, $status);
+    }
 
-            $intento   = max($numIp, $numEmail);
-            $bloqueado = $intento >= self::MAX_FAILS;
-            $remaining = max(0, self::MAX_FAILS - $intento);
-
-          
-            IntentoLoginFallido::create([
-                'correo_electronico' => $loginInput,
-                'ip'                 => $ip,
-                'user_agent'         => $request->userAgent(),
-                'intento_numero'     => $intento,
-                'bloqueado'          => $bloqueado,
-                'fecha_hora'         => now(),
-            ]);
-
-            return response()->json([
-                'message'             => $bloqueado
-                    ? 'Cuenta bloqueada. Intenta de nuevo en '.self::LOCKOUT_TTL / 60 .' minuto(s).'
-                    : "Credenciales incorrectas. Te quedan {$remaining} intento(s) antes del bloqueo.",
-                'attempts_remaining'  => $remaining,
-                'retry_after_seconds' => $bloqueado ? self::LOCKOUT_TTL : null,
-            ], 401);
-        }
-
-        
-        if (!$usuario->activo) {
-            return response()->json(['message' => 'Cuenta inactiva o pendiente de verificación. Por favor, revisa tu correo o contacta al administrador.'], 403);
-        }
-
-        
+    private function successfulLoginResponse(Request $request, Usuario $usuario, string $ip, string $keyIp, string $keyEmail): \Illuminate\Http\JsonResponse
+    {
         Cache::store('redis')->forget($keyIp);
         Cache::store('redis')->forget($keyEmail);
 
@@ -107,11 +91,70 @@ class AuthController extends Controller
             'fecha_hora'         => now(),
         ]);
 
-        return response()->json([
+        return $this->buildLoginResponse([
             'access_token' => $token,
-            'token_type'   => 'Bearer',
-            'usuario'      => $usuario->load('roles.opciones'),
+            'token_type' => 'Bearer',
+            'usuario' => $usuario->load('roles.opciones'),
         ], 200);
+    }
+
+    public function login(Request $request)
+    {
+        $request->validate([
+            'correo_electronico' => 'required|string',
+            'password'           => 'required',
+        ]);
+
+        $ip    = $request->ip();
+        $loginInput = strtolower($request->correo_electronico);
+
+        $cacheKeys = $this->loginCacheKeys($ip, $loginInput);
+        $keyIp = $cacheKeys['ip'];
+        $keyEmail = $cacheKeys['email'];
+
+        // ── 1. Verificar si hay un bloqueo activo ──────────────────────────
+        $attempts = $this->getLoginAttempts($keyIp, $keyEmail);
+        if ($attempts['blocked']) {
+            return $this->blockedLoginResponse($attempts['blocked_key']);
+        }
+
+        // ── 2. Validar credenciales (correo_electronico o nombre_usuario) ──
+        /** @var Usuario|null $usuario */
+        $usuario = Usuario::where('correo_electronico', $loginInput)
+            ->orWhere('nombre_usuario', $loginInput)
+            ->first();
+
+        $response = null;
+
+        if (!$usuario || !Hash::check($request->password, $usuario->password_hash)) {
+
+            // Incrementar contadores usando get+put para mantener TTL de 5 min
+            $numIp    = (int) Cache::store('redis')->get($keyIp, 0) + 1;
+            $numEmail = (int) Cache::store('redis')->get($keyEmail, 0) + 1;
+            Cache::store('redis')->put($keyIp,    $numIp,    self::LOCKOUT_TTL);
+            Cache::store('redis')->put($keyEmail, $numEmail, self::LOCKOUT_TTL);
+
+            $intento   = max($numIp, $numEmail);
+            $bloqueado = $intento >= self::MAX_FAILS;
+            $remaining = max(0, self::MAX_FAILS - $intento);
+
+            // ── Registrar en MongoDB ──────────────────────────────────────
+            $this->registerFailedLogin($request, $loginInput, $ip, $intento);
+
+            $response = $this->buildLoginResponse([
+                'message' => $bloqueado
+                    ? 'Cuenta bloqueada. Intenta de nuevo en '.self::LOCKOUT_TTL / 60 .' minuto(s).'
+                    : "Credenciales incorrectas. Te quedan {$remaining} intento(s) antes del bloqueo.",
+                'attempts_remaining' => $remaining,
+                'retry_after_seconds' => $bloqueado ? self::LOCKOUT_TTL : null,
+            ], 401);
+        } elseif (!$usuario->activo) {
+            $response = $this->buildLoginResponse(['message' => 'Cuenta inactiva. Contacta al administrador.'], 403);
+        } else {
+            $response = $this->successfulLoginResponse($request, $usuario, $ip, $keyIp, $keyEmail);
+        }
+
+        return $response;
     }
 
     public function logout(Request $request)
@@ -164,18 +207,21 @@ class AuthController extends Controller
             }
         }
 
-        \App\Modules\Auth\Entities\AccesoNoAutorizado::create([
-            'usuario_uuid'       => $usuario?->uuid,
-            'correo_electronico' => $usuario?->correo_electronico,
-            'rol'                => $usuario?->roles->first()?->codigo ?? 'SIN_AUTENTICAR',
-            'ip'                 => $request->ip(),
-            'user_agent'         => $request->userAgent(),
-            'metodo'             => $request->input('metodo', 'GET'),
-            'url'                => $request->input('url'),
-            'tipo_violacion'     => $request->input('tipo_violacion'),
-            'detalle'            => $request->input('detalle'),
-            'fecha_hora'         => now(),
-        ]);
+            /** @var \App\Modules\Auth\Entities\Rol|null $rol */
+            $rol = $usuario?->roles->first();
+
+            \App\Modules\Auth\Entities\AccesoNoAutorizado::create([
+                'usuario_uuid'       => $usuario?->uuid,
+                'correo_electronico' => $usuario?->correo_electronico,
+                'rol'                => $rol ? $rol->codigo : 'SIN_AUTENTICAR',
+                'ip'                 => $request->ip(),
+                'user_agent'         => $request->userAgent(),
+                'metodo'             => $request->input('metodo', 'GET'),
+                'url'                => $request->input('url'),
+                'tipo_violacion'     => $request->input('tipo_violacion'),
+                'detalle'            => $request->input('detalle'),
+                'fecha_hora'         => now(),
+            ]);
 
         return response()->json(['message' => 'Acceso no autorizado registrado en MongoDB.'], 201);
     }
@@ -273,7 +319,7 @@ class AuthController extends Controller
                 return [];
             }
             $data = $response->json()['data'] ?? [];
-            
+
             $list = [];
             foreach ($data as $c) {
                 if (!empty($c['name'])) {
@@ -284,11 +330,11 @@ class AuthController extends Controller
                     ];
                 }
             }
-            
+
             usort($list, function ($a, $b) {
                 return strcasecmp($a['name'], $b['name']);
             });
-            
+
             return $list;
         });
 
@@ -302,7 +348,7 @@ class AuthController extends Controller
         ]);
 
         $country = $request->input('country');
-        $cacheKey = 'ubicaciones:estados:' . md5($country);
+        $cacheKey = 'ubicaciones:estados:' . hash('sha256', $country);
 
         $estados = Cache::store('redis')->remember($cacheKey, now()->addDays(7), function () use ($country) {
             $response = \Illuminate\Support\Facades\Http::post('https://countriesnow.space/api/v0.1/countries/states', [
@@ -312,14 +358,15 @@ class AuthController extends Controller
                 return [];
             }
             $states = $response->json()['data']['states'] ?? [];
-            
+
             $list = [];
             foreach ($states as $s) {
                 if (!empty($s['name'])) {
                     $list[] = $s['name'];
                 }
             }
-            
+
+            $list = array_unique($list);
             natcasesort($list);
             return array_values($list);
         });
@@ -336,7 +383,7 @@ class AuthController extends Controller
 
         $country = $request->input('country');
         $state   = $request->input('state');
-        $cacheKey = 'ubicaciones:ciudades:' . md5($country . '_' . $state);
+        $cacheKey = 'ubicaciones:ciudades:' . hash('sha256', $country . '_' . $state);
 
         $ciudades = Cache::store('redis')->remember($cacheKey, now()->addDays(7), function () use ($country, $state) {
             $response = \Illuminate\Support\Facades\Http::post('https://countriesnow.space/api/v0.1/countries/state/cities', [
@@ -347,7 +394,7 @@ class AuthController extends Controller
                 return [];
             }
             $cities = $response->json()['data'] ?? [];
-            
+
             natcasesort($cities);
             return array_values($cities);
         });

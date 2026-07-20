@@ -6,6 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string $codigo
+ * @property string $nombre_rol
+ * @property string|null $descripcion
+ * @property bool $deleted
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ */
 class Rol extends Model
 {
     // Nombre de la tabla

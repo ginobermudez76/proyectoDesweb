@@ -108,7 +108,7 @@ El frontend estará disponible en tu navegador en `http://localhost:8080` (o el 
 
 ## Despliegue en Producción (Servidor Nativo Nginx y PHP-FPM)
 
-Para entornos de producción reales (como la dirección del servidor `http://192.168.0.144/`), la arquitectura no requiere Docker y corre nativamente sobre el sistema operativo (ej: Ubuntu Linux) para maximizar la velocidad de Entrada/Salida (I/O) de archivos y base de datos.
+Para entornos de producción reales (como la dirección del servidor `https://eldomoniodedesarrollo.dev/`), la arquitectura no requiere Docker y corre nativamente sobre el sistema operativo (ej: Ubuntu Linux) para maximizar la velocidad de Entrada/Salida (I/O) de archivos y base de datos.
 
 ### Estructura de Directorios en Servidor
 El repositorio se aloja en `/var/www/proyectoDesweb`, teniendo la siguiente estructura física:
