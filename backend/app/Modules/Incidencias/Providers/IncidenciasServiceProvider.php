@@ -9,7 +9,7 @@ class IncidenciasServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        // ...
+        // Intentionally empty. All module service boot initialization is done in the boot() method.
     }
 
     public function boot(): void

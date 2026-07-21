@@ -23,6 +23,7 @@ function buildEvidencias(evidencias) {
                      style="border:1.5px solid var(--gray-200);border-radius:10px;overflow:hidden;
                             width:100px;height:100px;display:inline-block;cursor:pointer">
                     <img src="${e.ruta}" alt="${e.nombre_archivo}"
+                         width="100" height="100"
                          style="width:100%;height:100%;object-fit:cover">
                 </div>
             `).join('')}
@@ -46,7 +47,7 @@ function buildHistorial(historial) {
                     ${h.estado_anterior || '—'} → ${h.estado_nuevo}
                 </div>
                 <div class="text-muted-sm">
-                    ${formatDate(h.fecha_cambio || h.fecha_hora)} · 
+                    ${formatDate(h.fecha_cambio || h.fecha_hora)} ·
                     ${h.tecnico_id ? `Por: ${h.tecnico_nombre || h.tecnico_id}` : 'Por: Supervisor/Admin'}
                 </div>
                 ${h.observacion && h.observacion !== 'Sin observaciones.'

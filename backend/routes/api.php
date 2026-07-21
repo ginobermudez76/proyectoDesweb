@@ -7,7 +7,11 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['throttle:login'])->post('/login', [AuthController::class, 'login']);
 Route::post('/logs/unauthorized', [AuthController::class, 'logUnauthorizedAccess']);
 Route::get('/documentos/tipos', [AuthController::class, 'tiposDocumento']);
+
 Route::post('/register', [AuthController::class, 'register']);
+
+Route::post('/verificar-codigo', [AuthController::class, 'verificarCodigo']); 
+
 Route::get('/ubicaciones/paises', [AuthController::class, 'paises']);
 Route::get('/ubicaciones/estados', [AuthController::class, 'estados']);
 Route::get('/ubicaciones/ciudades', [AuthController::class, 'ciudades']);

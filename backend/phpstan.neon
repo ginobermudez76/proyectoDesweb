@@ -12,6 +12,7 @@ parameters:
     ignoreErrors:
         # Example: Ignore some dynamic Laravel magic if needed
         # - '#Access to an undefined property#'
+        - '#Trait App\\Shared\\Traits\\ApiResponses is used zero times and is not analysed\.#'
 
     excludePaths:
         # Exclude any temporary or compiled files if needed

@@ -40,7 +40,7 @@ const THEME_VARS = {
         '--gray-50':  '#F9FAFB',
         '--gray-100': '#F3F4F6',
         '--gray-200': '#E5E7EB',
-        '--gray-400': '#9CA3AF',
+        '--gray-400': '#6B7280',
         '--gray-700': '#374151',
         '--gray-900': '#111827',
         '--white':    '#FFFFFF',

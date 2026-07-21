@@ -2,7 +2,7 @@
 
 namespace App\Modules\Incidencias\Observers;
 
-use App\Models\Auditoria;
+use App\Modules\Auth\Entities\Auditoria;
 use App\Modules\Incidencias\Entities\Incidencia;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Str;

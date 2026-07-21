@@ -1,322 +1,457 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Registro de Ciudadano — Sistema de Incidencias</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="css/style.css" rel="stylesheet">
-    <script src="/js/colors.js"></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+      integrity="sha384-XVE0LqdyWESihx0laEzd3gYh4gI9YLsp5MTNQeSEvlZy1MIPUdVADmaCwgbqi3Hz"
+      crossorigin="anonymous"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+      rel="stylesheet"
+    />
+    <link href="css/style.css" rel="stylesheet" />
     <script src="/js/toast.js"></script>
     <style>
+      .register-container {
+        max-width: 520px;
+        margin: 40px auto;
+        background: var(--white);
+        border-radius: 20px;
+        padding: 30px 40px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      }
+      .register-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--gray-900);
+        text-align: center;
+        margin-bottom: 6px;
+      }
+      .register-subtitle {
+        font-size: 13.5px;
+        color: var(--gray-500);
+        text-align: center;
+        margin-bottom: 24px;
+      }
+      .phone-group {
+        display: flex;
+        gap: 8px;
+      }
+      .phone-prefix {
+        width: 100px;
+        flex-shrink: 0;
+      }
+      .form-row {
+        display: flex;
+        gap: 12px;
+      }
+      .form-row .form-group {
+        flex: 1;
+      }
+      @media (max-width: 576px) {
         .register-container {
-            max-width: 520px;
-            margin: 40px auto;
-            background: var(--white);
-            border-radius: 20px;
-            padding: 30px 40px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-        }
-        .register-title {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--gray-900);
-            text-align: center;
-            margin-bottom: 6px;
-        }
-        .register-subtitle {
-            font-size: 13.5px;
-            color: var(--gray-500);
-            text-align: center;
-            margin-bottom: 24px;
-        }
-        .phone-group {
-            display: flex;
-            gap: 8px;
-        }
-        .phone-prefix {
-            width: 100px;
-            flex-shrink: 0;
+          margin: 20px 12px;
+          padding: 20px 24px;
         }
         .form-row {
-            display: flex;
-            gap: 12px;
+          flex-direction: column;
+          gap: 0;
         }
-        .form-row .form-group {
-            flex: 1;
-        }
-        @media(max-width: 576px) {
-            .register-container {
-                margin: 20px 12px;
-                padding: 20px 24px;
-            }
-            .form-row {
-                flex-direction: column;
-                gap: 0;
-            }
-        }
+      }
     </style>
-</head>
-<body>
-<div class="container">
-    <div class="register-container">
-        <div class="register-title">Crear Cuenta</div>
-        <div class="register-subtitle">Regístrate para reportar y dar seguimiento a incidencias</div>
-
+  </head>
+  <body>
+    <main class="container">
+      <div class="register-container">
         <div id="error-msg" class="error-msg"></div>
 
-        <div class="form-row">
-            <div class="form-group">
-                <label class="form-label" for="nombres">Nombres</label>
-                <input class="form-input" id="nombres" type="text" placeholder="Ej. Juan" autocomplete="off">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="apellidos">Apellidos</label>
-                <input class="form-input" id="apellidos" type="text" placeholder="Ej. Pérez" autocomplete="off">
-            </div>
-        </div>
+        <div id="step-1-register">
+          <div class="register-title">Crear Cuenta</div>
+          <div class="register-subtitle">
+            Regístrate para reportar y dar seguimiento a incidencias
+          </div>
 
-        <div class="form-group">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="nombres">Nombres</label>
+              <input
+                class="form-input"
+                id="nombres"
+                type="text"
+                placeholder="Ej. Juan"
+                autocomplete="off"
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="apellidos">Apellidos</label>
+              <input
+                class="form-input"
+                id="apellidos"
+                type="text"
+                placeholder="Ej. Pérez"
+                autocomplete="off"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
             <label class="form-label" for="correo">Correo electrónico</label>
-            <input class="form-input" id="correo" type="email" placeholder="juan.perez@ejemplo.com" autocomplete="off">
-        </div>
+            <input
+              class="form-input"
+              id="correo"
+              type="email"
+              placeholder="juan.perez@ejemplo.com"
+              autocomplete="off"
+            />
+          </div>
 
-        <div class="form-row">
+          <div class="form-row">
             <div class="form-group">
-                <label class="form-label" for="usuario">Nombre de usuario</label>
-                <input class="form-input" id="usuario" type="text" placeholder="juan.perez" autocomplete="off">
+              <label class="form-label" for="usuario">Nombre de usuario</label>
+              <input
+                class="form-input"
+                id="usuario"
+                type="text"
+                placeholder="juan.perez"
+                autocomplete="off"
+              />
             </div>
             <div class="form-group">
-                <label class="form-label" for="password">Contraseña</label>
-                <input class="form-input" id="password" type="password" placeholder="Mín. 8 caracteres" autocomplete="new-password">
+              <label class="form-label" for="password">Contraseña</label>
+              <input
+                class="form-input"
+                id="password"
+                type="password"
+                placeholder="Mín. 8 caracteres"
+                autocomplete="new-password"
+              />
             </div>
-        </div>
+          </div>
 
-        <div class="form-row">
+          <div class="form-row">
             <div class="form-group">
-                <label class="form-label" for="tipo_doc">Tipo de Documento</label>
-                <select class="form-input" id="tipo_doc" onchange="onTipoDocChange()"></select>
+              <label class="form-label" for="tipo_doc">Tipo de Documento</label>
+              <select class="form-input" id="tipo_doc" onchange="onTipoDocChange()"></select>
             </div>
             <div class="form-group">
-                <label class="form-label" for="documento">Nº de Documento</label>
-                <input class="form-input" id="documento" type="text" placeholder="Ingresa tu documento" autocomplete="off">
+              <label class="form-label" for="documento">Nº de Documento</label>
+              <input
+                class="form-input"
+                id="documento"
+                type="text"
+                placeholder="Ingresa tu documento"
+                autocomplete="off"
+              />
             </div>
-        </div>
+          </div>
 
-        <div class="form-group">
+          <div class="form-group">
             <label class="form-label" for="celular">Número de Celular</label>
             <div class="phone-group">
-                <select class="form-input phone-prefix" id="prefijo_celular">
-                    <option value="">Cargando…</option>
-                </select>
-                <input class="form-input flex-1" id="celular" type="tel" placeholder="999999999" autocomplete="off">
+              <select
+                class="form-input phone-prefix"
+                id="prefijo_celular"
+                aria-label="Prefijo telefónico del país"
+              >
+                <option value="">Cargando…</option>
+              </select>
+              <input
+                class="form-input flex-1"
+                id="celular"
+                type="tel"
+                placeholder="999999999"
+                autocomplete="off"
+              />
             </div>
-        </div>
+          </div>
 
-        <div class="form-group">
+          <div class="form-group">
             <label class="form-label" for="pais">País</label>
-            <input class="form-input" id="pais" list="paisList" placeholder="Escribe o selecciona tu país" onchange="onPaisChange()" onblur="validarDatalist('pais', 'paisList')" autocomplete="off">
+            <input
+              class="form-input"
+              id="pais"
+              list="paisList"
+              placeholder="Escribe o selecciona tu país"
+              onchange="onPaisChange()"
+              onblur="validarDatalist('pais', 'paisList')"
+              autocomplete="off"
+            />
             <datalist id="paisList"></datalist>
-        </div>
+          </div>
 
-        <div class="form-row">
+          <div class="form-row">
             <div class="form-group" id="estadoGroup">
-                <label class="form-label" for="estado">Estado / Provincia</label>
-                <input class="form-input" id="estado" list="estadoList" placeholder="Escribe o selecciona" onchange="onEstadoChange()" onblur="validarDatalist('estado', 'estadoList')" autocomplete="off">
-                <datalist id="estadoList"></datalist>
+              <label class="form-label" for="estado">Estado / Provincia</label>
+              <input
+                class="form-input"
+                id="estado"
+                list="estadoList"
+                placeholder="Escribe o selecciona"
+                onchange="onEstadoChange()"
+                onblur="validarDatalist('estado', 'estadoList')"
+                autocomplete="off"
+              />
+              <datalist id="estadoList"></datalist>
             </div>
             <div class="form-group" id="ciudadGroup">
-                <label class="form-label" for="ciudad">Ciudad</label>
-                <input class="form-input" id="ciudad" list="ciudadList" placeholder="Escribe o selecciona" onblur="validarDatalist('ciudad', 'ciudadList')" autocomplete="off">
-                <datalist id="ciudadList"></datalist>
+              <label class="form-label" for="ciudad">Ciudad</label>
+              <input
+                class="form-input"
+                id="ciudad"
+                list="ciudadList"
+                placeholder="Escribe o selecciona"
+                onblur="validarDatalist('ciudad', 'ciudadList')"
+                autocomplete="off"
+              />
+              <datalist id="ciudadList"></datalist>
             </div>
-        </div>
+          </div>
 
-        <button class="btn-orange mt-3" id="registerBtn" onclick="doRegister()">
+          <button class="btn-orange mt-3" id="registerBtn" onclick="doRegister()">
             <i class="bi bi-person-plus-fill"></i> Registrarme
-        </button>
+          </button>
 
-        <div style="text-align:center;margin-top:16px">
+          <div style="text-align: center; margin-top: 16px">
             <span class="text-muted-sm">¿Ya tienes cuenta? </span>
-            <a href="login.html" style="font-size:13.5px;color:var(--orange);font-weight:600;text-decoration:none">
-                Inicia sesión aquí
+            <a
+              href="login.html"
+              style="font-size: 13.5px; color: var(--orange); font-weight: 600; text-decoration: none"
+            >
+              Inicia sesión aquí
             </a>
+          </div>
         </div>
-    </div>
-</div>
 
-<script src="js/app.js"></script>
-<script src="js/auth.js"></script>
-<script>
-    let tiposDoc = [];
-    let countriesData = [];
+        <div id="step-2-verify" style="display: none; text-align: center; padding: 20px 0">
+          <i class="bi bi-envelope-check" style="font-size: 3.5rem; color: var(--orange)"></i>
+          <h3 class="mt-3" style="font-weight: 700; color: var(--gray-900)">Verifica tu correo</h3>
+          <p class="text-muted" style="font-size: 14.5px">
+            Hemos enviado un código de 6 dígitos a <br />
+            <strong id="verify-email-display" style="color: var(--gray-900)"></strong>
+          </p>
 
-    // Cargar tipos de documentos y cascada de ubicación al iniciar
-    async function initForm() {
+          <div class="form-group mt-4 text-start">
+            <label class="form-label text-center w-100" for="codigo_verificacion"
+              >Ingresa el código</label
+            >
+            <input
+              class="form-input text-center mx-auto"
+              id="codigo_verificacion"
+              type="text"
+              placeholder="123456"
+              maxlength="6"
+              autocomplete="off"
+              style="
+                font-size: 24px;
+                letter-spacing: 10px;
+                font-weight: bold;
+                width: 80%;
+                display: block;
+              "
+            />
+          </div>
+
+          <button class="btn-orange mt-4 w-100" id="verifyBtn" onclick="doVerify()">
+            <i class="bi bi-check-circle-fill"></i> Verificar y Entrar
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <script src="js/app.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+      let tiposDoc = [];
+      let countriesData = [];
+      let emailRegistrado = '';
+
+      // Cargar tipos de documentos y cascada de ubicación al iniciar
+      async function initForm() {
         await cargarTiposDocumento();
         await cargarUbicacionBase();
         await detectarUbicacionIP();
-    }
+      }
 
-    async function cargarTiposDocumento() {
+      async function cargarTiposDocumento() {
         try {
-            tiposDoc = await apiFetch('/documentos/tipos');
-            const select = document.getElementById('tipo_doc');
-            select.innerHTML = tiposDoc.map(t => `<option value="${t.id}">${t.label}</option>`).join('');
-            onTipoDocChange();
+          tiposDoc = await apiFetch('/documentos/tipos');
+          const select = document.getElementById('tipo_doc');
+          select.innerHTML = tiposDoc
+            .map((t) => `<option value="${t.id}">${t.label}</option>`)
+            .join('');
+          onTipoDocChange();
         } catch (e) {
-            console.error('Error al cargar tipos de documento:', e);
+          console.error('Error al cargar tipos de documento:', e);
         }
-    }
+      }
 
-    function onTipoDocChange() {
+      function onTipoDocChange() {
         const select = document.getElementById('tipo_doc');
         const docInput = document.getElementById('documento');
-        const selectedId = parseInt(select.value);
-        const selected = tiposDoc.find(t => t.id === selectedId);
-        
+        const selectedId = Number.parseInt(select.value, 10);
+        const selected = tiposDoc.find((t) => t.id === selectedId);
+
         if (selected && selected.validacion) {
-            docInput.placeholder = selected.validacion.error_msg || `Ingresa tu ${selected.label}`;
+          docInput.placeholder = selected.validacion.error_msg || `Ingresa tu ${selected.label}`;
         }
-    }
+      }
 
-    async function cargarUbicacionBase() {
+      async function cargarUbicacionBase() {
         try {
-            // Obtener países ordenados alfabéticamente desde el proxy del backend (Redis cache)
-            countriesData = await apiFetch('/ubicaciones/paises');
-            
-            if (countriesData && countriesData.length > 0) {
-                // Cargar datalist de país
-                const paisList = document.getElementById('paisList');
-                paisList.innerHTML = countriesData
-                    .map(c => `<option value="${c.name}">${c.flag || ''} ${c.name}</option>`).join('');
+          // Obtener países ordenados alfabéticamente desde el proxy del backend (Redis cache)
+          countriesData = await apiFetch('/ubicaciones/paises');
 
-                // Cargar selectores de prefijo celular (con banderas y ordenados)
-                const prefixSelect = document.getElementById('prefijo_celular');
-                prefixSelect.innerHTML = countriesData
-                    .filter(c => c.dial_code)
-                    .map(c => `<option value="${c.dial_code}">${c.flag || '📍'} ${c.dial_code}</option>`).join('');
-            }
+          if (countriesData && countriesData.length > 0) {
+            // Cargar datalist de país
+            const paisList = document.getElementById('paisList');
+            paisList.innerHTML = countriesData
+              .map((c) => `<option value="${c.name}">${c.flag || ''} ${c.name}</option>`)
+              .join('');
+
+            // Cargar selectores de prefijo celular (con banderas y ordenados)
+            const prefixSelect = document.getElementById('prefijo_celular');
+            prefixSelect.innerHTML = countriesData
+              .filter((c) => c.dial_code)
+              .map(
+                (c) => `<option value="${c.dial_code}">${c.flag || '📍'} ${c.dial_code}</option>`
+              )
+              .join('');
+          }
         } catch (e) {
-            console.error('Error al cargar países:', e);
-            fallbackUbicacionInputs();
+          console.error('Error al cargar países:', e);
+          fallbackUbicacionInputs();
         }
-    }
+      }
 
-    async function detectarUbicacionIP() {
+      async function detectarUbicacionIP() {
         try {
-            const res = await fetch('https://freeipapi.com/api/json');
-            const ipData = await res.json();
-            
-            if (ipData && ipData.countryName) {
-                // Auto-seleccionar país
-                const paisInput = document.getElementById('pais');
-                paisInput.value = ipData.countryName;
-                onPaisChange(ipData.regionName, ipData.cityName);
+          const res = await fetch('https://freeipapi.com/api/json');
+          const ipData = await res.json();
 
-                // Auto-seleccionar prefijo
-                const countryObj = countriesData.find(c => c.name.toLowerCase() === ipData.countryName.toLowerCase());
-                if (countryObj) {
-                    document.getElementById('prefijo_celular').value = countryObj.dial_code;
-                }
+          if (ipData && ipData.countryName) {
+            // Auto-seleccionar país
+            const paisInput = document.getElementById('pais');
+            paisInput.value = ipData.countryName;
+            onPaisChange(ipData.regionName, ipData.cityName);
+
+            // Auto-seleccionar prefijo
+            const countryObj = countriesData.find(
+              (c) => c.name.toLowerCase() === ipData.countryName.toLowerCase()
+            );
+            if (countryObj) {
+              document.getElementById('prefijo_celular').value = countryObj.dial_code;
             }
+          }
         } catch (e) {
-            console.warn('No se pudo autodetectar ubicación IP:', e);
+          console.warn('No se pudo autodetectar ubicación IP:', e);
         }
-    }
+      }
 
-    function fallbackUbicacionInputs() {
+      function fallbackUbicacionInputs() {
         document.getElementById('prefijo_celular').innerHTML = `
             <option value="+593">🇪🇨 +593 (Ecuador)</option>
             <option value="+1">🇺🇸 +1 (USA)</option>
             <option value="+57">🇨🇴 +57 (Colombia)</option>`;
-    }
+      }
 
-    // Helper para forzar la selección de elementos existentes en los datalists
-    window.validarDatalist = function(inputId, datalistId) {
+      // Helper para forzar la selección de elementos existentes en los datalists
+      window.validarDatalist = function (inputId, datalistId) {
         const input = document.getElementById(inputId);
         const datalist = document.getElementById(datalistId);
         if (!input || !datalist || !input.value.trim()) return;
 
-        const options = Array.from(datalist.options).map(opt => opt.value.trim().toLowerCase());
+        const options = Array.from(datalist.options).map((opt) => opt.value.trim().toLowerCase());
         const typedValue = input.value.trim().toLowerCase();
 
-        // Si el valor escrito no está en la lista de opciones válidas, limpiar el input
         if (!options.includes(typedValue)) {
-            input.value = '';
-            if (inputId === 'pais') {
-                document.getElementById('estadoList').innerHTML = '';
-                document.getElementById('ciudadList').innerHTML = '';
-            } else if (inputId === 'estado') {
-                document.getElementById('ciudadList').innerHTML = '';
-            }
+          input.value = '';
+          if (inputId === 'pais') {
+            document.getElementById('estadoList').innerHTML = '';
+            document.getElementById('ciudadList').innerHTML = '';
+          } else if (inputId === 'estado') {
+            document.getElementById('ciudadList').innerHTML = '';
+          }
         }
-    };
+      };
 
-    async function onPaisChange(preSelectEstado = '', preSelectCiudad = '') {
+      async function onPaisChange(preSelectEstado = '', preSelectCiudad = '') {
         const country = document.getElementById('pais').value;
         const estadoInput = document.getElementById('estado');
         const estadoList = document.getElementById('estadoList');
         const ciudadInput = document.getElementById('ciudad');
         const ciudadList = document.getElementById('ciudadList');
-        
+
         if (!country) return;
-        
+
         estadoInput.value = '';
         ciudadInput.value = '';
         estadoList.innerHTML = '<option value="Cargando provincias…">';
         ciudadList.innerHTML = '';
 
         try {
-            // Consultar estados desde el backend (Redis cache)
-            const states = await apiFetch(`/ubicaciones/estados?country=${encodeURIComponent(country)}`);
-            
-            if (states && states.length > 0) {
-                estadoList.innerHTML = states.map(s => `<option value="${s}"></option>`).join('');
-                
-                if (preSelectEstado && states.includes(preSelectEstado)) {
-                    estadoInput.value = preSelectEstado;
-                    onEstadoChange(preSelectCiudad);
-                }
-            } else {
-                estadoList.innerHTML = '';
-            }
-        } catch (e) {
-            console.error('Error al cargar provincias:', e);
-        }
-    }
+          // Consultar estados desde el backend (Redis cache)
+          const states = await apiFetch(
+            `/ubicaciones/estados?country=${encodeURIComponent(country)}`
+          );
 
-    async function onEstadoChange(preSelectCiudad = '') {
+          if (states && states.length > 0) {
+            estadoList.innerHTML = states.map((s) => `<option value="${s}"></option>`).join('');
+
+            if (preSelectEstado && states.includes(preSelectEstado)) {
+              estadoInput.value = preSelectEstado;
+              onEstadoChange(preSelectCiudad);
+            }
+          } else {
+            estadoList.innerHTML = '';
+          }
+        } catch (e) {
+          console.error('Error al cargar provincias:', e);
+        }
+      }
+
+      async function onEstadoChange(preSelectCiudad = '') {
         const country = document.getElementById('pais').value;
         const state = document.getElementById('estado').value;
         const ciudadInput = document.getElementById('ciudad');
         const ciudadList = document.getElementById('ciudadList');
 
         if (!state) return;
-        
+
         ciudadInput.value = '';
         ciudadList.innerHTML = '<option value="Cargando ciudades…">';
 
         try {
-            // Consultar ciudades desde el backend (Redis cache)
-            const cities = await apiFetch(`/ubicaciones/ciudades?country=${encodeURIComponent(country)}&state=${encodeURIComponent(state)}`);
+          // Consultar ciudades desde el backend (Redis cache)
+          const cities = await apiFetch(
+            `/ubicaciones/ciudades?country=${encodeURIComponent(country)}&state=${encodeURIComponent(state)}`
+          );
 
-            if (cities && cities.length > 0) {
-                ciudadList.innerHTML = cities.map(c => `<option value="${c}"></option>`).join('');
-                
-                if (preSelectCiudad && cities.includes(preSelectCiudad)) {
-                    ciudadInput.value = preSelectCiudad;
-                }
-            } else {
-                ciudadList.innerHTML = '';
+          if (cities && cities.length > 0) {
+            ciudadList.innerHTML = cities.map((c) => `<option value="${c}"></option>`).join('');
+
+            if (preSelectCiudad && cities.includes(preSelectCiudad)) {
+              ciudadInput.value = preSelectCiudad;
             }
+          } else {
+            ciudadList.innerHTML = '';
+          }
         } catch (e) {
-            console.error('Error al cargar ciudades:', e);
+          console.error('Error al cargar ciudades:', e);
         }
-    }
+      }
 
-    async function doRegister() {
+      async function doRegister() {
         const btn = document.getElementById('registerBtn');
         const errEl = document.getElementById('error-msg');
         errEl.style.display = 'none';
@@ -326,66 +461,126 @@
         const correo = document.getElementById('correo').value.trim();
         const usuario = document.getElementById('usuario').value.trim();
         const password = document.getElementById('password').value;
-        const id_tipo_documento = parseInt(document.getElementById('tipo_doc').value);
+        const id_tipo_documento = Number.parseInt(document.getElementById('tipo_doc').value, 10);
         const documento = document.getElementById('documento').value.trim();
         const prefijo = document.getElementById('prefijo_celular').value;
         const celular = document.getElementById('celular').value.trim();
-        
+
         const pais = document.getElementById('pais').value.trim();
         const estado = document.getElementById('estado').value.trim();
         const ciudad = document.getElementById('ciudad').value.trim();
 
-        if (!nombres || !apellidos || !correo || !usuario || !password || !documento || !celular || !pais || !estado || !ciudad) {
-            errEl.textContent = 'Por favor, completa todos los campos del formulario.';
-            errEl.style.display = 'block';
-            return;
+        if (
+          !nombres ||
+          !apellidos ||
+          !correo ||
+          !usuario ||
+          !password ||
+          !documento ||
+          !celular ||
+          !pais ||
+          !estado ||
+          !ciudad
+        ) {
+          errEl.textContent = 'Por favor, completa todos los campos del formulario.';
+          errEl.style.display = 'block';
+          return;
         }
 
         btn.disabled = true;
         btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Registrando…';
 
         const ubicacionJson = {
-            pais: pais,
-            provincia_estado: estado,
-            ciudad: ciudad
+          pais: pais,
+          provincia_estado: estado,
+          ciudad: ciudad,
         };
 
         try {
-            const data = await apiFetch('/register', {
-                method: 'POST',
-                body: JSON.stringify({
-                    nombres,
-                    apellidos,
-                    correo_electronico: correo,
-                    nombre_usuario: usuario,
-                    password,
-                    id_tipo_documento,
-                    documento,
-                    celular,
-                    prefijo_celular: prefijo,
-                    codigo_pais: pais,
-                    ubicacion: ubicacionJson
-                })
-            });
+          const data = await apiFetch('/register', {
+            method: 'POST',
+            body: JSON.stringify({
+              nombres,
+              apellidos,
+              correo_electronico: correo,
+              nombre_usuario: usuario,
+              password,
+              id_tipo_documento,
+              documento,
+              celular,
+              prefijo_celular: prefijo,
+              codigo_pais: pais,
+              ubicacion: ubicacionJson,
+            }),
+          });
 
-            localStorage.setItem('auth_token', data.access_token);
-            localStorage.setItem('auth_user', JSON.stringify(data.usuario));
+          if (data.require_verification) {
+            emailRegistrado = data.correo;
+            document.getElementById('verify-email-display').textContent = emailRegistrado;
+            document.getElementById('step-1-register').style.display = 'none';
+            document.getElementById('step-2-verify').style.display = 'block';
+            showToast('¡Registro exitoso! Revisa tu correo.', 'info');
+            return;
+          }
 
-            showToast('Cuenta creada con éxito. ¡Bienvenido!', 'success');
+          localStorage.setItem('auth_token', data.access_token);
+          localStorage.setItem('auth_user', JSON.stringify(data.usuario));
 
-            setTimeout(() => {
-                window.location.href = '/pages/incidencias/panel.html';
-            }, 1000);
+          showToast('Cuenta creada con éxito. ¡Bienvenido!', 'success');
 
+          setTimeout(() => {
+            window.location.href = '/pages/incidencias/panel.html';
+          }, 1000);
         } catch (e) {
-            errEl.textContent = e.message || 'Error al completar el registro.';
-            errEl.style.display = 'block';
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-person-plus-fill"></i> Registrarme';
+          errEl.textContent = e.message || 'Error al completar el registro.';
+          errEl.style.display = 'block';
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-person-plus-fill"></i> Registrarme';
         }
-    }
+      }
 
-    initForm();
-</script>
-</body>
+      async function doVerify() {
+        const btn = document.getElementById('verifyBtn');
+        const errEl = document.getElementById('error-msg');
+        errEl.style.display = 'none';
+
+        const codigo = document.getElementById('codigo_verificacion').value.trim();
+
+        if (!codigo || codigo.length !== 6) {
+          errEl.textContent = 'Por favor, ingresa el código completo de 6 dígitos.';
+          errEl.style.display = 'block';
+          return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Verificando…';
+
+        try {
+          const data = await apiFetch('/verificar-codigo', {
+            method: 'POST',
+            body: JSON.stringify({
+              correo_electronico: emailRegistrado,
+              codigo: codigo,
+            }),
+          });
+
+          localStorage.setItem('auth_token', data.access_token);
+          localStorage.setItem('auth_user', JSON.stringify(data.usuario));
+
+          showToast('Cuenta verificada con éxito. ¡Bienvenido!', 'success');
+
+          setTimeout(() => {
+            window.location.href = '/pages/incidencias/panel.html';
+          }, 1000);
+        } catch (e) {
+          errEl.textContent = e.message || 'Error al verificar el código.';
+          errEl.style.display = 'block';
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> Verificar y Entrar';
+        }
+      }
+
+      initForm();
+    </script>
+  </body>
 </html>

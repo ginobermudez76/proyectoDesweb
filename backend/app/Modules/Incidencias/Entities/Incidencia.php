@@ -4,6 +4,18 @@ namespace App\Modules\Incidencias\Entities;
 
 use MongoDB\Laravel\Eloquent\Model;
 
+/**
+ * @property string $titulo
+ * @property string $descripcion
+ * @property string $estado
+ * @property string $prioridad
+ * @property array $ubicacion
+ * @property string $usuario_id
+ * @property \Illuminate\Support\Carbon $fecha_creacion
+ * @property bool $deleted
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property string|null $asignado_a
+ */
 class Incidencia extends Model
 {
     protected $connection = 'mongodb';

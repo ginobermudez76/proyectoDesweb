@@ -11,7 +11,10 @@ use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
-    public function register(): void {}
+    public function register(): void
+    {
+        // Intentionally empty. No custom bindings are registered on initialization.
+    }
 
     public function boot(): void
     {

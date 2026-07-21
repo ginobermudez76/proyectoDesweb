@@ -13,6 +13,7 @@ class MensajeController extends Controller
 {
     public function index(Request $request, $incidencia_id)
     {
+        /** @var Incidencia $incidencia */
         $incidencia = Incidencia::findOrFail($incidencia_id);
         $rol = $request->user()->roles->first()->codigo ?? 'CIUDADANO';
 

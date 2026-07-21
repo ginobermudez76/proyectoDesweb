@@ -8,17 +8,19 @@ use App\Modules\Incidencias\Controllers\SeguimientoController;
 use App\Modules\Incidencias\Controllers\NotificacionController;
 use Illuminate\Support\Facades\Route;
 
+$routeIncidencia = 'incidencias/{incidencia}';
+
 // 1. Grupo general (Límite normal: 180 peticiones por minuto)
-Route::middleware(['rbac', 'throttle:180,1'])->group(function () {
+Route::middleware(['rbac', 'throttle:180,1'])->group(function () use ($routeIncidencia) {
     // Consultas GET (Listar incidencias, ver detalles, stats)
     Route::get('dashboard/stats', [IncidenciaController::class, 'dashboardStats']);
     Route::get('perfil/stats-tecnico', [IncidenciaController::class, 'perfilStatsTecnico']);
     Route::get('incidencias', [IncidenciaController::class, 'index']);
-    Route::get('incidencias/{incidencia}', [IncidenciaController::class, 'show']);
+    Route::get($routeIncidencia, [IncidenciaController::class, 'show']);
 
     // Actualizaciones o Eliminaciones
-    Route::put('incidencias/{incidencia}', [IncidenciaController::class, 'update']);
-    Route::delete('incidencias/{incidencia}', [IncidenciaController::class, 'destroy']);
+    Route::put($routeIncidencia, [IncidenciaController::class, 'update']);
+    Route::delete($routeIncidencia, [IncidenciaController::class, 'destroy']);
 
     Route::post('incidencias/{id}/estado', [SeguimientoController::class, 'cambiarEstado']);
     Route::post('incidencias/{id}/comentarios', [ComentarioController::class, 'store']);
@@ -30,8 +32,8 @@ Route::middleware(['rbac', 'throttle:180,1'])->group(function () {
     Route::post('notificaciones/leer-todas', [NotificacionController::class, 'marcarTodasLeidas']);
 });
 
-// 2. Grupo ULTRA PROTEGIDO contra bots/spam (Límite estricto: 9 peticiones por minuto)
-Route::middleware(['rbac', 'throttle:9,1'])->group(function () {
+// 2. Grupo ULTRA PROTEGIDO contra bots/spam (Límite: 60 peticiones por minuto)
+Route::middleware(['rbac', 'throttle:60,1'])->group(function () {
     // Crear una nueva incidencia (evita que llenen la base de datos de basura)
     Route::post('incidencias', [IncidenciaController::class, 'store']);
 

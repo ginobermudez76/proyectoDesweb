@@ -7,6 +7,21 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string $nombre_usuario
+ * @property string $correo_electronico
+ * @property string $password_hash
+ * @property string $nombres
+ * @property string $apellidos
+ * @property bool $activo
+ * @property bool $deleted
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property int $id_tipo_documento
+ * @property string $documento
+ * @property string $celular
+ */
 class Usuario extends Authenticatable
 {
     use HasApiTokens;
