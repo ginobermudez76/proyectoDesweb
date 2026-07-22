@@ -80,12 +80,13 @@
                         <th>Usuario</th>
                         <th>Correo</th>
                         <th>Rol</th>
-                        <th>Estado</th>
+                        <th>Estado de Invitación</th>
+                        <th>Acceso</th>
                         <th style="text-align:right">Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="listaTabla">
-                    <tr><td colspan="5" class="text-muted-sm text-center py-3">Cargando…</td></tr>
+                    <tr><td colspan="6" class="text-muted-sm text-center py-3">Cargando…</td></tr>
                 </tbody>
             </table>
         </div>
@@ -105,15 +106,15 @@
             <input class="form-input" id="newCorreo" type="email" placeholder="correo@ejemplo.com"></div>
         <div class="form-group"><label class="form-label" for="newUsuario">Nombre de usuario (opcional)</label>
             <input class="form-input" id="newUsuario" placeholder="Ej: carlos.mendez"></div>
-        <div class="form-group"><label class="form-label" for="newPass">Contraseña temporal *</label>
-            <input class="form-input" id="newPass" type="password" placeholder="Mínimo 8 caracteres"></div>
         <div class="form-group"><label class="form-label" for="newRol">Rol del usuario *</label>
-            <select class="form-input" id="newRol">
+            <select class="form-input" id="newRol" onchange="onRolChange(this.value)">
                 <option value="ADMIN">Administrador</option>
                 <option value="SUPERVISOR">Supervisor</option>
                 <option value="TECNICO">Técnico</option>
                 <option value="CIUDADANO">Ciudadano</option>
             </select></div>
+        <div class="form-group" id="passContainer" style="display:none"><label class="form-label" for="newPass">Contraseña *</label>
+            <input class="form-input" id="newPass" type="password" placeholder="Mínimo 8 caracteres"></div>
         <div id="modalError" class="error-msg" style="display:none;font-size:12px;margin-bottom:10px"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
             <button class="btn-outline-gray" onclick="cerrarModal()">Cancelar</button>
@@ -182,6 +183,28 @@
         return `${firstName[0] ?? '?'}${lastName[0]?.toUpperCase() ?? ''}`.toUpperCase();
       }
 
+      function getEstadoInvitacionInfo(user) {
+        const rol = user?.roles?.[0];
+        const reqInvitacion = rol ? (rol.req_token_invitacion ?? (rol.codigo !== 'CIUDADANO')) : false;
+
+        if (!reqInvitacion) {
+          return { label: 'No requiere', badgeClass: 'bg-secondary text-white', status: 'no_requiere' };
+        }
+
+        if (user.fecha_aceptacion) {
+          return { label: 'Aceptada', badgeClass: 'bg-success text-white', status: 'aceptada' };
+        }
+
+        const ahora = new Date();
+        const expiracion = user.fecha_expiracion_invitacion ? new Date(user.fecha_expiracion_invitacion) : null;
+
+        if (expiracion && ahora > expiracion) {
+          return { label: 'Expirada', badgeClass: 'bg-danger text-white', status: 'expirada' };
+        }
+
+        return { label: 'Pendiente de aceptación', badgeClass: 'bg-warning text-dark', status: 'pendiente' };
+      }
+
       let usuarios = [];
       let filtroActual = 'todos';
       let DB_ROLES = [];
@@ -196,7 +219,7 @@
           document.getElementById('lista').innerHTML =
             `<div class="text-danger text-center py-3">Error al cargar usuarios: ${err.message}</div>`;
         document.getElementById('listaTabla').innerHTML =
-            `<tr><td colspan="5" class="text-danger text-center py-3">Error al cargar usuarios: ${err.message}</td></tr>`;
+            `<tr><td colspan="6" class="text-danger text-center py-3">Error al cargar usuarios: ${err.message}</td></tr>`;
     }
 }
 
@@ -216,6 +239,24 @@ function renderFiltroTabs() {
           const el = document.getElementById(id);
           if (el) el.innerHTML = optHtml;
         });
+        if (DB_ROLES.length) {
+          onRolChange(DB_ROLES[0].codigo);
+        }
+      }
+
+      function onRolChange(codigoRol) {
+        const rolObj = DB_ROLES.find(r => r.codigo === codigoRol);
+        const reqInvitacion = rolObj ? (rolObj.req_token_invitacion ?? (codigoRol !== 'CIUDADANO')) : (codigoRol !== 'CIUDADANO');
+        const passContainer = document.getElementById('passContainer');
+        const passInput = document.getElementById('newPass');
+
+        if (reqInvitacion) {
+          passContainer.style.display = 'none';
+          passInput.removeAttribute('required');
+        } else {
+          passContainer.style.display = 'block';
+          passInput.setAttribute('required', 'true');
+        }
       }
 
       function setFiltro(btn) {
@@ -242,6 +283,14 @@ function renderFiltroTabs() {
         const rol      = u.roles?.[0];
         const initials = getUserInitials(u);
         const color    = AVATAR_COLORS[rol?.codigo] || '#9CA3AF';
+        const invInfo  = getEstadoInvitacionInfo(u);
+
+        const btnReenviar = (puedeEditar && (invInfo.status === 'pendiente' || invInfo.status === 'expirada'))
+          ? `<button class="toggle-btn" style="border-color:#f97316;color:#f97316"
+                     onclick="reenviarInvitacion('${u.uuid}')">
+                 ${invInfo.status === 'expirada' ? 'Reenviar Invitación' : 'Recordar Invitación'}
+             </button>` : '';
+
         return `
         <div class="user-card">
             <div class="user-avatar" style="background:${color}">${initials}</div>
@@ -250,7 +299,10 @@ function renderFiltroTabs() {
                     ${u.nombres} ${u.apellidos}
                 </div>
                 <div class="text-muted-sm" style="margin-bottom:4px">${u.correo_electronico}</div>
-                ${rol ? `<span class="role-badge role-${rol.codigo}">${rol.nombre_rol}</span>` : ''}
+                <div style="display:flex;gap:4px;flex-wrap:wrap">
+                  ${rol ? `<span class="role-badge role-${rol.codigo}">${rol.nombre_rol}</span>` : ''}
+                  <span class="badge ${invInfo.badgeClass}" style="font-size:11px;padding:3px 8px;border-radius:10px">${invInfo.label}</span>
+                </div>
             </div>
             ${
               puedeEditar
@@ -258,6 +310,7 @@ function renderFiltroTabs() {
             <div style="display:flex;flex-direction:column;gap:6px">
                 <button class="toggle-btn" style="border-color:var(--gray-400);color:var(--gray-400)"
                         onclick="abrirEdicion('${u.uuid}')">Editar</button>
+                ${btnReenviar}
                 <button class="toggle-btn ${u.activo ? 'toggle-active' : 'toggle-inactive'}"
                         onclick="toggleActivo('${u.uuid}')">
                     ${u.activo ? 'Desactivar' : 'Activar'}
@@ -275,6 +328,14 @@ function renderFiltroTabs() {
         const rol      = u.roles?.[0];
         const initials = getUserInitials(u);
         const color    = AVATAR_COLORS[rol?.codigo] || '#9CA3AF';
+        const invInfo  = getEstadoInvitacionInfo(u);
+
+        const btnReenviar = (puedeEditar && (invInfo.status === 'pendiente' || invInfo.status === 'expirada'))
+          ? `<button class="toggle-btn" style="border-color:#f97316;color:#f97316;margin-right:6px"
+                     onclick="reenviarInvitacion('${u.uuid}')">
+                 ${invInfo.status === 'expirada' ? 'Reenviar (Nueva)' : 'Recordar'}
+             </button>` : '';
+
         return `
         <tr style="cursor:default">
             <td class="td-title">
@@ -282,9 +343,11 @@ function renderFiltroTabs() {
             </td>
             <td>${u.correo_electronico}</td>
             <td>${rol ? `<span class="role-badge role-${rol.codigo}">${rol.nombre_rol}</span>` : '—'}</td>
+            <td><span class="badge ${invInfo.badgeClass}" style="font-size:12px;padding:4px 10px;border-radius:12px">${invInfo.label}</span></td>
             <td><span class="badge-status ${u.activo ? 'badge-resuelto' : 'badge-urgente'}">${u.activo ? 'Activo' : 'Inactivo'}</span></td>
             <td style="text-align:right;white-space:nowrap">
                 ${puedeEditar ? `
+                ${btnReenviar}
                 <button class="toggle-btn" style="border-color:var(--gray-400);color:var(--gray-400);margin-right:6px"
                         onclick="abrirEdicion('${u.uuid}')">Editar</button>
                 <button class="toggle-btn ${u.activo ? 'toggle-active' : 'toggle-inactive'}"
@@ -293,7 +356,7 @@ function renderFiltroTabs() {
                 </button>` : ''}
             </td>
         </tr>`;
-    }).join('') || `<tr><td colspan="5" class="text-muted-sm text-center py-3">Sin usuarios en este filtro.</td></tr>`;
+    }).join('') || `<tr><td colspan="6" class="text-muted-sm text-center py-3">Sin usuarios en este filtro.</td></tr>`;
 }
 
       async function toggleActivo(uuid) {
@@ -385,7 +448,7 @@ function abrirEdicion(uuid) {
         const rol_codigo = document.getElementById('newRol').value;
         const nombre_usuario = document.getElementById('newUsuario').value.trim();
 
-        if (!nombres || !apellidos || !correo || !password) {
+        if (!nombres || !apellidos || !correo) {
           errEl.textContent = 'Completa todos los campos obligatorios.';
           errEl.style.display = 'block';
           return;
@@ -397,17 +460,27 @@ function abrirEdicion(uuid) {
               nombres,
               apellidos,
               correo_electronico: correo,
-              password,
+              password: password || null,
               rol_codigo,
               nombre_usuario: nombre_usuario || null,
             }),
           });
           cerrarModal();
-          showToast('Usuario creado correctamente', 'success');
+          showToast('Usuario registrado correctamente. Invitación enviada si corresponde.', 'success');
           await cargar();
         } catch (err) {
           errEl.textContent = err.message || 'Error al crear el usuario.';
           errEl.style.display = 'block';
+        }
+      }
+
+      async function reenviarInvitacion(uuid) {
+        try {
+          const res = await apiFetch(`/usuarios/${uuid}/reenviar-invitacion`, { method: 'POST' });
+          showToast(res.message || 'Invitación procesada correctamente', 'success');
+          await cargar();
+        } catch (err) {
+          showToast(err.message || 'Error al reenviar la invitación', 'error');
         }
       }
 

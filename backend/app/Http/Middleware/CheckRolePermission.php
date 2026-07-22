@@ -20,6 +20,8 @@ class CheckRolePermission
         'api/register',
         'api/documentos/tipos',
         'api/logs/unauthorized',
+        'api/invitacion/validar',
+        'api/invitacion/aceptar',
     ];
 
     /** Routes that authenticated users can access without RBAC check. */

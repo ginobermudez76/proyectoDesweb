@@ -149,7 +149,15 @@ class AuthController extends Controller
                 'retry_after_seconds' => $bloqueado ? self::LOCKOUT_TTL : null,
             ], 401);
         } elseif (!$usuario->activo) {
-            $response = $this->buildLoginResponse(['message' => 'Cuenta inactiva. Contacta al administrador.'], 403);
+            $msg = 'Tu cuenta no está activa.';
+            if (empty($usuario->fecha_aceptacion)) {
+                if ($usuario->fecha_expiracion_invitacion && now()->greaterThan($usuario->fecha_expiracion_invitacion)) {
+                    $msg = 'Tu invitación ha expirado. Por favor, solicita un reenvío al administrador.';
+                } else {
+                    $msg = 'Tu cuenta requiere aceptar la invitación enviada a tu correo electrónico.';
+                }
+            }
+            $response = $this->buildLoginResponse(['message' => $msg], 403);
         } else {
             $response = $this->successfulLoginResponse($request, $usuario, $ip, $keyIp, $keyEmail);
         }

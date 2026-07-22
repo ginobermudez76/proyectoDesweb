@@ -50,18 +50,26 @@ class Usuario extends Authenticatable
         'id_tipo_documento',
         'documento',
         'celular',
+        'token_invitacion',
+        'fecha_invitacion',
+        'fecha_expiracion_invitacion',
+        'fecha_aceptacion',
     ];
 
     // Ocultar atributos sensibles en serialización
     protected $hidden = [
         'id',
         'password_hash',
+        'token_invitacion',
     ];
 
     // Casts de tipos
     protected $casts = [
         'activo' => 'boolean',
         'deleted' => 'boolean',
+        'fecha_invitacion' => 'datetime',
+        'fecha_expiracion_invitacion' => 'datetime',
+        'fecha_aceptacion' => 'datetime',
         'deleted_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
