@@ -33,6 +33,14 @@ class CheckRolePermission
         'api/notificaciones',
         'api/notificaciones/*',
         'api/usuarios/sesiones',
+        'api/2fa/setup-app',
+        'api/2fa/confirm-app',
+        'api/2fa/disable-app',
+        'api/2fa/toggle-email',
+        'api/webauthn/keys',
+        'api/webauthn/keys/*',
+        'api/webauthn/register/options',
+        'api/webauthn/register',
     ];
 
     public function handle(Request $request, Closure $next): Response
