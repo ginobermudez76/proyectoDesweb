@@ -317,6 +317,18 @@
         try {
           const res = await apiFetch('/2fa/toggle-email', {
             method: 'POST',
+            body: JSON.stringify({ enable })
+          });
+          showToast(res.message || 'Estado de 2FA por correo actualizado', 'success');
+
+          user.aut_email = !!res.aut_email;
+          saveAuth(getToken(), user);
+        } catch (e) {
+          document.getElementById('switchEmail2FA').checked = !enable;
+          showToast(e.message || 'No se pudo actualizar la configuración 2FA por correo.', 'error');
+        }
+      }
+
       // Cargar lista de Passkeys
       cargarPasskeys();
 
