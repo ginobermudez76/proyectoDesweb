@@ -197,7 +197,7 @@ function haversine([lat1,lng1],[lat2,lng2]) {
               descText = `<span style="color:${color}">${estInfo.label}</span> · ${priInfo.label || inc.prioridad || 'Media'}`;
             }
 
-            const comoLlegarHTML = role === 'TECNICO'
+            const comoLlegarHTML = (role === 'TECNICO' || role === 'SUPERVISOR')
                 ? `<br><a href="${googleMapsDirUrl(lat, lng)}" target="_blank" rel="noopener">
                        <i class="bi bi-signpost-2"></i> Cómo llegar
                    </a>`

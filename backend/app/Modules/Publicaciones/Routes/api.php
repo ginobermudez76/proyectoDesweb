@@ -8,4 +8,6 @@ Route::get('publicaciones/{id}', [PublicacionController::class, 'show']);
 
 Route::middleware(['rbac'])->group(function () {
     Route::post('publicaciones', [PublicacionController::class, 'store']);
+    Route::put('publicaciones/{id}', [PublicacionController::class, 'update']);
+    Route::delete('publicaciones/{id}', [PublicacionController::class, 'destroy']);
 });

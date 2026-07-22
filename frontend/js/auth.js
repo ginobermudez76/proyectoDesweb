@@ -175,6 +175,55 @@ function getUserInitials() {
   return n + a;
 }
 
+/** Timestamp (ms) de la publicación más reciente de una lista, o 0 si está vacía. */
+function fechaMasReciente(publicaciones) {
+  return (publicaciones || []).reduce((max, p) => {
+    const t = p.fecha_publicacion ? new Date(p.fecha_publicacion).getTime() : 0;
+    return t > max ? t : max;
+  }, 0);
+}
+
+/** Clave de localStorage donde se guarda la última visita del usuario actual a Comunicados. */
+function _comunicadosVistoKey() {
+  const uuid = getUser()?.uuid;
+  return uuid ? `comunicados_visto_${uuid}` : null;
+}
+
+/** Marca todos los comunicados actualmente cargados como vistos por el usuario. */
+function marcarComunicadosVistos(publicaciones) {
+  const key = _comunicadosVistoKey();
+  if (!key) return;
+  localStorage.setItem(key, String(fechaMasReciente(publicaciones)));
+}
+
+/**
+ * Consulta si hay comunicados más nuevos que la última visita del usuario y,
+ * de ser así, agrega un punto distintivo al link "Comunicados" del menú.
+ */
+async function revisarComunicadosNuevos() {
+  const key = _comunicadosVistoKey();
+  if (!key) return;
+
+  try {
+    const publicaciones = await apiFetch('/publicaciones');
+    const masReciente = fechaMasReciente(publicaciones);
+    const ultimaVisita = Number(localStorage.getItem(key) || 0);
+
+    if (masReciente > ultimaVisita) {
+      const link = document.querySelector('.bottom-nav a[href*="publicaciones.html"]');
+      if (link && !link.querySelector('.nav-new-dot')) {
+        link.style.position = 'relative';
+        const dot = document.createElement('span');
+        dot.className = 'nav-new-dot';
+        dot.style.cssText = 'position:absolute;top:6px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--red);border:1.5px solid var(--surface-2)';
+        link.appendChild(dot);
+      }
+    }
+  } catch {
+    // Silencioso: el indicador es informativo, no debe interrumpir la carga de la página.
+  }
+}
+
 function timeAgo(dateStr) {
   if (!dateStr) return '';
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -286,8 +335,8 @@ function getNavLinks() {
   const role = getRole();
   const links = [];
 
-    // Dashboard - ADMIN (global) y CIUDADANO (sus propias incidencias)
-    if (role === 'ADMIN' || role === 'CIUDADANO') {
+    // Dashboard - ADMIN y SUPERVISOR (global) y CIUDADANO (sus propias incidencias)
+    if (role === 'ADMIN' || role === 'SUPERVISOR' || role === 'CIUDADANO') {
         links.push({ href: 'pages/dashboard/dashboard.html', icon: 'bi-speedometer2', label: 'Panel', group: 'general' });
     }
 
@@ -304,6 +353,9 @@ function getNavLinks() {
         links.push({ href: 'pages/incidencias/mapa.html',     icon: 'bi-map',        label: 'Mapa', group: 'general' });
     }
 
+    // Comunicados — visibles para todos los roles autenticados
+    links.push({ href: 'pages/publicaciones/publicaciones.html', icon: 'bi-megaphone', label: 'Comunicados', group: 'general' });
+
     // Gestión de usuarios — Admin y Supervisor
     const hasUsuarios = ops.some(o => o.includes('Gestión de Usuarios'));
     if (hasUsuarios) {
@@ -314,6 +366,11 @@ function getNavLinks() {
     const hasRoles = ops.some(o => o.includes('Gestión de Roles'));
     if (hasRoles) {
         links.push({ href: 'pages/roles/roles.html', icon: 'bi-shield-lock', label: 'Roles', group: 'administracion' });
+    }
+
+    // Catálogos (gestión) — solo ADMIN tiene permiso de escritura sobre "Catálogos"
+    if (role === 'ADMIN') {
+        links.push({ href: 'pages/catalogos/catalogos.html', icon: 'bi-tags', label: 'Catálogos', group: 'administracion' });
     }
 
     // Perfil — todos los roles. En móvil es el único acceso a "Cerrar sesión"
@@ -425,8 +482,8 @@ async function checkRoutePermission() {
         await denyAccess();
     }
 
-    // 3. Dashboard (ADMIN ve datos globales, CIUDADANO ve solo sus propias incidencias)
-    if (p.includes('/pages/dashboard/') && role !== 'ADMIN' && role !== 'CIUDADANO') {
+    // 3. Dashboard (ADMIN y SUPERVISOR ven datos globales, CIUDADANO ve solo sus propias incidencias)
+    if (p.includes('/pages/dashboard/') && role !== 'ADMIN' && role !== 'SUPERVISOR' && role !== 'CIUDADANO') {
         await denyAccess();
     }
 
@@ -782,6 +839,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     _renderNavLinks(nav);
+    revisarComunicadosNuevos();
 
     if (window.innerWidth >= 768) {
       document.body.style.paddingLeft = '240px';
