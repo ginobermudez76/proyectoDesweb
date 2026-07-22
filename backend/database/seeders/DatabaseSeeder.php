@@ -114,10 +114,10 @@ class DatabaseSeeder extends Seeder
     private function seedRoles(): void
     {
         $roles = [
-            ['codigo' => self::ROLE_ADMIN, 'nombre_rol' => 'Administrador', 'descripcion' => 'Acceso total.', 'req_token_invitacion' => true],
-            ['codigo' => self::ROLE_SUPERVISOR, 'nombre_rol' => 'Supervisor', 'descripcion' => 'Supervisor de incidencias.', 'req_token_invitacion' => true],
-            ['codigo' => self::ROLE_TECNICO, 'nombre_rol' => 'Técnico', 'descripcion' => 'Resolutor de incidencias.', 'req_token_invitacion' => true],
-            ['codigo' => self::ROLE_CIUDADANO, 'nombre_rol' => 'Ciudadano', 'descripcion' => 'Reporta incidencias.', 'req_token_invitacion' => false],
+            ['codigo' => self::ROLE_ADMIN, 'nombre_rol' => 'Administrador', 'descripcion' => 'Acceso total.', 'req_token_invitacion' => true, 'aut_2fa_obligatoria' => true],
+            ['codigo' => self::ROLE_SUPERVISOR, 'nombre_rol' => 'Supervisor', 'descripcion' => 'Supervisor de incidencias.', 'req_token_invitacion' => true, 'aut_2fa_obligatoria' => false],
+            ['codigo' => self::ROLE_TECNICO, 'nombre_rol' => 'Técnico', 'descripcion' => 'Resolutor de incidencias.', 'req_token_invitacion' => true, 'aut_2fa_obligatoria' => false],
+            ['codigo' => self::ROLE_CIUDADANO, 'nombre_rol' => 'Ciudadano', 'descripcion' => 'Reporta incidencias.', 'req_token_invitacion' => false, 'aut_2fa_obligatoria' => false],
         ];
 
         foreach ($roles as $rol) {
@@ -128,6 +128,7 @@ class DatabaseSeeder extends Seeder
                     'nombre_rol' => $rol['nombre_rol'],
                     'descripcion' => $rol['descripcion'],
                     'req_token_invitacion' => $rol['req_token_invitacion'],
+                    'aut_2fa_obligatoria' => $rol['aut_2fa_obligatoria'],
                     'deleted' => false,
                     'created_at' => now(),
                 ]

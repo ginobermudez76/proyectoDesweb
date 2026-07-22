@@ -67,7 +67,7 @@
     <!-- Formulario -->
     <div class="login-form-pane">
         <div class="login-theme-corner" id="themeCorner"></div>
-        <div class="login-form-box">
+        <div class="login-form-box" id="loginFormBox">
             <div class="login-title" style="font-size:24px">Bienvenido de nuevo</div>
             <div class="login-subtitle" style="margin-bottom:28px">Ingresa tus credenciales para continuar</div>
 
@@ -91,6 +91,41 @@
                 </a>
             </div>
         </div>
+
+        <!-- Panel de Verificación 2FA -->
+        <div class="login-form-box" id="twoFactorBox" style="display:none">
+            <div class="login-title" style="font-size:24px">Autenticación de 2 Pasos</div>
+            <div class="login-subtitle" style="margin-bottom:20px" id="twoFactorSubtitle">Ingresa el código de 6 dígitos para verificar tu identidad</div>
+
+            <div id="twoFactorError" class="error-msg" style="display:none"></div>
+
+            <!-- Selector de Métodos (si tiene más de 1) -->
+            <div id="methodSelector" style="display:none;margin-bottom:20px">
+                <label class="form-label" style="margin-bottom:8px">Selecciona el método de verificación:</label>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                    <button id="btnMethodApp" class="btn-outline-gray" style="font-size:13px;padding:8px" onclick="select2faMethod('app')">
+                        <i class="bi bi-shield-lock me-1"></i> App Autenticadora
+                    </button>
+                    <button id="btnMethodEmail" class="btn-outline-gray" style="font-size:13px;padding:8px" onclick="select2faMethod('email')">
+                        <i class="bi bi-envelope me-1"></i> Código por Email
+                    </button>
+                </div>
+            </div>
+
+            <!-- Campo Código 6 dígitos -->
+            <div class="form-group mb-3">
+                <label class="form-label" for="twoFactorCode" id="codeLabel">Código de 6 dígitos *</label>
+                <input class="form-input text-center" id="twoFactorCode" type="text" maxlength="6" placeholder="000000" style="font-size:22px;letter-spacing:6px;font-weight:700">
+            </div>
+
+            <button class="btn-orange mt-2 w-100" id="verify2faBtn" onclick="doVerify2FA()">
+                <i class="bi bi-shield-check"></i> Verificar Código
+            </button>
+
+            <button class="btn-outline-gray mt-2 w-100" style="font-size:13px" onclick="cancel2FA()">
+                Cancelar e Ir al Login
+            </button>
+        </div>
     </div>
 </div>
 
@@ -113,6 +148,9 @@
     document.getElementById('themeCorner').innerHTML = themeToggleHTML(false);
 
     let _lockoutInterval = null;
+    let _pending2faToken = null;
+    let _active2faMethod = 'app';
+    let _availableMethods = [];
 
       async function doLogin() {
         const btn = document.getElementById('loginBtn');
@@ -135,7 +173,23 @@
                 method: 'POST',
                 body: JSON.stringify({ correo_electronico: correo, password: pass })
             });
+
+            if (data.requires_2fa) {
+                _pending2faToken = data.pending_token;
+                _availableMethods = data.methods || ['app'];
+                iniciarFlujo2FA();
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-box-arrow-in-right"></i> Ingresar';
+                return;
+            }
+
             saveAuth(data.access_token, data.usuario);
+
+            if (data.requiere_configurar_2fa) {
+                sessionStorage.setItem('show_2fa_reminder', '1');
+            }
+
+            ejecutarTransicionExito(btn);
 
             // Transición animada de ingreso al sistema: el color "sale" del botón.
             // Se fija el clip-path inicial (radio 0, centrado en el botón) y
@@ -213,8 +267,126 @@
         }, 1000);
       }
 
+      function iniciarFlujo2FA() {
+        document.getElementById('loginFormBox').style.display = 'none';
+        document.getElementById('twoFactorBox').style.display = 'block';
+        document.getElementById('twoFactorError').style.display = 'none';
+        document.getElementById('twoFactorCode').value = '';
+
+        const selector = document.getElementById('methodSelector');
+        if (_availableMethods.length > 1) {
+          selector.style.display = 'block';
+          select2faMethod(_availableMethods[0]);
+        } else {
+          selector.style.display = 'none';
+          select2faMethod(_availableMethods[0] || 'app');
+        }
+      }
+
+      function select2faMethod(method) {
+        _active2faMethod = method;
+        const btnApp = document.getElementById('btnMethodApp');
+        const btnEmail = document.getElementById('btnMethodEmail');
+        const subTitle = document.getElementById('twoFactorSubtitle');
+        const label = document.getElementById('codeLabel');
+
+        if (method === 'app') {
+          btnApp.className = 'btn-orange';
+          btnEmail.className = 'btn-outline-gray';
+          subTitle.textContent = 'Ingresa el código de 6 dígitos que genera tu App de Autenticación (Google / Microsoft Authenticator).';
+          label.textContent = 'Código de App Autenticadora *';
+        } else {
+          btnEmail.className = 'btn-orange';
+          btnApp.className = 'btn-outline-gray';
+          subTitle.textContent = 'Enviaremos un código de verificación de 6 dígitos a tu correo electrónico registrado.';
+          label.textContent = 'Código recibido por Email *';
+          // Disparar envío automático de correo si selecciona email
+          enviarCodigoCorreo();
+        }
+      }
+
+      async function enviarCodigoCorreo() {
+        const errEl = document.getElementById('twoFactorError');
+        try {
+          await apiFetch('/2fa/send-email-code', {
+            method: 'POST',
+            body: JSON.stringify({ pending_token: _pending2faToken })
+          });
+          showToast('Código de verificación enviado a tu correo', 'info');
+        } catch (e) {
+          errEl.textContent = e.message || 'No se pudo enviar el correo de verificación.';
+          errEl.style.display = 'block';
+        }
+      }
+
+      async function doVerify2FA() {
+        const btn = document.getElementById('verify2faBtn');
+        const errEl = document.getElementById('twoFactorError');
+        const code = document.getElementById('twoFactorCode').value.trim();
+
+        errEl.style.display = 'none';
+        if (!code || code.length !== 6) {
+          errEl.textContent = 'Ingresa un código numérico válido de 6 dígitos.';
+          errEl.style.display = 'block';
+          return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verificando…';
+
+        try {
+          const data = await apiFetch('/2fa/verify', {
+            method: 'POST',
+            body: JSON.stringify({
+              pending_token: _pending2faToken,
+              method: _active2faMethod,
+              code: code
+            })
+          });
+
+          saveAuth(data.access_token, data.usuario);
+          ejecutarTransicionExito(btn);
+        } catch (e) {
+          errEl.textContent = e.message || 'Código de verificación incorrecto o vencido.';
+          errEl.style.display = 'block';
+          btn.disabled = false;
+          btn.innerHTML = '<i class="bi bi-shield-check"></i> Verificar Código';
+        }
+      }
+
+      function cancel2FA() {
+        _pending2faToken = null;
+        document.getElementById('twoFactorBox').style.display = 'none';
+        document.getElementById('loginFormBox').style.display = 'block';
+      }
+
+      function ejecutarTransicionExito(btn) {
+        const transitionEl = document.getElementById('loginTransition');
+        const rect = btn.getBoundingClientRect();
+        const ox = rect.left + rect.width / 2;
+        const oy = rect.top + rect.height / 2;
+
+        transitionEl.style.transition = 'none';
+        transitionEl.style.clipPath = `circle(0% at ${ox}px ${oy}px)`;
+        transitionEl.classList.add('show');
+        void transitionEl.getBoundingClientRect();
+
+        transitionEl.style.transition = '';
+        requestAnimationFrame(() => {
+          transitionEl.style.clipPath = `circle(150% at ${ox}px ${oy}px)`;
+        });
+
+        setTimeout(() => { window.location.href = dashboardUrl(''); }, 1400);
+      }
+
       document.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') doLogin();
+        if (e.key === 'Enter') {
+          if (document.getElementById('twoFactorBox').style.display !== 'none') {
+            doVerify2FA();
+          } else {
+            doLogin();
+          }
+        }
       });
     </script>
   </body>

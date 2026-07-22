@@ -2,11 +2,14 @@
 
 use App\Modules\Auth\Controllers\UsuarioController;
 use App\Modules\Auth\Controllers\RolController;
+use App\Modules\Auth\Controllers\TwoFactorController;
 use Illuminate\Support\Facades\Route;
 
-// Rutas públicas de invitación
+// Rutas públicas de invitación y 2FA challenge
 Route::get('/invitacion/validar', [UsuarioController::class, 'validarInvitacion']);
 Route::post('/invitacion/aceptar', [UsuarioController::class, 'aceptarInvitacion']);
+Route::post('/2fa/verify', [TwoFactorController::class, 'verifyChallenge']);
+Route::post('/2fa/send-email-code', [TwoFactorController::class, 'sendEmailCode']);
 
 Route::middleware(['throttle:api', 'rbac'])->group(function () {
     Route::get('/roles', [UsuarioController::class, 'roles']);
@@ -17,6 +20,12 @@ Route::middleware(['throttle:api', 'rbac'])->group(function () {
     Route::put('/usuarios/{uuid}', [UsuarioController::class, 'update']);
     Route::patch('/usuarios/{uuid}/toggle', [UsuarioController::class, 'toggleActivo']);
     Route::post('/usuarios/{uuid}/reenviar-invitacion', [UsuarioController::class, 'reenviarInvitacion']);
+
+    // Configuración de 2FA del Usuario Autenticado
+    Route::post('/2fa/setup-app', [TwoFactorController::class, 'setupApp']);
+    Route::post('/2fa/confirm-app', [TwoFactorController::class, 'confirmApp']);
+    Route::post('/2fa/disable-app', [TwoFactorController::class, 'disableApp']);
+    Route::post('/2fa/toggle-email', [TwoFactorController::class, 'toggleEmail']);
 
     // Gestión de Roles Administrativo
     Route::get('/admin/roles', [RolController::class, 'index']);

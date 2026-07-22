@@ -79,6 +79,31 @@ class AuthController extends Controller
         Cache::store('redis')->forget($keyIp);
         Cache::store('redis')->forget($keyEmail);
 
+        $usuario->load('roles.opciones');
+
+        $metodosActivos = [];
+        if ($usuario->aut_app_autenticacion) $metodosActivos[] = 'app';
+        if ($usuario->aut_email) $metodosActivos[] = 'email';
+
+        // Si tiene 1 o más métodos 2FA activos, NO se devuelve access_token final; se emite un pending_token de 5 minutos en Redis.
+        if (count($metodosActivos) > 0) {
+            $pendingToken = Str::random(40);
+            Cache::store('redis')->put('2fa_pending:' . $pendingToken, [
+                'usuario_id' => $usuario->id,
+                'metodos'    => $metodosActivos,
+            ], now()->addMinutes(5));
+
+            return $this->buildLoginResponse([
+                'requires_2fa'  => true,
+                'pending_token' => $pendingToken,
+                'methods'       => $metodosActivos,
+            ], 200);
+        }
+
+        // Si no tiene métodos 2FA activos, verificar si su rol exige 2FA obligatorio para avisarle en el frontend con modal no bloqueante
+        $rol = $usuario->roles->first();
+        $requiereConfigurar2fa = $rol ? (bool) ($rol->aut_2fa_obligatoria ?? false) : false;
+
         $token = Str::random(60);
         Cache::store('redis')->put('auth_token:'.$token, $usuario->id, now()->addDays(7));
 
@@ -92,9 +117,10 @@ class AuthController extends Controller
         ]);
 
         return $this->buildLoginResponse([
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'usuario' => $usuario->load('roles.opciones'),
+            'access_token'            => $token,
+            'token_type'              => 'Bearer',
+            'usuario'                 => $usuario,
+            'requiere_configurar_2fa' => $requiereConfigurar2fa,
         ], 200);
     }
 

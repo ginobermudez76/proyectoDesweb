@@ -54,6 +54,10 @@ class Usuario extends Authenticatable
         'fecha_invitacion',
         'fecha_expiracion_invitacion',
         'fecha_aceptacion',
+        'aut_2fa_secret',
+        'aut_app_autenticacion',
+        'aut_email',
+        'aut_passkeys',
     ];
 
     // Ocultar atributos sensibles en serialización
@@ -61,12 +65,16 @@ class Usuario extends Authenticatable
         'id',
         'password_hash',
         'token_invitacion',
+        'aut_2fa_secret',
     ];
 
     // Casts de tipos
     protected $casts = [
         'activo' => 'boolean',
         'deleted' => 'boolean',
+        'aut_app_autenticacion' => 'boolean',
+        'aut_email' => 'boolean',
+        'aut_passkeys' => 'boolean',
         'fecha_invitacion' => 'datetime',
         'fecha_expiracion_invitacion' => 'datetime',
         'fecha_aceptacion' => 'datetime',
