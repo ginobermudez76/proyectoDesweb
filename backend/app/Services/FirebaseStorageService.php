@@ -61,10 +61,16 @@ class FirebaseStorageService
     }
 
     /**
-     * Tries to create an optimized temp file for images; returns null on failure.
+     * Tries to create an optimized temp file for images exceeding 1MB (1024 * 1024 bytes); returns null on failure or if smaller.
      */
     private function getOptimizedFilePath($file): ?string
     {
+        // Solo comprimir imágenes que superen 1MB (1,048,576 bytes)
+        $oneMegabyteInBytes = 1024 * 1024;
+        if ($file->getSize() <= $oneMegabyteInBytes) {
+            return null;
+        }
+
         try {
             return $this->optimizeImage($file->getRealPath());
         } catch (\Exception $e) {

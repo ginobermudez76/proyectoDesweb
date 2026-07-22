@@ -43,12 +43,12 @@ function dashboardUrl(basePath = '') {
   const role = getRole();
   if (!role) return joinUrl(basePath, 'login.html');
 
-  // El Administrador inicia en su Dashboard exclusivo
-  if (role === 'ADMIN') {
+  // Administrador y Ciudadano inician en su Panel de control (dashboard)
+  if (role === 'ADMIN' || role === 'CIUDADANO') {
     return joinUrl(basePath, 'pages/dashboard/dashboard.html');
   }
 
-  // Todos los demás roles van al panel de incidencias
+  // Técnico y Supervisor van al panel de incidencias
   return joinUrl(basePath, 'pages/incidencias/panel.html');
 }
 
@@ -127,7 +127,37 @@ function requireAuth(basePath = null) {
     });
     return false;
   }
+
+  // Comprobar si hay aviso de 2FA pendiente al entrar a cualquier pantalla del sistema
+  if (sessionStorage.getItem('show_2fa_reminder') === '1') {
+    sessionStorage.removeItem('show_2fa_reminder');
+    setTimeout(() => {
+      _mostrarModalGlobal2FAReminder(prefix);
+    }, 400);
+  }
+
   return true;
+}
+
+function _mostrarModalGlobal2FAReminder(prefix) {
+  if (document.getElementById('_global2faReminderOverlay')) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = '_global2faReminderOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+  overlay.innerHTML = `
+    <div style="background:var(--bg-card, #ffffff);border-radius:20px;padding:24px;width:100%;max-width:400px;text-align:center;box-shadow:0 10px 25px rgba(0,0,0,0.2)">
+        <div class="text-warning mb-2" style="font-size:42px"><i class="bi bi-shield-exclamation"></i></div>
+        <div style="font-size:18px;font-weight:700;margin-bottom:8px;color:var(--gray-900, #1e293b)">Autenticación de 2 Pasos Requerida</div>
+        <div class="text-muted-sm mb-4" style="font-size:13px;color:var(--gray-600, #64748b)">Tu rol de usuario requiere que configures al menos un método de Autenticación de Doble Factor (App Autenticadora o Correo Electrónico) para mayor seguridad.</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <button class="btn btn-outline-secondary" style="font-size:13px;border-radius:12px" onclick="document.getElementById('_global2faReminderOverlay').remove()">Luego</button>
+            <button class="btn btn-warning text-dark font-weight-bold" style="font-size:13px;border-radius:12px;font-weight:700" onclick="window.location.href='${joinUrl(prefix, 'pages/perfil/perfil.html')}'">Configurar Ahora</button>
+        </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
 }
 
 function requireRole(allowed) {
@@ -173,6 +203,55 @@ function getUserInitials() {
   const n = (u.nombres ?? u.nombre_usuario ?? '?')[0].toUpperCase();
   const a = u.apellidos?.[0]?.toUpperCase() ?? '';
   return n + a;
+}
+
+/** Timestamp (ms) de la publicación más reciente de una lista, o 0 si está vacía. */
+function fechaMasReciente(publicaciones) {
+  return (publicaciones || []).reduce((max, p) => {
+    const t = p.fecha_publicacion ? new Date(p.fecha_publicacion).getTime() : 0;
+    return t > max ? t : max;
+  }, 0);
+}
+
+/** Clave de localStorage donde se guarda la última visita del usuario actual a Comunicados. */
+function _comunicadosVistoKey() {
+  const uuid = getUser()?.uuid;
+  return uuid ? `comunicados_visto_${uuid}` : null;
+}
+
+/** Marca todos los comunicados actualmente cargados como vistos por el usuario. */
+function marcarComunicadosVistos(publicaciones) {
+  const key = _comunicadosVistoKey();
+  if (!key) return;
+  localStorage.setItem(key, String(fechaMasReciente(publicaciones)));
+}
+
+/**
+ * Consulta si hay comunicados más nuevos que la última visita del usuario y,
+ * de ser así, agrega un punto distintivo al link "Comunicados" del menú.
+ */
+async function revisarComunicadosNuevos() {
+  const key = _comunicadosVistoKey();
+  if (!key) return;
+
+  try {
+    const publicaciones = await apiFetch('/publicaciones');
+    const masReciente = fechaMasReciente(publicaciones);
+    const ultimaVisita = Number(localStorage.getItem(key) || 0);
+
+    if (masReciente > ultimaVisita) {
+      const link = document.querySelector('.bottom-nav a[href*="publicaciones.html"]');
+      if (link && !link.querySelector('.nav-new-dot')) {
+        link.style.position = 'relative';
+        const dot = document.createElement('span');
+        dot.className = 'nav-new-dot';
+        dot.style.cssText = 'position:absolute;top:6px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--red);border:1.5px solid var(--surface-2)';
+        link.appendChild(dot);
+      }
+    }
+  } catch {
+    // Silencioso: el indicador es informativo, no debe interrumpir la carga de la página.
+  }
 }
 
 function timeAgo(dateStr) {
@@ -286,49 +365,56 @@ function getNavLinks() {
   const role = getRole();
   const links = [];
 
-  // Dashboard - solo para ADMIN
-  if (role === 'ADMIN') {
-    links.push({
-      href: 'pages/dashboard/dashboard.html',
-      icon: 'bi-speedometer2',
-      label: 'Inicio',
-    });
-  }
-
-  // Incidencias — visible para roles autenticados (excepto ADMIN que no ve incidencias ni mapa)
-  const hasIncidencias = ops.some((o) => o.includes('Incidencias'));
-  if (hasIncidencias && role !== 'ADMIN') {
-    links.push({ href: 'pages/incidencias/panel.html', icon: 'bi-house-fill', label: 'Inicio' });
-    if (role === 'CIUDADANO') {
-      links.push({
-        href: 'pages/incidencias/reportar.html',
-        icon: 'bi-plus-circle',
-        label: 'Reportar',
-      });
+    // Dashboard - ADMIN y SUPERVISOR (global) y CIUDADANO (sus propias incidencias)
+    if (role === 'ADMIN' || role === 'SUPERVISOR' || role === 'CIUDADANO') {
+        links.push({ href: 'pages/dashboard/dashboard.html', icon: 'bi-speedometer2', label: 'Panel', group: 'general' });
     }
-    links.push({ href: 'pages/incidencias/mapa.html', icon: 'bi-map', label: 'Mapa' });
-  }
 
-  // Gestión de usuarios — Admin y Supervisor
-  const hasUsuarios = ops.some((o) => o.includes('Gestión de Usuarios'));
-  if (hasUsuarios) {
-    links.push({ href: 'pages/usuarios/usuarios.html', icon: 'bi-people', label: 'Usuarios' });
-  }
+    // Incidencias — visible para roles autenticados (excepto ADMIN que no ve incidencias ni mapa)
+    // Para CIUDADANO, "Panel de control" ya incluye la lista completa + reportar, así que no
+    // duplicamos "Inicio" en su menú.
+    const hasIncidencias = ops.some(o => o.includes('Incidencias'));
+    if (hasIncidencias && role !== 'ADMIN') {
+        if (role !== 'CIUDADANO') {
+            links.push({ href: 'pages/incidencias/panel.html', icon: 'bi-house-fill', label: 'Inicio', group: 'general' });
+        } else {
+            links.push({ href: 'pages/incidencias/reportar.html', icon: 'bi-plus-circle', label: 'Reportar', group: 'general' });
+        }
+        links.push({ href: 'pages/incidencias/mapa.html',     icon: 'bi-map',        label: 'Mapa', group: 'general' });
+    }
 
-  // Gestión de Roles — Admin
-  const hasRoles = ops.some((o) => o.includes('Gestión de Roles'));
-  if (hasRoles) {
-    links.push({ href: 'pages/roles/roles.html', icon: 'bi-shield-lock', label: 'Roles' });
-  }
+    // Comunicados — visibles para todos los roles autenticados
+    links.push({ href: 'pages/publicaciones/publicaciones.html', icon: 'bi-megaphone', label: 'Comunicados', group: 'general' });
 
-  // Perfil — todos los roles
-  const hasPerfil = ops.some((o) => o.includes('Perfil de Usuario'));
-  if (hasPerfil) {
-    links.push({ href: 'pages/perfil/perfil.html', icon: 'bi-person', label: 'Perfil' });
-  }
+    // Gestión de usuarios — Admin y Supervisor
+    const hasUsuarios = ops.some(o => o.includes('Gestión de Usuarios'));
+    if (hasUsuarios) {
+        links.push({ href: 'pages/usuarios/usuarios.html', icon: 'bi-people', label: 'Usuarios y roles', group: 'administracion' });
+    }
 
-  return links;
+    // Gestión de Roles — Admin
+    const hasRoles = ops.some(o => o.includes('Gestión de Roles'));
+    if (hasRoles) {
+        links.push({ href: 'pages/roles/roles.html', icon: 'bi-shield-lock', label: 'Roles', group: 'administracion' });
+    }
+
+    // Catálogos (gestión) — solo ADMIN tiene permiso de escritura sobre "Catálogos"
+    if (role === 'ADMIN') {
+        links.push({ href: 'pages/catalogos/catalogos.html', icon: 'bi-tags', label: 'Catálogos', group: 'administracion' });
+    }
+
+    // Perfil — todos los roles. En móvil es el único acceso a "Cerrar sesión"
+    // (el sidebar de escritorio la reemplaza por la tarjeta de usuario al pie).
+    const hasPerfil = ops.some(o => o.includes('Perfil de Usuario'));
+    if (hasPerfil) {
+        links.push({ href: 'pages/perfil/perfil.html', icon: 'bi-person', label: 'Perfil', group: 'general' });
+    }
+
+    return links;
 }
+
+const NAV_GROUP_LABELS = { general: 'GENERAL', administracion: 'ADMINISTRACIÓN' };
+const ROL_LABELS_CORTO = { ADMIN: 'Administrador', SUPERVISOR: 'Supervisor', TECNICO: 'Técnico', CIUDADANO: 'Ciudadano' };
 
 function _navPrefix() {
   const p = window.location.pathname;
@@ -356,21 +442,43 @@ function _renderNavLinks(navElement) {
     html += '<div class="nav-brand"><span class="nav-brand-icon">📍</span> Incidencias</div>';
   }
 
-  html += links
-    .map((l) => {
-      // Los hrefs en getNavLinks() ya son relativos a la raíz del frontend
-      const fullHref = prefix + l.href;
-      const activeClass = window.location.pathname.includes(l.href.split('/').pop() ?? '')
-        ? 'active'
-        : '';
-      return `<a href="${fullHref}" class="${activeClass}"><i class="bi ${l.icon}"></i><span>${l.label}</span></a>`;
-    })
-    .join('');
+    // En escritorio, Perfil se muestra como tarjeta de usuario al pie, no como link suelto.
+    const linksVisibles = isDesktop ? links.filter(l => !l.href.includes('perfil/perfil.html')) : links;
 
-  html += '<div class="nav-divider"></div>';
-  html += `<a href="#" class="nav-logout-link" id="_sidebarLogout">
-        <i class="bi bi-box-arrow-right"></i><span>Cerrar sesión</span>
-    </a>`;
+    let lastGroup = null;
+    linksVisibles.forEach(l => {
+        if (isDesktop && l.group && l.group !== lastGroup) {
+            html += `<div class="nav-group-label">${NAV_GROUP_LABELS[l.group] || ''}</div>`;
+            lastGroup = l.group;
+        }
+        const fullHref    = prefix + l.href; // Los hrefs en getNavLinks() ya son relativos a la raíz del frontend
+        const activeClass = window.location.pathname.includes(l.href.split('/').pop()) ? 'active' : '';
+        html += `<a href="${fullHref}" class="${activeClass}"><i class="bi ${l.icon}"></i><span>${l.label}</span></a>`;
+    });
+
+    html += '<div class="nav-divider"></div>';
+
+    if (isDesktop) {
+        const role     = getRole();
+        const color    = (typeof APP_COLORS !== 'undefined' && APP_COLORS.roles[role]) || '#9CA3AF';
+        html += `
+        <div class="nav-user-card">
+            <a href="${prefix}pages/perfil/perfil.html" class="nav-user-link">
+                <span class="nav-user-avatar" style="background:${color}">${getUserInitials()}</span>
+                <span class="nav-user-info">
+                    <span class="nav-user-name">${getUserName() || 'Usuario'}</span>
+                    <span class="nav-user-role">${ROL_LABELS_CORTO[role] || role || ''}</span>
+                </span>
+            </a>
+            <button type="button" class="nav-user-logout" id="_sidebarLogout" aria-label="Cerrar sesión">
+                <i class="bi bi-box-arrow-right"></i>
+            </button>
+        </div>`;
+    } else {
+        html += `<a href="#" class="nav-logout-link" id="_sidebarLogout">
+            <i class="bi bi-box-arrow-right"></i><span>Cerrar sesión</span>
+        </a>`;
+    }
 
   navElement.innerHTML = html;
   navElement.querySelector('#_sidebarLogout')?.addEventListener('click', (e) => {
@@ -383,39 +491,39 @@ function _renderNavLinks(navElement) {
 async function checkRoutePermission() {
   const p = window.location.pathname;
 
-  // Si es la página de login, index o página de error, no validar
-  if (p.endsWith('login.html') || p.endsWith('error.html') || p === '/' || p.endsWith('/')) {
-    return;
-  }
-
-  // Si el usuario no tiene token y está en otra página, requireAuth() lo redirigirá a login.html
-  if (!getToken()) return;
-
-  const ops = getOpciones();
-  const role = getRole();
-
-  // 1. Gestión de Usuarios
-  if (p.includes('/pages/usuarios/') && !ops.includes('Gestión de Usuarios')) {
-    await denyAccess();
-  }
-
-  // 2. Gestión de Roles
-  if (p.includes('/pages/roles/') && !ops.includes('Gestión de Roles')) {
-    await denyAccess();
-  }
-
-  // 3. Dashboard de Administración (solo ADMIN)
-  if (p.includes('/pages/dashboard/') && role !== 'ADMIN') {
-    await denyAccess();
-  }
-
-  // 4. Incidencias y Mapa (requiere opciones de Incidencias, ADMIN no tiene permitido verlas ni mapa)
-  if (p.includes('/pages/incidencias/')) {
-    const tienePermisoIncidencias = ops.some((o) => o.includes('Incidencias'));
-    if (!tienePermisoIncidencias || role === 'ADMIN') {
-      await denyAccess();
+    // Si es la página de login, index o página de error, no validar
+    if (p.endsWith('login.html') || p.endsWith('error.html') || p === '/' || p.endsWith('/')) {
+        return;
     }
-  }
+
+    // Si el usuario no tiene token y está en otra página, requireAuth() lo redirigirá a login.html
+    if (!getToken()) return;
+
+    const ops  = getOpciones();
+    const role = getRole();
+
+    // 1. Gestión de Usuarios
+    if (p.includes('/pages/usuarios/') && !ops.includes('Gestión de Usuarios')) {
+        await denyAccess();
+    }
+
+    // 2. Gestión de Roles
+    if (p.includes('/pages/roles/') && !ops.includes('Gestión de Roles')) {
+        await denyAccess();
+    }
+
+    // 3. Dashboard (ADMIN y SUPERVISOR ven datos globales, CIUDADANO ve solo sus propias incidencias)
+    if (p.includes('/pages/dashboard/') && role !== 'ADMIN' && role !== 'SUPERVISOR' && role !== 'CIUDADANO') {
+        await denyAccess();
+    }
+
+    // 4. Incidencias y Mapa (requiere opciones de Incidencias, ADMIN no tiene permitido verlas ni mapa)
+    if (p.includes('/pages/incidencias/')) {
+        const tienePermisoIncidencias = ops.some(o => o.includes('Incidencias'));
+        if (!tienePermisoIncidencias || role === 'ADMIN') {
+            await denyAccess();
+        }
+    }
 }
 
 async function denyAccess() {
@@ -761,6 +869,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     _renderNavLinks(nav);
+    revisarComunicadosNuevos();
 
     if (window.innerWidth >= 768) {
       document.body.style.paddingLeft = '240px';

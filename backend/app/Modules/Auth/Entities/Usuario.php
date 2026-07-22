@@ -50,18 +50,34 @@ class Usuario extends Authenticatable
         'id_tipo_documento',
         'documento',
         'celular',
+        'token_invitacion',
+        'fecha_invitacion',
+        'fecha_expiracion_invitacion',
+        'fecha_aceptacion',
+        'aut_2fa_secret',
+        'aut_app_autenticacion',
+        'aut_email',
+        'aut_passkeys',
     ];
 
     // Ocultar atributos sensibles en serialización
     protected $hidden = [
         'id',
         'password_hash',
+        'token_invitacion',
+        'aut_2fa_secret',
     ];
 
     // Casts de tipos
     protected $casts = [
         'activo' => 'boolean',
         'deleted' => 'boolean',
+        'aut_app_autenticacion' => 'boolean',
+        'aut_email' => 'boolean',
+        'aut_passkeys' => 'boolean',
+        'fecha_invitacion' => 'datetime',
+        'fecha_expiracion_invitacion' => 'datetime',
+        'fecha_aceptacion' => 'datetime',
         'deleted_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -119,5 +135,10 @@ class Usuario extends Authenticatable
     public function tipoDocumento()
     {
         return $this->belongsTo(TipoDocumento::class, 'id_tipo_documento');
+    }
+
+    public function passkeys()
+    {
+        return $this->hasMany(WebAuthnCredential::class, 'id_usuario');
     }
 }

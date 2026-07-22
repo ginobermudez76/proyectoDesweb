@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
     private const OPCION_GESTION_USUARIOS = 'Gestión de Usuarios';
     private const OPCION_CATALOGOS = 'Catálogos';
     private const OPCION_GESTION_ROLES = 'Gestión de Roles';
+    private const OPCION_PUBLICACIONES_GESTION = 'Publicaciones - Gestión';
 
     private const ENDPOINT_INCIDENCIAS = 'api/incidencias';
     private const ENDPOINT_INCIDENCIAS_ANY = 'api/incidencias/*';
@@ -32,12 +33,20 @@ class DatabaseSeeder extends Seeder
     private const ENDPOINT_INCIDENCIAS_MENSAJES = 'api/incidencias/*/mensajes';
     private const ENDPOINT_DASHBOARD_STATS = 'api/dashboard/stats';
     private const ENDPOINT_PUBLICACIONES = 'api/publicaciones';
+    private const ENDPOINT_PUBLICACIONES_ANY = 'api/publicaciones/*';
     private const ENDPOINT_USER = 'api/user';
+    private const ENDPOINT_PERFIL_STATS_TECNICO = 'api/perfil/stats-tecnico';
     private const ENDPOINT_ROLES = 'api/roles';
     private const ENDPOINT_USUARIOS = 'api/usuarios';
     private const ENDPOINT_USUARIOS_TECNICOS = 'api/usuarios/tecnicos';
     private const ENDPOINT_USUARIOS_TOGGLE = 'api/usuarios/*/toggle';
     private const ENDPOINT_CATALOGOS = 'api/catalogos';
+    private const ENDPOINT_CATALOGOS_ESTADOS_ANY = 'api/catalogos/estados/*';
+    private const ENDPOINT_CATALOGOS_PRIORIDADES_ANY = 'api/catalogos/prioridades/*';
+    private const ENDPOINT_CATALOGOS_TIPOS = 'api/catalogos/tipos';
+    private const ENDPOINT_CATALOGOS_TIPOS_ANY = 'api/catalogos/tipos/*';
+    private const ENDPOINT_CATALOGOS_SUBTIPOS = 'api/catalogos/subtipos';
+    private const ENDPOINT_CATALOGOS_SUBTIPOS_ANY = 'api/catalogos/subtipos/*';
     private const ENDPOINT_ADMIN_ROLES = 'api/admin/roles';
     private const ENDPOINT_ADMIN_ROLES_ANY = 'api/admin/roles/*';
     private const ENDPOINT_ADMIN_OPCIONES = 'api/admin/opciones';
@@ -105,10 +114,10 @@ class DatabaseSeeder extends Seeder
     private function seedRoles(): void
     {
         $roles = [
-            ['codigo' => self::ROLE_ADMIN, 'nombre_rol' => 'Administrador', 'descripcion' => 'Acceso total.'],
-            ['codigo' => self::ROLE_SUPERVISOR, 'nombre_rol' => 'Supervisor', 'descripcion' => 'Supervisor de incidencias.'],
-            ['codigo' => self::ROLE_TECNICO, 'nombre_rol' => 'Técnico', 'descripcion' => 'Resolutor de incidencias.'],
-            ['codigo' => self::ROLE_CIUDADANO, 'nombre_rol' => 'Ciudadano', 'descripcion' => 'Reporta incidencias.'],
+            ['codigo' => self::ROLE_ADMIN, 'nombre_rol' => 'Administrador', 'descripcion' => 'Acceso total.', 'req_token_invitacion' => true, 'aut_2fa_obligatoria' => true],
+            ['codigo' => self::ROLE_SUPERVISOR, 'nombre_rol' => 'Supervisor', 'descripcion' => 'Supervisor de incidencias.', 'req_token_invitacion' => true, 'aut_2fa_obligatoria' => false],
+            ['codigo' => self::ROLE_TECNICO, 'nombre_rol' => 'Técnico', 'descripcion' => 'Resolutor de incidencias.', 'req_token_invitacion' => true, 'aut_2fa_obligatoria' => false],
+            ['codigo' => self::ROLE_CIUDADANO, 'nombre_rol' => 'Ciudadano', 'descripcion' => 'Reporta incidencias.', 'req_token_invitacion' => false, 'aut_2fa_obligatoria' => false],
         ];
 
         foreach ($roles as $rol) {
@@ -118,6 +127,8 @@ class DatabaseSeeder extends Seeder
                     'uuid' => DB::raw(self::UUID),
                     'nombre_rol' => $rol['nombre_rol'],
                     'descripcion' => $rol['descripcion'],
+                    'req_token_invitacion' => $rol['req_token_invitacion'],
+                    'aut_2fa_obligatoria' => $rol['aut_2fa_obligatoria'],
                     'deleted' => false,
                     'created_at' => now(),
                 ]
@@ -136,6 +147,7 @@ class DatabaseSeeder extends Seeder
             ['nombre_opcion' => self::OPCION_GESTION_USUARIOS, 'descripcion' => 'Administración y creación de usuarios y listar roles.', 'ruta' => '/usuarios'],
             ['nombre_opcion' => self::OPCION_CATALOGOS, 'descripcion' => 'Consulta de catálogos del sistema (estados, prioridades, tipos).', 'ruta' => '/catalogos'],
             ['nombre_opcion' => self::OPCION_GESTION_ROLES, 'descripcion' => 'Administración y asignación de menús y permisos a roles.', 'ruta' => '/roles'],
+            ['nombre_opcion' => self::OPCION_PUBLICACIONES_GESTION, 'descripcion' => 'Creación y gestión de publicaciones y comunicados oficiales.', 'ruta' => '/publicaciones'],
         ];
 
         foreach ($opciones as $opcion) {
@@ -162,18 +174,27 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($usuarios as $usuario) {
+            // El uuid solo se genera al crear el usuario por primera vez: regenerarlo en cada
+            // reseed rompería las referencias existentes (usuario_id/asignado_a) en Incidencia (Mongo).
+            $yaExiste = DB::table('usuario')->where('correo_electronico', $usuario['correo'])->exists();
+
+            $valores = [
+                'nombre_usuario' => $usuario['nombre_usuario'],
+                'password_hash' => Hash::make($usuario['password']),
+                'nombres' => $usuario['nombres'],
+                'apellidos' => $usuario['apellidos'],
+                'activo' => true,
+                'deleted' => false,
+                'created_at' => now(),
+            ];
+
+            if (!$yaExiste) {
+                $valores['uuid'] = DB::raw(self::UUID);
+            }
+
             DB::table('usuario')->updateOrInsert(
                 ['correo_electronico' => $usuario['correo']],
-                [
-                    'uuid' => DB::raw(self::UUID),
-                    'nombre_usuario' => $usuario['nombre_usuario'],
-                    'password_hash' => Hash::make($usuario['password']),
-                    'nombres' => $usuario['nombres'],
-                    'apellidos' => $usuario['apellidos'],
-                    'activo' => true,
-                    'deleted' => false,
-                    'created_at' => now(),
-                ]
+                $valores
             );
 
             $rolId = DB::table('rol')->where('codigo', $usuario['rol_codigo'])->value('id');
@@ -216,6 +237,7 @@ class DatabaseSeeder extends Seeder
             $this->mapRolOpcion($rolSupervisor->id, self::OPCION_PERFIL_USUARIO, true, true);
             $this->mapRolOpcion($rolSupervisor->id, self::OPCION_CATALOGOS, true, false);
             $this->mapRolOpcion($rolSupervisor->id, self::OPCION_GESTION_USUARIOS, true, true);
+            $this->mapRolOpcion($rolSupervisor->id, self::OPCION_PUBLICACIONES_GESTION, true, true);
         }
 
         if ($rolAdmin) {
@@ -223,6 +245,7 @@ class DatabaseSeeder extends Seeder
             $this->mapRolOpcion($rolAdmin->id, self::OPCION_GESTION_USUARIOS, true, true);
             $this->mapRolOpcion($rolAdmin->id, self::OPCION_CATALOGOS, true, true);
             $this->mapRolOpcion($rolAdmin->id, self::OPCION_GESTION_ROLES, true, true);
+            $this->mapRolOpcion($rolAdmin->id, self::OPCION_PUBLICACIONES_GESTION, true, true);
         }
     }
 
@@ -240,7 +263,12 @@ class DatabaseSeeder extends Seeder
             ['nombre' => 'Enviar Mensaje', 'metodo' => 'POST', 'url' => self::ENDPOINT_INCIDENCIAS_MENSAJES],
             ['nombre' => 'Ver Mensajes', 'metodo' => 'GET', 'url' => self::ENDPOINT_INCIDENCIAS_MENSAJES],
             ['nombre' => 'Estadísticas de Dashboard', 'metodo' => 'GET', 'url' => self::ENDPOINT_DASHBOARD_STATS],
+            ['nombre' => 'Estadísticas Perfil Técnico', 'metodo' => 'GET', 'url' => self::ENDPOINT_PERFIL_STATS_TECNICO],
+            ['nombre' => 'Listar Publicaciones', 'metodo' => 'GET', 'url' => self::ENDPOINT_PUBLICACIONES],
+            ['nombre' => 'Ver Detalle Publicación', 'metodo' => 'GET', 'url' => self::ENDPOINT_PUBLICACIONES_ANY],
             ['nombre' => 'Crear Publicación', 'metodo' => 'POST', 'url' => self::ENDPOINT_PUBLICACIONES],
+            ['nombre' => 'Actualizar Publicación', 'metodo' => 'PUT', 'url' => self::ENDPOINT_PUBLICACIONES_ANY],
+            ['nombre' => 'Eliminar Publicación', 'metodo' => 'DELETE', 'url' => self::ENDPOINT_PUBLICACIONES_ANY],
             ['nombre' => 'Ver Perfil', 'metodo' => 'GET', 'url' => self::ENDPOINT_USER],
             ['nombre' => 'Listar Roles', 'metodo' => 'GET', 'url' => self::ENDPOINT_ROLES],
             ['nombre' => 'Listar Usuarios', 'metodo' => 'GET', 'url' => self::ENDPOINT_USUARIOS],
@@ -249,6 +277,14 @@ class DatabaseSeeder extends Seeder
             ['nombre' => 'Actualizar Usuario', 'metodo' => 'PUT', 'url' => self::ENDPOINT_USUARIOS_ANY()],
             ['nombre' => 'Activar/Desactivar Usuario', 'metodo' => 'PATCH', 'url' => self::ENDPOINT_USUARIOS_TOGGLE],
             ['nombre' => 'Consultar Catálogos', 'metodo' => 'GET', 'url' => self::ENDPOINT_CATALOGOS],
+            ['nombre' => 'Actualizar Estado (catálogo)', 'metodo' => 'PUT', 'url' => self::ENDPOINT_CATALOGOS_ESTADOS_ANY],
+            ['nombre' => 'Actualizar Prioridad (catálogo)', 'metodo' => 'PUT', 'url' => self::ENDPOINT_CATALOGOS_PRIORIDADES_ANY],
+            ['nombre' => 'Crear Tipo de Incidencia', 'metodo' => 'POST', 'url' => self::ENDPOINT_CATALOGOS_TIPOS],
+            ['nombre' => 'Actualizar Tipo de Incidencia', 'metodo' => 'PUT', 'url' => self::ENDPOINT_CATALOGOS_TIPOS_ANY],
+            ['nombre' => 'Eliminar Tipo de Incidencia', 'metodo' => 'DELETE', 'url' => self::ENDPOINT_CATALOGOS_TIPOS_ANY],
+            ['nombre' => 'Crear Subtipo de Incidencia', 'metodo' => 'POST', 'url' => self::ENDPOINT_CATALOGOS_SUBTIPOS],
+            ['nombre' => 'Actualizar Subtipo de Incidencia', 'metodo' => 'PUT', 'url' => self::ENDPOINT_CATALOGOS_SUBTIPOS_ANY],
+            ['nombre' => 'Eliminar Subtipo de Incidencia', 'metodo' => 'DELETE', 'url' => self::ENDPOINT_CATALOGOS_SUBTIPOS_ANY],
             ['nombre' => 'Listar Roles Admin', 'metodo' => 'GET', 'url' => self::ENDPOINT_ADMIN_ROLES],
             ['nombre' => 'Crear Rol', 'metodo' => 'POST', 'url' => self::ENDPOINT_ADMIN_ROLES],
             ['nombre' => 'Actualizar Rol', 'metodo' => 'PUT', 'url' => self::ENDPOINT_ADMIN_ROLES_ANY],
@@ -280,12 +316,17 @@ class DatabaseSeeder extends Seeder
         $this->mapOpcionEndpoint(self::OPCION_INCIDENCIAS_LECTURA_REPORTE, 'POST', self::ENDPOINT_INCIDENCIAS_COMENTARIOS);
         $this->mapOpcionEndpoint(self::OPCION_INCIDENCIAS_LECTURA_REPORTE, 'POST', self::ENDPOINT_INCIDENCIAS_EVIDENCIAS);
         $this->mapOpcionEndpoint(self::OPCION_INCIDENCIAS_LECTURA_REPORTE, 'GET', self::ENDPOINT_INCIDENCIAS_MENSAJES);
-        $this->mapOpcionEndpoint(self::OPCION_INCIDENCIAS_LECTURA_REPORTE, 'POST', self::ENDPOINT_PUBLICACIONES);
+        $this->mapOpcionEndpoint(self::OPCION_PUBLICACIONES_GESTION, 'POST', self::ENDPOINT_PUBLICACIONES);
+        $this->mapOpcionEndpoint(self::OPCION_PUBLICACIONES_GESTION, 'PUT', self::ENDPOINT_PUBLICACIONES_ANY);
+        $this->mapOpcionEndpoint(self::OPCION_PUBLICACIONES_GESTION, 'DELETE', self::ENDPOINT_PUBLICACIONES_ANY);
 
         $this->mapOpcionEndpoint(self::OPCION_INCIDENCIAS_GESTION_OPERATIVA, 'POST', self::ENDPOINT_INCIDENCIAS_ESTADO);
         $this->mapOpcionEndpoint(self::OPCION_INCIDENCIAS_GESTION_OPERATIVA, 'POST', self::ENDPOINT_INCIDENCIAS_MENSAJES);
 
+        $this->mapOpcionEndpoint(self::OPCION_INCIDENCIAS_GESTION_OPERATIVA, 'POST', self::ENDPOINT_INCIDENCIAS_COMENTARIOS);
+
         $this->mapOpcionEndpoint(self::OPCION_PERFIL_USUARIO, 'GET', self::ENDPOINT_USER);
+        $this->mapOpcionEndpoint(self::OPCION_PERFIL_USUARIO, 'GET', self::ENDPOINT_PERFIL_STATS_TECNICO);
 
         $this->mapOpcionEndpoint(self::OPCION_GESTION_USUARIOS, 'GET', self::ENDPOINT_ROLES);
         $this->mapOpcionEndpoint(self::OPCION_GESTION_USUARIOS, 'GET', self::ENDPOINT_USUARIOS);
@@ -297,6 +338,14 @@ class DatabaseSeeder extends Seeder
         $this->mapOpcionEndpoint(self::OPCION_CATALOGOS, 'GET', self::ENDPOINT_CATALOGOS);
         $this->mapOpcionEndpoint(self::OPCION_CATALOGOS, 'GET', self::ENDPOINT_USUARIOS_TECNICOS);
         $this->mapOpcionEndpoint(self::OPCION_CATALOGOS, 'GET', self::ENDPOINT_DASHBOARD_STATS);
+        $this->mapOpcionEndpoint(self::OPCION_CATALOGOS, 'PUT', self::ENDPOINT_CATALOGOS_ESTADOS_ANY);
+        $this->mapOpcionEndpoint(self::OPCION_CATALOGOS, 'PUT', self::ENDPOINT_CATALOGOS_PRIORIDADES_ANY);
+        $this->mapOpcionEndpoint(self::OPCION_CATALOGOS, 'POST', self::ENDPOINT_CATALOGOS_TIPOS);
+        $this->mapOpcionEndpoint(self::OPCION_CATALOGOS, 'PUT', self::ENDPOINT_CATALOGOS_TIPOS_ANY);
+        $this->mapOpcionEndpoint(self::OPCION_CATALOGOS, 'DELETE', self::ENDPOINT_CATALOGOS_TIPOS_ANY);
+        $this->mapOpcionEndpoint(self::OPCION_CATALOGOS, 'POST', self::ENDPOINT_CATALOGOS_SUBTIPOS);
+        $this->mapOpcionEndpoint(self::OPCION_CATALOGOS, 'PUT', self::ENDPOINT_CATALOGOS_SUBTIPOS_ANY);
+        $this->mapOpcionEndpoint(self::OPCION_CATALOGOS, 'DELETE', self::ENDPOINT_CATALOGOS_SUBTIPOS_ANY);
 
         $this->mapOpcionEndpoint(self::OPCION_GESTION_ROLES, 'GET', self::ENDPOINT_ADMIN_ROLES);
         $this->mapOpcionEndpoint(self::OPCION_GESTION_ROLES, 'POST', self::ENDPOINT_ADMIN_ROLES);

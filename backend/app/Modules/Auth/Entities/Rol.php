@@ -35,6 +35,8 @@ class Rol extends Model
         'codigo',
         'nombre_rol',
         'descripcion',
+        'req_token_invitacion',
+        'aut_2fa_obligatoria',
         'deleted',
         'deleted_at',
     ];
@@ -46,6 +48,8 @@ class Rol extends Model
 
     // Casts de tipos
     protected $casts = [
+        'req_token_invitacion' => 'boolean',
+        'aut_2fa_obligatoria' => 'boolean',
         'deleted' => 'boolean',
         'deleted_at' => 'datetime',
         'created_at' => 'datetime',
