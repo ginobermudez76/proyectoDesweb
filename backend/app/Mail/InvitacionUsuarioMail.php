@@ -27,7 +27,10 @@ class InvitacionUsuarioMail extends Mailable
         $this->nombreRol = $nombreRol;
         $this->esRecordatorio = $esRecordatorio;
 
-        $baseUrl = config('app.url', 'http://localhost');
+        $baseUrl = config('app.url', 'https://eldomoniodedesarrollo.dev');
+        if (empty($baseUrl) || str_contains($baseUrl, 'localhost') || str_contains($baseUrl, '127.0.0.1')) {
+            $baseUrl = 'https://eldomoniodedesarrollo.dev';
+        }
         $this->urlActivacion = rtrim($baseUrl, '/') . '/activar-invitacion.html?token=' . $usuario->token_invitacion;
 
         /** @var Carbon $expiracion */
