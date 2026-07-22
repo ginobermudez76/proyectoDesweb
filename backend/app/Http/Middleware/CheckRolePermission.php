@@ -26,6 +26,8 @@ class CheckRolePermission
     private const AUTHENTICATED_FREE_ROUTES = [
         'api/logout',
         'api/user',
+        'api/perfil/avatar',
+        'api/perfil/actualizar',
         'api/notificaciones',
         'api/notificaciones/*',
         'api/usuarios/sesiones',
