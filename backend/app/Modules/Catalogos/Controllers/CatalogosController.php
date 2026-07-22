@@ -14,6 +14,9 @@ use Illuminate\Validation\Rule;
 
 class CatalogosController extends Controller
 {
+    private const MSG_SUBTIPO_DUPLICADO = 'Ya existe un subtipo con ese nombre para este tipo de incidencia.';
+
+
     /**
      * GET /api/catalogos
      *
@@ -165,8 +168,8 @@ class CatalogosController extends Controller
 
         if ($yaExiste) {
             return response()->json([
-                'message' => 'Ya existe un subtipo con ese nombre para este tipo de incidencia.',
-                'errors' => ['nombre' => ['Ya existe un subtipo con ese nombre para este tipo de incidencia.']],
+                'message' => self::MSG_SUBTIPO_DUPLICADO,
+                'errors' => ['nombre' => [self::MSG_SUBTIPO_DUPLICADO]],
             ], 422);
         }
 
@@ -200,8 +203,8 @@ class CatalogosController extends Controller
 
         if ($yaExiste) {
             return response()->json([
-                'message' => 'Ya existe un subtipo con ese nombre para este tipo de incidencia.',
-                'errors' => ['nombre' => ['Ya existe un subtipo con ese nombre para este tipo de incidencia.']],
+                'message' => self::MSG_SUBTIPO_DUPLICADO,
+                'errors' => ['nombre' => [self::MSG_SUBTIPO_DUPLICADO]],
             ], 422);
         }
 
