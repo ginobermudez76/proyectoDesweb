@@ -21,6 +21,58 @@
     <script src="/js/colors.js"></script>
     <script src="/js/toast.js"></script>
     <script src="/js/app.js"></script>
+    <style>
+      body.auth-page {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background: var(--bg);
+        padding: 20px;
+        margin: 0;
+      }
+      .auth-card {
+        width: 100%;
+        max-width: 480px;
+        background: var(--surface, #1b2233);
+        border: 1px solid var(--gray-200, rgba(255, 255, 255, 0.1));
+        border-radius: 24px;
+        padding: 36px 32px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        margin: auto;
+      }
+      [data-theme="light"] .auth-card {
+        background: #ffffff;
+        border-color: #e2e8f0;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+      }
+      .brand {
+        text-align: center;
+        margin-bottom: 24px;
+      }
+      .brand-logo {
+        width: 56px;
+        height: 56px;
+        background: var(--bg-orange-light, rgba(249, 115, 22, 0.15));
+        color: var(--orange, #f97316);
+        border-radius: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        margin-bottom: 12px;
+      }
+      .brand-name {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--gray-900);
+      }
+      .brand-sub {
+        font-size: 13px;
+        color: var(--gray-400);
+        margin-top: 2px;
+      }
+    </style>
   </head>
   <body class="auth-page">
     <div class="auth-card">
