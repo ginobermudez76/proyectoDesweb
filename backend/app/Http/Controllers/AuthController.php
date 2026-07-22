@@ -84,6 +84,7 @@ class AuthController extends Controller
         $metodosActivos = [];
         if ($usuario->aut_app_autenticacion) $metodosActivos[] = 'app';
         if ($usuario->aut_email) $metodosActivos[] = 'email';
+        if ($usuario->aut_passkeys) $metodosActivos[] = 'passkey';
 
         // Si tiene 1 o más métodos 2FA activos, NO se devuelve access_token final; se emite un pending_token de 5 minutos en Redis.
         if (count($metodosActivos) > 0) {

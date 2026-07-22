@@ -22,6 +22,8 @@ class CheckRolePermission
         'api/logs/unauthorized',
         'api/invitacion/validar',
         'api/invitacion/aceptar',
+        'api/webauthn/login/options',
+        'api/webauthn/login',
     ];
 
     /** Routes that authenticated users can access without RBAC check. */

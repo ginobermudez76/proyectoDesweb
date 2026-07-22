@@ -14,7 +14,8 @@
         "laravel/tinker": "^2.10.1",
         "mongodb/laravel-mongodb": "^5.8",
         "pragmarx/google2fa-laravel": "^3.0",
-        "resend/resend-laravel": "^1.4"
+        "resend/resend-laravel": "^1.4",
+        "web-auth/webauthn-framework": "^5.3"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

@@ -136,4 +136,9 @@ class Usuario extends Authenticatable
     {
         return $this->belongsTo(TipoDocumento::class, 'id_tipo_documento');
     }
+
+    public function passkeys()
+    {
+        return $this->hasMany(WebAuthnCredential::class, 'id_usuario');
+    }
 }

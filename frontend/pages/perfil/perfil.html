@@ -112,12 +112,19 @@
             <div style="display:flex;align-items:center;justify-content:space-between">
                 <div>
                     <div style="font-size:14px;font-weight:600;color:var(--gray-900)">
-                        <i class="bi bi-key me-1 text-primary"></i> Passkeys / WebAuthn
+                        <i class="bi bi-fingerprint me-1 text-primary"></i> Passkeys / Biometría
                     </div>
-                    <div class="text-muted-sm" style="font-size:12px">Huella dactilar, FaceID o Llave física</div>
+                    <div class="text-muted-sm" style="font-size:12px">Huella dactilar, FaceID o Llave de Seguridad</div>
                 </div>
-                <span class="badge bg-secondary text-white" style="font-size:10px;padding:4px 8px;border-radius:8px">Próximamente</span>
+                <div id="passkeysStatus">
+                    <button class="btn-orange" style="font-size:12px;padding:6px 12px;border-radius:8px" onclick="registrarPasskey()">
+                        <i class="bi bi-plus-circle me-1"></i> Agregar
+                    </button>
+                </div>
             </div>
+            
+            <!-- Lista de Passkeys Registradas -->
+            <div id="passkeysList" style="display:none;margin-top:12px;padding-top:10px;border-top:1px dashed var(--gray-200)"></div>
         </div>
     </div>
 
@@ -310,15 +317,97 @@
         try {
           const res = await apiFetch('/2fa/toggle-email', {
             method: 'POST',
-            body: JSON.stringify({ enable })
-          });
-          showToast(res.message || 'Estado de 2FA por correo actualizado', 'success');
+      // Cargar lista de Passkeys
+      cargarPasskeys();
 
-          user.aut_email = !!res.aut_email;
-          saveAuth(getToken(), user);
+      async function cargarPasskeys() {
+        try {
+          const keys = await apiFetch('/webauthn/keys');
+          const container = document.getElementById('passkeysList');
+          if (keys.length === 0) {
+            container.style.display = 'none';
+            return;
+          }
+          container.style.display = 'block';
+          container.innerHTML = keys.map(k => `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;font-size:12.5px">
+              <div><i class="bi bi-key-fill text-muted me-1"></i> <strong>${escapeHtml(k.name)}</strong></div>
+              <button class="btn btn-link text-danger p-0" style="font-size:12px;text-decoration:none" onclick="eliminarPasskey('${k.uuid}')">Eliminar</button>
+            </div>
+          `).join('');
         } catch (e) {
-          document.getElementById('switchEmail2FA').checked = !enable;
-          showToast(e.message || 'No se pudo actualizar la configuración 2FA por correo.', 'error');
+          console.error('Error cargando passkeys:', e);
+        }
+      }
+
+      function bufferToBase64URL(buffer) {
+        return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+          .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+      }
+
+      function base64URLToBuffer(base64URL) {
+        const base64 = base64URL.replace(/-/g, '+').replace(/_/g, '/');
+        const padLen = (4 - (base64.length % 4)) % 4;
+        const padded = base64 + '='.repeat(padLen);
+        const binary = atob(padded);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        return bytes.buffer;
+      }
+
+      async function registrarPasskey() {
+        if (!window.PublicKeyCredential) {
+          showToast('Tu navegador o dispositivo no soporta Passkeys / Biometría.', 'error');
+          return;
+        }
+
+        try {
+          const options = await apiFetch('/webauthn/register/options', { method: 'POST' });
+          options.challenge = base64URLToBuffer(options.challenge);
+          options.user.id = base64URLToBuffer(options.user.id);
+          if (options.excludeCredentials) {
+            options.excludeCredentials.forEach(c => c.id = base64URLToBuffer(c.id));
+          }
+
+          const credential = await navigator.credentials.create({ publicKey: options });
+          const rawId = bufferToBase64URL(credential.rawId);
+          const responsePayload = {
+            id: credential.id,
+            rawId: rawId,
+            type: credential.type,
+            response: {
+              clientDataJSON: bufferToBase64URL(credential.response.clientDataJSON),
+              attestationObject: bufferToBase64URL(credential.response.attestationObject),
+            },
+            name: prompt('Nombre para esta Passkey (ej. Mi iPhone / Windows Hello):', 'Mi Dispositivo') || 'Mi Passkey'
+          };
+
+          const res = await apiFetch('/webauthn/register', {
+            method: 'POST',
+            body: JSON.stringify(responsePayload)
+          });
+
+          showToast(res.message || 'Passkey registrada correctamente', 'success');
+          user.aut_passkeys = true;
+          saveAuth(getToken(), user);
+          cargarPasskeys();
+        } catch (e) {
+          if (e.name === 'NotAllowedError') {
+            showToast('Operación cancelada por el usuario.', 'info');
+          } else {
+            showToast(e.message || 'Error al registrar la Passkey.', 'error');
+          }
+        }
+      }
+
+      async function eliminarPasskey(uuid) {
+        if (!confirm('¿Deseas eliminar esta Passkey de tu cuenta?')) return;
+        try {
+          const res = await apiFetch(`/webauthn/keys/${uuid}`, { method: 'DELETE' });
+          showToast(res.message || 'Passkey eliminada', 'info');
+          cargarPasskeys();
+        } catch (e) {
+          showToast(e.message || 'Error al eliminar Passkey', 'error');
         }
       }
 

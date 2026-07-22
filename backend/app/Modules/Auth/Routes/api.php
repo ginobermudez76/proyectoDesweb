@@ -5,11 +5,15 @@ use App\Modules\Auth\Controllers\RolController;
 use App\Modules\Auth\Controllers\TwoFactorController;
 use Illuminate\Support\Facades\Route;
 
-// Rutas públicas de invitación y 2FA challenge
+use App\Modules\Auth\Controllers\WebAuthnController;
+
+// Rutas públicas de invitación, 2FA challenge y WebAuthn
 Route::get('/invitacion/validar', [UsuarioController::class, 'validarInvitacion']);
 Route::post('/invitacion/aceptar', [UsuarioController::class, 'aceptarInvitacion']);
 Route::post('/2fa/verify', [TwoFactorController::class, 'verifyChallenge']);
 Route::post('/2fa/send-email-code', [TwoFactorController::class, 'sendEmailCode']);
+Route::post('/webauthn/login/options', [WebAuthnController::class, 'loginOptions']);
+Route::post('/webauthn/login', [WebAuthnController::class, 'login']);
 
 Route::middleware(['throttle:api', 'rbac'])->group(function () {
     Route::get('/roles', [UsuarioController::class, 'roles']);
@@ -26,6 +30,12 @@ Route::middleware(['throttle:api', 'rbac'])->group(function () {
     Route::post('/2fa/confirm-app', [TwoFactorController::class, 'confirmApp']);
     Route::post('/2fa/disable-app', [TwoFactorController::class, 'disableApp']);
     Route::post('/2fa/toggle-email', [TwoFactorController::class, 'toggleEmail']);
+
+    // WebAuthn / Passkeys del Usuario Autenticado
+    Route::get('/webauthn/keys', [WebAuthnController::class, 'list']);
+    Route::post('/webauthn/register/options', [WebAuthnController::class, 'registerOptions']);
+    Route::post('/webauthn/register', [WebAuthnController::class, 'register']);
+    Route::delete('/webauthn/keys/{uuid}', [WebAuthnController::class, 'destroy']);
 
     // Gestión de Roles Administrativo
     Route::get('/admin/roles', [RolController::class, 'index']);
