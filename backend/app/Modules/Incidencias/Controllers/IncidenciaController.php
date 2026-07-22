@@ -272,15 +272,21 @@ class IncidenciaController extends Controller
     public function dashboardStats(Request $request)
     {
         $rol = $this->currentRole($request);
-        if ($rol !== self::ROLE_ADMIN && $rol !== self::ROLE_SUPERVISOR) {
+        if ($rol !== self::ROLE_ADMIN && $rol !== self::ROLE_SUPERVISOR && $rol !== self::ROLE_CIUDADANO) {
             return $this->jsonError('Acceso denegado.');
         }
 
-        $total = Incidencia::count();
-        $urgentes = Incidencia::where('prioridad', 'Urgente')->count();
-        $resueltas = Incidencia::where('estado', 'Resuelta')->count();
-        $pendientes = Incidencia::where('estado', 'Pendiente')->count();
-        $proceso = Incidencia::where('estado', 'En Proceso')->count();
+        // El ciudadano solo ve estadísticas de sus propias incidencias
+        // (usuario_id en Incidencia guarda el UUID, igual que en index()/store())
+        $usuarioUuid = $rol === self::ROLE_CIUDADANO ? $request->user()->uuid : null;
+
+        $base = fn () => $usuarioUuid ? Incidencia::where('usuario_id', $usuarioUuid) : Incidencia::query();
+
+        $total = $base()->count();
+        $urgentes = $base()->where('prioridad', 'Urgente')->count();
+        $resueltas = $base()->where('estado', 'Resuelta')->count();
+        $pendientes = $base()->where('estado', 'Pendiente')->count();
+        $proceso = $base()->where('estado', 'En Proceso')->count();
 
         return response()->json([
             'total' => $total,
@@ -288,6 +294,153 @@ class IncidenciaController extends Controller
             'resueltas' => $resueltas,
             'pendientes' => $pendientes,
             'proceso' => $proceso,
+            'recientes' => $this->incidenciasRecientes($usuarioUuid),
+            'porSemana' => $this->incidenciasPorSemana($usuarioUuid),
+            'actividad' => $this->actividadReciente($usuarioUuid),
+        ], 200);
+    }
+
+    /**
+     * Últimas 5 incidencias con el nombre del técnico asignado (si tiene).
+     */
+    private function incidenciasRecientes(?string $usuarioUuid = null)
+    {
+        $query = Incidencia::orderBy('fecha_creacion', 'desc');
+        if ($usuarioUuid) {
+            $query->where('usuario_id', $usuarioUuid);
+        }
+        $recientes = $query->limit(5)->get();
+
+        foreach ($recientes as $inc) {
+            $asignadoNombre = null;
+            if (!empty($inc->asignado_a)) {
+                $tecnico = \App\Modules\Auth\Entities\Usuario::where('uuid', $inc->asignado_a)->first();
+                if ($tecnico) {
+                    $asignadoNombre = trim($tecnico->nombres.' '.$tecnico->apellidos);
+                }
+            }
+            $inc->setAttribute('asignado_a_nombre', $asignadoNombre);
+        }
+
+        return $recientes;
+    }
+
+    /**
+     * Conteo de incidencias creadas en los últimos 7 días, agrupado por día (Lun-Dom).
+     */
+    private function incidenciasPorSemana(?string $usuarioUuid = null)
+    {
+        $dias = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+        $conteo = array_fill(0, 7, 0);
+
+        $inicioSemana = now()->subDays(6)->startOfDay();
+        $query = Incidencia::where('fecha_creacion', '>=', $inicioSemana);
+        if ($usuarioUuid) {
+            $query->where('usuario_id', $usuarioUuid);
+        }
+        $query->get(['fecha_creacion'])
+            ->each(function ($inc) use (&$conteo) {
+                if ($inc->fecha_creacion) {
+                    $conteo[$inc->fecha_creacion->dayOfWeekIso - 1]++;
+                }
+            });
+
+        return collect($dias)->map(fn ($dia, $i) => ['dia' => $dia, 'total' => $conteo[$i]])->values();
+    }
+
+    /**
+     * Últimos eventos: para admin/supervisor son del sistema completo;
+     * para el ciudadano, solo eventos de sus propias incidencias.
+     */
+    private function actividadReciente(?string $usuarioUuid = null)
+    {
+        $eventos = collect();
+
+        if ($usuarioUuid) {
+            $misIncidenciaIds = Incidencia::where('usuario_id', $usuarioUuid)->pluck('_id');
+
+            Seguimiento::whereIn('incidencia_id', $misIncidenciaIds)
+                ->orderBy('fecha_cambio', 'desc')->limit(5)->get()->each(function ($s) use ($eventos) {
+                    $texto = $s->estado_nuevo === 'Resuelta'
+                        ? 'Tu incidencia fue marcada como resuelta'
+                        : "Tu incidencia cambió de estado a '{$s->estado_nuevo}'";
+                    $eventos->push(['texto' => $texto, 'fecha' => $s->fecha_cambio]);
+                });
+
+            Incidencia::where('usuario_id', $usuarioUuid)
+                ->orderBy('fecha_creacion', 'desc')->limit(3)->get()->each(function ($inc) use ($eventos) {
+                    $eventos->push(['texto' => 'Reportaste una incidencia', 'fecha' => $inc->fecha_creacion]);
+                });
+
+            return $eventos->sortByDesc('fecha')->take(5)->values();
+        }
+
+        Seguimiento::orderBy('fecha_cambio', 'desc')->limit(5)->get()->each(function ($s) use ($eventos) {
+            $tecnico = \App\Modules\Auth\Entities\Usuario::where('uuid', $s->tecnico_id)->first();
+            $nombre = $tecnico ? trim($tecnico->nombres.' '.$tecnico->apellidos) : 'Alguien';
+            $texto = $s->estado_nuevo === 'Resuelta'
+                ? "{$nombre} resolvió una incidencia"
+                : "{$nombre} cambió el estado a '{$s->estado_nuevo}'";
+            $eventos->push(['texto' => $texto, 'fecha' => $s->fecha_cambio]);
+        });
+
+        Incidencia::orderBy('fecha_creacion', 'desc')->limit(3)->get()->each(function ($inc) use ($eventos) {
+            $texto = $inc->prioridad === 'Urgente'
+                ? 'Nueva incidencia urgente reportada'
+                : 'Nueva incidencia reportada';
+            $eventos->push(['texto' => $texto, 'fecha' => $inc->fecha_creacion]);
+        });
+
+        \App\Modules\Auth\Entities\Usuario::orderBy('created_at', 'desc')->limit(2)->get()->each(function ($u) use ($eventos) {
+            $eventos->push(['texto' => 'Nuevo usuario registrado', 'fecha' => $u->created_at]);
+        });
+
+        return $eventos->sortByDesc('fecha')->take(5)->values();
+    }
+
+    /**
+     * Estadísticas para la tarjeta de perfil del técnico:
+     * asignadas hoy, resueltas (histórico) y tiempo promedio de resolución.
+     */
+    public function perfilStatsTecnico(Request $request)
+    {
+        $rol = $request->user()->roles->first()->codigo ?? 'CIUDADANO';
+        if ($rol !== 'TECNICO') {
+            return response()->json(['message' => 'Esta métrica es solo para técnicos.'], 403);
+        }
+
+        $uuid = $request->user()->uuid;
+        $inicioHoy = now()->startOfDay();
+
+        // Aproximación: "asignadas hoy" son las incidencias asignadas a este
+        // técnico cuya fecha de creación es de hoy (no existe un campo de
+        // "fecha de asignación" independiente en el modelo actual).
+        $asignadasHoy = Incidencia::where('asignado_a', $uuid)
+            ->where('fecha_creacion', '>=', $inicioHoy)
+            ->count();
+
+        $resueltas = Incidencia::where('asignado_a', $uuid)
+            ->where('estado', 'Resuelta')
+            ->get(['_id', 'fecha_creacion']);
+
+        $tiempos = [];
+        foreach ($resueltas as $inc) {
+            $seguimiento = Seguimiento::where('incidencia_id', (string) $inc->_id)
+                ->where('estado_nuevo', 'Resuelta')
+                ->orderBy('fecha_cambio', 'desc')
+                ->first();
+
+            if ($seguimiento && $inc->fecha_creacion) {
+                $tiempos[] = $inc->fecha_creacion->diffInMinutes($seguimiento->fecha_cambio);
+            }
+        }
+
+        $tiempoPromedio = count($tiempos) ? (int) round(array_sum($tiempos) / count($tiempos)) : null;
+
+        return response()->json([
+            'asignadas_hoy' => $asignadasHoy,
+            'resueltas' => $resueltas->count(),
+            'tiempo_promedio_minutos' => $tiempoPromedio,
         ], 200);
     }
 }

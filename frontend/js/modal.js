@@ -76,6 +76,45 @@ function showConfirmModal(title, message, confirmLabel = 'Confirmar', confirmCla
     });
 }
 
+// ── Lightbox de imagen (evidencia) ─────────────────────────────────────────
+
+/**
+ * Muestra solo la imagen a pantalla completa sobre un fondo oscuro, con una
+ * X para cerrar. Sin título ni texto adicional (no reutiliza showModal()).
+ * Se cierra con la X, clic fuera de la imagen, o la tecla Escape.
+ * @param {string} ruta - URL de la imagen
+ */
+function showImageModal(ruta) {
+    document.getElementById('_imgLightbox')?.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = '_imgLightbox';
+    overlay.style.cssText = `
+        position:fixed; inset:0; z-index:2000;
+        background:rgba(0,0,0,.85);
+        display:flex; align-items:center; justify-content:center;
+        padding:24px;
+    `;
+    overlay.innerHTML = `
+        <button type="button" aria-label="Cerrar" style="
+            position:absolute; top:16px; right:16px; width:40px; height:40px;
+            border-radius:50%; border:none; background:rgba(255,255,255,.15);
+            color:#fff; font-size:22px; line-height:1; cursor:pointer;">
+            &times;
+        </button>
+        <img src="${ruta}" style="max-width:100%;max-height:100%;border-radius:8px;
+             box-shadow:0 20px 60px rgba(0,0,0,.4)">
+    `;
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.remove();
+    overlay.querySelector('button').addEventListener('click', close);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+    document.addEventListener('keydown', function onEsc(e) {
+        if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onEsc); }
+    });
+}
+
 // ── Modal de prompt de texto ───────────────────────────────────────────────
 
 /**

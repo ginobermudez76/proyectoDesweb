@@ -165,15 +165,16 @@
       }
 
       async function subirFoto(incidenciaId) {
-        if (!fotoFile) return;
+        if (!fotoFile) return true;
         const fd = new FormData();
         fd.append('archivo', fotoFile);
         const token = localStorage.getItem('auth_token');
-        await fetch(`/api/incidencias/${incidenciaId}/evidencias`, {
+        const response = await fetch(`/api/incidencias/${incidenciaId}/evidencias`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
           body: fd,
         });
+        return response.ok;
       }
 
       async function enviarReporte() {
@@ -211,12 +212,17 @@
               lat: userLat,
               lng: userLng,
             }),
-          });
-          await subirFoto(inc.id);
-          showToast('Incidencia reportada correctamente. Redirigiendo…', 'success');
-          // location.replace elimina reportar.html del historial,
-          // así el botón ‹ en detalle regresa al panel y no al formulario lleno.
-          setTimeout(() => {
+        });
+        const fotoOk = await subirFoto(inc.id);
+        showToast(
+            fotoOk
+                ? 'Incidencia reportada correctamente. Redirigiendo…'
+                : 'Incidencia reportada, pero la foto no se pudo subir. Puedes intentarlo de nuevo desde el detalle.',
+            fotoOk ? 'success' : 'warning'
+        );
+        // location.replace elimina reportar.html del historial,
+        // así el botón ‹ en detalle regresa al panel y no al formulario lleno.
+        setTimeout(() => {
             window.location.replace(`detalle.html?id=${inc.id}`);
           }, 800);
         } catch (e) {

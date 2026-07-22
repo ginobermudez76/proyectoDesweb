@@ -28,34 +28,23 @@
         <i class="bi bi-bell" style="font-size: 22px; color: var(--gray-400)"></i>
       </div>
 
-      <!-- Resumen rápido -->
-      <div class="section" style="padding-bottom: 0">
-        <div
-          style="
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 4px;
-          "
-        >
-          <div class="card-white" style="padding: 12px; text-align: center; margin-bottom: 0">
-            <div style="font-size: 22px; font-weight: 700; color: var(--orange)" id="totalEl">
-              —
+    <!-- Resumen rápido -->
+    <div class="section" style="padding-bottom:0">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:4px">
+            <div class="card-white" style="padding:12px;text-align:center;margin-bottom:0">
+                <div style="font-size:22px;font-weight:700;color:var(--accent-text)" id="totalEl">—</div>
+                <div class="text-muted-sm">Total</div>
             </div>
-            <div class="text-muted-sm">Total</div>
-          </div>
-          <div class="card-white" style="padding: 12px; text-align: center; margin-bottom: 0">
-            <div style="font-size: 22px; font-weight: 700; color: #ef4444" id="urgentesEl">—</div>
-            <div class="text-muted-sm">Urgentes</div>
-          </div>
-          <div class="card-white" style="padding: 12px; text-align: center; margin-bottom: 0">
-            <div style="font-size: 22px; font-weight: 700; color: var(--green)" id="resueltasEl">
-              —
+            <div class="card-white" style="padding:12px;text-align:center;margin-bottom:0">
+                <div style="font-size:22px;font-weight:700;color:#F87171" id="urgentesEl">—</div>
+                <div class="text-muted-sm">Urgentes</div>
             </div>
-            <div class="text-muted-sm">Resueltas</div>
-          </div>
+            <div class="card-white" style="padding:12px;text-align:center;margin-bottom:0">
+                <div style="font-size:22px;font-weight:700;color:#4ADE80" id="resueltasEl">—</div>
+                <div class="text-muted-sm">Resueltas</div>
+            </div>
         </div>
-      </div>
+    </div>
 
       <!-- Alert de urgentes -->
       <div class="alert-banner" id="alertBanner" style="display: none">
@@ -84,8 +73,28 @@
 
       <div class="section">
         <div class="section-title" id="countLabel">Incidencias</div>
-        <div id="lista"><div class="text-muted-sm text-center py-3">Cargando…</div></div>
-      </div>
+
+        <!-- Móvil: tarjetas -->
+        <div id="lista" class="mobile-only"><div class="text-muted-sm text-center py-3">Cargando…</div></div>
+
+        <!-- Escritorio: tabla de datos -->
+        <div class="table-card desktop-only">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Título</th>
+                        <th>Prioridad</th>
+                        <th>Estado</th>
+                        <th>Ubicación</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody id="listaTabla">
+                    <tr><td colspan="5" class="text-muted-sm text-center py-3">Cargando…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
       <!-- Botón reportar (solo ciudadano) -->
       <div id="btnReportarWrap" style="display: none; padding: 0 16px 16px">
@@ -165,13 +174,14 @@
               `${n} ${n === 1 ? 'incidencia urgente' : 'incidencias urgentes'} sin resolver`;
           }
 
-          renderLista();
-        } catch (error) {
-          console.error('No se pudieron cargar las incidencias del panel:', error);
-          document.getElementById('lista').innerHTML =
-            '<div class="text-muted-sm text-center py-3">Error al cargar.</div>';
-        }
-      }
+        renderLista();
+    } catch {
+        const err = '<div class="text-muted-sm text-center py-3">Error al cargar.</div>';
+        document.getElementById('lista').innerHTML = err;
+        document.getElementById('listaTabla').innerHTML =
+            `<tr><td colspan="5" class="text-muted-sm text-center py-3">Error al cargar.</td></tr>`;
+    }
+}
 
       function filtrar(lista) {
         const q = (document.getElementById('tipoSearch')?.value || '').toLowerCase();
@@ -203,27 +213,42 @@
         const lista = filtrar(todas);
         document.getElementById('countLabel').textContent = `Incidencias (${lista.length})`;
 
-        // Determinar la URL de detalle relativa a esta página
-        const href = (i) => `detalle.html?id=${i.id}`;
+    const href = i => `detalle.html?id=${i.id}`;
 
-        document.getElementById('lista').innerHTML = lista.length
-          ? lista.map((i) => incidentCardHTMLCatalog(i, href(i))).join('')
-          : '<div class="text-muted-sm text-center py-3">Sin incidencias en este filtro.</div>';
-      }
+    // Móvil: tarjetas
+    document.getElementById('lista').innerHTML = lista.length
+        ? lista.map(i => incidentCardHTMLCatalog(i, href(i))).join('')
+        : '<div class="text-muted-sm text-center py-3">Sin incidencias en este filtro.</div>';
 
-      /**
-       * Versión de incidentCardHTML que usa catálogos dinámicos.
-       */
-      function incidentCardHTMLCatalog(inc, href) {
-        const priInfo = getPrioridadInfo(inc.prioridad);
-        const estInfo = getEstadoInfo(inc.estado);
-        return `
-    <div class="incident-card ${priInfo.css_class ? priInfo.css_class.replace('badge-', 'border-') : ''}"
+    // Escritorio: filas de tabla
+    document.getElementById('listaTabla').innerHTML = lista.length
+        ? lista.map(i => incidentRowHTML(i, href(i))).join('')
+        : `<tr><td colspan="5" class="text-muted-sm text-center py-3">Sin incidencias en este filtro.</td></tr>`;
+}
+
+/**
+ * Tarjeta móvil (usa catálogos dinámicos).
+ */
+/**
+ * Recorta la descripción a un extracto corto para diferenciar incidencias
+ * similares (mismo título/categoría) a simple vista.
+ */
+function truncateDescripcion(desc, max = 55) {
+    if (!desc) return '';
+    return desc.length > max ? desc.slice(0, max).trimEnd() + '…' : desc;
+}
+
+function incidentCardHTMLCatalog(inc, href) {
+    const priInfo = getPrioridadInfo(inc.prioridad);
+    const estInfo = getEstadoInfo(inc.estado);
+    return `
+    <div class="incident-card ${priInfo.css_class ? priInfo.css_class.replace('badge-','border-') : ''}"
          onclick="window.location.href='${href}'">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
             <span style="font-size:14px;font-weight:600;color:var(--gray-900)">${inc.titulo}</span>
             <span class="badge-status ${priInfo.css_class}">${priInfo.label || inc.prioridad || 'Media'}</span>
         </div>
+        ${inc.descripcion ? `<div class="text-muted-sm" style="margin-bottom:4px">${truncateDescripcion(inc.descripcion)}</div>` : ''}
         <div class="text-muted-sm" style="margin-bottom:6px">
             <i class="bi bi-geo-alt" style="font-size:11px"></i>
             ${inc.ubicacion ? 'Ver ubicación' : 'Sin ubicación'} · ${timeAgo(inc.fecha_creacion)}
@@ -237,7 +262,28 @@
     </div>`;
       }
 
-      cargar();
-    </script>
-  </body>
+/**
+ * Fila de tabla para escritorio (mismos datos y catálogos).
+ */
+function incidentRowHTML(inc, href) {
+    const priInfo = getPrioridadInfo(inc.prioridad);
+    const estInfo = getEstadoInfo(inc.estado);
+    const sinAsig = (role === 'SUPERVISOR' || role === 'ADMIN') && !inc.asignado_a
+        ? ' <span class="badge-status badge-urgente" style="font-size:10px">Sin asignar</span>' : '';
+    return `
+    <tr onclick="window.location.href='${href}'">
+        <td class="td-title">
+            ${inc.titulo}
+            ${inc.descripcion ? `<div class="text-muted-sm">${truncateDescripcion(inc.descripcion)}</div>` : ''}
+        </td>
+        <td><span class="badge-status ${priInfo.css_class}">${priInfo.label || inc.prioridad || 'Media'}</span></td>
+        <td><span class="badge-status ${estInfo.css_class}">${estInfo.label || inc.estado}</span>${sinAsig}</td>
+        <td><i class="bi bi-geo-alt" style="font-size:11px"></i> ${inc.ubicacion ? 'Ver ubicación' : 'Sin ubicación'}</td>
+        <td>${timeAgo(inc.fecha_creacion)}</td>
+    </tr>`;
+}
+
+cargar();
+</script>
+</body>
 </html>

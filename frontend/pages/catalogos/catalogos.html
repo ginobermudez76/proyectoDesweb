@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Gestión de catálogos del sistema">
+    <title>Catálogos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+" crossorigin="anonymous" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+" crossorigin="anonymous" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+    <script src="/js/colors.js"></script>
+    <script src="/js/toast.js"></script>
+</head>
+<body>
+<div class="app-container">
+
+    <div class="app-header">
+        <button class="back-btn" onclick="history.back()"><i class="bi bi-chevron-left"></i></button>
+        <h5>Catálogos</h5>
+        <div></div>
+    </div>
+
+    <!-- Estados -->
+    <div class="section">
+        <div class="section-title">Estados de incidencia</div>
+        <div class="text-muted-sm" style="margin-top:-8px;margin-bottom:12px">
+            Solo se puede editar la apariencia (etiqueta, color, orden). El código interno no es editable.
+        </div>
+        <div id="listaEstados"><div class="text-muted-sm text-center py-3">Cargando…</div></div>
+    </div>
+
+    <!-- Prioridades -->
+    <div class="section" style="padding-top:0">
+        <div class="section-title">Prioridades de incidencia</div>
+        <div id="listaPrioridades"><div class="text-muted-sm text-center py-3">Cargando…</div></div>
+    </div>
+
+    <!-- Tipos y subtipos -->
+    <div class="section" style="padding-top:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div class="section-title" style="margin-bottom:0">Tipos de incidencia</div>
+            <button class="btn-orange" style="width:auto;padding:8px 16px;font-size:13px;border-radius:10px"
+                    onclick="nuevoTipo()">
+                <i class="bi bi-plus"></i> Nuevo tipo
+            </button>
+        </div>
+        <div id="listaTipos"><div class="text-muted-sm text-center py-3">Cargando…</div></div>
+    </div>
+
+</div>
+
+<!-- Modal editar estado/prioridad (apariencia) -->
+<div id="epModalOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center;padding:16px">
+    <div style="background:var(--surface);color:var(--gray-900);border-radius:20px;padding:24px;width:100%;max-width:400px;max-height:85vh;overflow-y:auto">
+        <div style="font-size:16px;font-weight:700;margin-bottom:16px" id="epModalTitulo">Editar</div>
+        <input type="hidden" id="epTipo">
+        <input type="hidden" id="epUuid">
+        <div class="form-group"><label class="form-label" for="epLabel">Etiqueta *</label>
+            <input class="form-input" id="epLabel"></div>
+        <div class="form-group"><label class="form-label" for="epColor">Color</label>
+            <input type="color" class="form-input" id="epColor" style="height:44px;padding:4px"></div>
+        <div class="form-group"><label class="form-label" for="epCssClass">Clase CSS (opcional)</label>
+            <input class="form-input" id="epCssClass" placeholder="Ej: badge-recibido"></div>
+        <div class="form-group"><label class="form-label" for="epOrden">Orden</label>
+            <input type="number" min="0" max="255" class="form-input" id="epOrden"></div>
+        <div class="form-check" style="margin-bottom:12px">
+            <input type="checkbox" class="form-check-input" id="epActivo">
+            <label class="form-check-label" for="epActivo">Activo (visible en la app)</label>
+        </div>
+        <div id="epModalError" class="error-msg" style="display:none;font-size:12px;margin-bottom:10px"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+            <button class="btn-outline-gray" onclick="cerrarEpModal()">Cancelar</button>
+            <button class="btn-orange" style="border-radius:12px" onclick="guardarEp()">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal nuevo/editar tipo -->
+<div id="tipoModalOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center;padding:16px">
+    <div style="background:var(--surface);color:var(--gray-900);border-radius:20px;padding:24px;width:100%;max-width:400px;max-height:85vh;overflow-y:auto">
+        <div style="font-size:16px;font-weight:700;margin-bottom:16px" id="tipoModalTitulo">Nuevo tipo</div>
+        <input type="hidden" id="tipoUuid">
+        <div class="form-group"><label class="form-label" for="tipoNombre">Nombre *</label>
+            <input class="form-input" id="tipoNombre" placeholder="Ej: Alumbrado Público"></div>
+        <div class="form-group"><label class="form-label" for="tipoIcono">Clase de ícono (Bootstrap Icons, opcional)</label>
+            <input class="form-input" id="tipoIcono" placeholder="Ej: bi-lightbulb"></div>
+        <div class="form-group"><label class="form-label" for="tipoOrden">Orden</label>
+            <input type="number" min="0" max="255" class="form-input" id="tipoOrden"></div>
+        <div class="form-check" id="tipoActivoWrap" style="margin-bottom:12px;display:none">
+            <input type="checkbox" class="form-check-input" id="tipoActivo">
+            <label class="form-check-label" for="tipoActivo">Activo (visible en la app)</label>
+        </div>
+        <div id="tipoModalError" class="error-msg" style="display:none;font-size:12px;margin-bottom:10px"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+            <button class="btn-outline-gray" onclick="cerrarTipoModal()">Cancelar</button>
+            <button class="btn-orange" style="border-radius:12px" onclick="guardarTipo()">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal nuevo/editar subtipo -->
+<div id="subtipoModalOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center;padding:16px">
+    <div style="background:var(--surface);color:var(--gray-900);border-radius:20px;padding:24px;width:100%;max-width:400px;max-height:85vh;overflow-y:auto">
+        <div style="font-size:16px;font-weight:700;margin-bottom:16px" id="subtipoModalTitulo">Nuevo subtipo</div>
+        <input type="hidden" id="subtipoUuid">
+        <input type="hidden" id="subtipoTipoUuid">
+        <div class="form-group"><label class="form-label" for="subtipoNombre">Nombre *</label>
+            <input class="form-input" id="subtipoNombre" placeholder="Ej: Lámpara fundida"></div>
+        <div class="form-group"><label class="form-label" for="subtipoOrden">Orden</label>
+            <input type="number" min="0" max="255" class="form-input" id="subtipoOrden"></div>
+        <div class="form-check" id="subtipoActivoWrap" style="margin-bottom:12px;display:none">
+            <input type="checkbox" class="form-check-input" id="subtipoActivo">
+            <label class="form-check-label" for="subtipoActivo">Activo (visible en la app)</label>
+        </div>
+        <div id="subtipoModalError" class="error-msg" style="display:none;font-size:12px;margin-bottom:10px"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+            <button class="btn-outline-gray" onclick="cerrarSubtipoModal()">Cancelar</button>
+            <button class="btn-orange" style="border-radius:12px" onclick="guardarSubtipo()">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"
+></script>
+<script src="/js/app.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/modal.js"></script>
+<script>
+    if (!requireRole(['ADMIN'])) throw new Error('Redirigiendo');
+
+    let estados = [];
+    let prioridades = [];
+    let tipos = [];
+
+    async function cargar() {
+        try {
+            const data = await apiFetch('/catalogos');
+            estados = data.estados || [];
+            prioridades = data.prioridades || [];
+            tipos = data.tipos || [];
+            renderEstados();
+            renderPrioridades();
+            renderTipos();
+        } catch (err) {
+            showToast(err.message || 'No se pudieron cargar los catálogos.', 'error');
+        }
+    }
+
+    function filaApariencia(item, tipo) {
+        return `
+        <div class="card-white" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px">
+            <div style="display:flex;align-items:center;gap:10px;min-width:0">
+                <span style="width:16px;height:16px;border-radius:50%;background:${item.color_hex || '#9CA3AF'};flex-shrink:0"></span>
+                <div style="min-width:0">
+                    <div style="font-size:14px;font-weight:600;color:var(--gray-900)">${item.label}</div>
+                    <div class="text-muted-sm">Código: ${item.codigo} · Orden: ${item.orden}</div>
+                </div>
+            </div>
+            <button class="toggle-btn" style="border-color:var(--gray-400);color:var(--gray-400);flex-shrink:0"
+                    onclick="abrirEp('${tipo}', '${item.uuid}')">Editar</button>
+        </div>`;
+    }
+
+    function renderEstados() {
+        document.getElementById('listaEstados').innerHTML =
+            estados.map(e => filaApariencia(e, 'estado')).join('') ||
+            '<div class="text-muted-sm text-center py-3">Sin estados configurados.</div>';
+    }
+
+    function renderPrioridades() {
+        document.getElementById('listaPrioridades').innerHTML =
+            prioridades.map(p => filaApariencia(p, 'prioridad')).join('') ||
+            '<div class="text-muted-sm text-center py-3">Sin prioridades configuradas.</div>';
+    }
+
+    function renderTipos() {
+        document.getElementById('listaTipos').innerHTML = tipos.map(t => `
+            <div class="card-white" style="padding:14px 16px">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                    <div style="display:flex;align-items:center;gap:10px;min-width:0">
+                        <i class="bi ${t.icono_clase || 'bi-tag'}" style="font-size:18px;color:var(--accent-text)"></i>
+                        <div style="font-size:14px;font-weight:600;color:var(--gray-900)">${t.nombre}</div>
+                    </div>
+                    <div style="display:flex;gap:6px;flex-shrink:0">
+                        <button class="toggle-btn" style="border-color:var(--gray-400);color:var(--gray-400)"
+                                onclick="abrirEdicionTipo('${t.uuid}')">Editar</button>
+                        <button class="toggle-btn toggle-active" onclick="eliminarTipo('${t.uuid}')">Eliminar</button>
+                    </div>
+                </div>
+                <div style="margin-top:10px;padding-left:28px">
+                    ${(t.subtipos || []).map(s => `
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid var(--gray-200)">
+                            <div class="text-muted-sm" style="color:var(--gray-700)">${s.nombre}</div>
+                            <div style="display:flex;gap:6px;flex-shrink:0">
+                                <button class="toggle-btn" style="border-color:var(--gray-400);color:var(--gray-400);padding:4px 10px;font-size:11px"
+                                        onclick="abrirEdicionSubtipo('${s.uuid}', '${t.uuid}')">Editar</button>
+                                <button class="toggle-btn toggle-active" style="padding:4px 10px;font-size:11px"
+                                        onclick="eliminarSubtipo('${s.uuid}')">Eliminar</button>
+                            </div>
+                        </div>`).join('') || '<div class="text-muted-sm" style="padding:8px 0">Sin subtipos.</div>'}
+                    <button style="background:none;border:none;padding:8px 0 0;color:var(--accent-text);font-size:12.5px;font-weight:600;cursor:pointer"
+                            onclick="nuevoSubtipo('${t.uuid}')">
+                        <i class="bi bi-plus-circle"></i> Agregar subtipo
+                    </button>
+                </div>
+            </div>`).join('') || '<div class="text-muted-sm text-center py-3">Sin tipos configurados.</div>';
+    }
+
+    /* ===== Estados / Prioridades (solo apariencia) ===== */
+
+    function abrirEp(tipo, uuid) {
+        const item = (tipo === 'estado' ? estados : prioridades).find(x => x.uuid === uuid);
+        if (!item) return;
+        document.getElementById('epModalTitulo').textContent = tipo === 'estado' ? 'Editar estado' : 'Editar prioridad';
+        document.getElementById('epTipo').value = tipo;
+        document.getElementById('epUuid').value = uuid;
+        document.getElementById('epLabel').value = item.label || '';
+        document.getElementById('epColor').value = item.color_hex || '#9CA3AF';
+        document.getElementById('epCssClass').value = item.css_class || '';
+        document.getElementById('epOrden').value = item.orden ?? 0;
+        document.getElementById('epActivo').checked = true;
+        document.getElementById('epModalError').style.display = 'none';
+        document.getElementById('epModalOverlay').style.display = 'flex';
+    }
+
+    function cerrarEpModal() {
+        document.getElementById('epModalOverlay').style.display = 'none';
+    }
+
+    async function guardarEp() {
+        const errEl = document.getElementById('epModalError');
+        errEl.style.display = 'none';
+
+        const tipo = document.getElementById('epTipo').value;
+        const uuid = document.getElementById('epUuid').value;
+        const label = document.getElementById('epLabel').value.trim();
+        const color_hex = document.getElementById('epColor').value;
+        const css_class = document.getElementById('epCssClass').value.trim();
+        const orden = Number(document.getElementById('epOrden').value) || 0;
+        const activo = document.getElementById('epActivo').checked;
+
+        if (!label) {
+            errEl.textContent = 'La etiqueta es obligatoria.';
+            errEl.style.display = 'block';
+            return;
+        }
+
+        const endpoint = tipo === 'estado' ? `/catalogos/estados/${uuid}` : `/catalogos/prioridades/${uuid}`;
+
+        try {
+            await apiFetch(endpoint, {
+                method: 'PUT',
+                body: JSON.stringify({ label, color_hex, css_class: css_class || null, orden, activo }),
+            });
+            cerrarEpModal();
+            showToast('Cambios guardados correctamente', 'success');
+            cargar();
+        } catch (e) {
+            errEl.textContent = e.message || 'No se pudo guardar.';
+            errEl.style.display = 'block';
+        }
+    }
+
+    /* ===== Tipos de incidencia ===== */
+
+    function nuevoTipo() {
+        document.getElementById('tipoModalTitulo').textContent = 'Nuevo tipo';
+        document.getElementById('tipoUuid').value = '';
+        document.getElementById('tipoNombre').value = '';
+        document.getElementById('tipoIcono').value = '';
+        document.getElementById('tipoOrden').value = tipos.length;
+        document.getElementById('tipoActivoWrap').style.display = 'none';
+        document.getElementById('tipoModalError').style.display = 'none';
+        document.getElementById('tipoModalOverlay').style.display = 'flex';
+    }
+
+    function abrirEdicionTipo(uuid) {
+        const t = tipos.find(x => x.uuid === uuid);
+        if (!t) return;
+        document.getElementById('tipoModalTitulo').textContent = 'Editar tipo';
+        document.getElementById('tipoUuid').value = t.uuid;
+        document.getElementById('tipoNombre').value = t.nombre || '';
+        document.getElementById('tipoIcono').value = t.icono_clase || '';
+        document.getElementById('tipoOrden').value = t.orden ?? 0;
+        document.getElementById('tipoActivo').checked = true;
+        document.getElementById('tipoActivoWrap').style.display = 'block';
+        document.getElementById('tipoModalError').style.display = 'none';
+        document.getElementById('tipoModalOverlay').style.display = 'flex';
+    }
+
+    function cerrarTipoModal() {
+        document.getElementById('tipoModalOverlay').style.display = 'none';
+    }
+
+    async function guardarTipo() {
+        const errEl = document.getElementById('tipoModalError');
+        errEl.style.display = 'none';
+
+        const uuid = document.getElementById('tipoUuid').value;
+        const nombre = document.getElementById('tipoNombre').value.trim();
+        const icono_clase = document.getElementById('tipoIcono').value.trim();
+        const orden = Number(document.getElementById('tipoOrden').value) || 0;
+
+        if (!nombre) {
+            errEl.textContent = 'El nombre es obligatorio.';
+            errEl.style.display = 'block';
+            return;
+        }
+
+        try {
+            if (uuid) {
+                const activo = document.getElementById('tipoActivo').checked;
+                await apiFetch(`/catalogos/tipos/${uuid}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ nombre, icono_clase: icono_clase || null, orden, activo }),
+                });
+            } else {
+                await apiFetch('/catalogos/tipos', {
+                    method: 'POST',
+                    body: JSON.stringify({ nombre, icono_clase: icono_clase || null, orden }),
+                });
+            }
+            cerrarTipoModal();
+            showToast('Tipo de incidencia guardado correctamente', 'success');
+            cargar();
+        } catch (e) {
+            errEl.textContent = e.message || 'No se pudo guardar el tipo.';
+            errEl.style.display = 'block';
+        }
+    }
+
+    async function eliminarTipo(uuid) {
+        const confirmado = await showConfirmModal(
+            'Eliminar tipo de incidencia',
+            '¿Estás seguro de que deseas eliminar este tipo? Solo se puede eliminar si no tiene subtipos activos.',
+            'Confirmar',
+            'btn-danger'
+        );
+        if (!confirmado) return;
+
+        try {
+            await apiFetch(`/catalogos/tipos/${uuid}`, { method: 'DELETE' });
+            showToast('Tipo eliminado correctamente', 'success');
+            cargar();
+        } catch (e) {
+            showToast(e.message || 'No se pudo eliminar el tipo.', 'error');
+        }
+    }
+
+    /* ===== Subtipos de incidencia ===== */
+
+    function nuevoSubtipo(tipoUuid) {
+        const t = tipos.find(x => x.uuid === tipoUuid);
+        document.getElementById('subtipoModalTitulo').textContent = `Nuevo subtipo de "${t?.nombre || ''}"`;
+        document.getElementById('subtipoUuid').value = '';
+        document.getElementById('subtipoTipoUuid').value = tipoUuid;
+        document.getElementById('subtipoNombre').value = '';
+        document.getElementById('subtipoOrden').value = (t?.subtipos || []).length;
+        document.getElementById('subtipoActivoWrap').style.display = 'none';
+        document.getElementById('subtipoModalError').style.display = 'none';
+        document.getElementById('subtipoModalOverlay').style.display = 'flex';
+    }
+
+    function abrirEdicionSubtipo(uuid, tipoUuid) {
+        const t = tipos.find(x => x.uuid === tipoUuid);
+        const s = t?.subtipos?.find(x => x.uuid === uuid);
+        if (!s) return;
+        document.getElementById('subtipoModalTitulo').textContent = 'Editar subtipo';
+        document.getElementById('subtipoUuid').value = s.uuid;
+        document.getElementById('subtipoTipoUuid').value = tipoUuid;
+        document.getElementById('subtipoNombre').value = s.nombre || '';
+        document.getElementById('subtipoOrden').value = s.orden ?? 0;
+        document.getElementById('subtipoActivo').checked = true;
+        document.getElementById('subtipoActivoWrap').style.display = 'block';
+        document.getElementById('subtipoModalError').style.display = 'none';
+        document.getElementById('subtipoModalOverlay').style.display = 'flex';
+    }
+
+    function cerrarSubtipoModal() {
+        document.getElementById('subtipoModalOverlay').style.display = 'none';
+    }
+
+    async function guardarSubtipo() {
+        const errEl = document.getElementById('subtipoModalError');
+        errEl.style.display = 'none';
+
+        const uuid = document.getElementById('subtipoUuid').value;
+        const tipoUuid = document.getElementById('subtipoTipoUuid').value;
+        const nombre = document.getElementById('subtipoNombre').value.trim();
+        const orden = Number(document.getElementById('subtipoOrden').value) || 0;
+
+        if (!nombre) {
+            errEl.textContent = 'El nombre es obligatorio.';
+            errEl.style.display = 'block';
+            return;
+        }
+
+        try {
+            if (uuid) {
+                const activo = document.getElementById('subtipoActivo').checked;
+                await apiFetch(`/catalogos/subtipos/${uuid}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ nombre, orden, activo }),
+                });
+            } else {
+                await apiFetch('/catalogos/subtipos', {
+                    method: 'POST',
+                    body: JSON.stringify({ id_tipo_uuid: tipoUuid, nombre, orden }),
+                });
+            }
+            cerrarSubtipoModal();
+            showToast('Subtipo guardado correctamente', 'success');
+            cargar();
+        } catch (e) {
+            errEl.textContent = e.message || 'No se pudo guardar el subtipo.';
+            errEl.style.display = 'block';
+        }
+    }
+
+    async function eliminarSubtipo(uuid) {
+        const confirmado = await showConfirmModal(
+            'Eliminar subtipo',
+            '¿Estás seguro de que deseas eliminar este subtipo?',
+            'Confirmar',
+            'btn-danger'
+        );
+        if (!confirmado) return;
+
+        try {
+            await apiFetch(`/catalogos/subtipos/${uuid}`, { method: 'DELETE' });
+            showToast('Subtipo eliminado correctamente', 'success');
+            cargar();
+        } catch (e) {
+            showToast(e.message || 'No se pudo eliminar el subtipo.', 'error');
+        }
+    }
+
+    cargar();
+</script>
+</body>
+</html>

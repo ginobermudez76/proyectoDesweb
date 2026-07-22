@@ -14,6 +14,7 @@ $routeIncidencia = 'incidencias/{incidencia}';
 Route::middleware(['rbac', 'throttle:180,1'])->group(function () use ($routeIncidencia) {
     // Consultas GET (Listar incidencias, ver detalles, stats)
     Route::get('dashboard/stats', [IncidenciaController::class, 'dashboardStats']);
+    Route::get('perfil/stats-tecnico', [IncidenciaController::class, 'perfilStatsTecnico']);
     Route::get('incidencias', [IncidenciaController::class, 'index']);
     Route::get($routeIncidencia, [IncidenciaController::class, 'show']);
 
