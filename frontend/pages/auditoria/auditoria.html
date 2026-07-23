@@ -23,17 +23,17 @@
 
     <div class="section">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-            <select class="form-input" id="fEntidad" onchange="cargar()">
+            <select class="form-input" id="fEntidad" aria-label="Filtrar por entidad" onchange="cargar()">
                 <option value="">Todas las entidades</option>
             </select>
-            <select class="form-input" id="fAccion" onchange="cargar()">
+            <select class="form-input" id="fAccion" aria-label="Filtrar por acción" onchange="cargar()">
                 <option value="">Todas las acciones</option>
                 <option value="CREAR">Crear</option>
                 <option value="ACTUALIZAR">Actualizar</option>
                 <option value="ELIMINAR">Eliminar</option>
             </select>
-            <input class="form-input" id="fUsuario" placeholder="Buscar por usuario…" oninput="debounceCargar()">
-            <input type="date" class="form-input" id="fDesde" onchange="cargar()">
+            <input class="form-input" id="fUsuario" placeholder="Buscar por usuario…" aria-label="Buscar por usuario" oninput="debounceCargar()">
+            <input type="date" class="form-input" id="fDesde" aria-label="Filtrar desde fecha" onchange="cargar()">
         </div>
 
         <div class="section-title" id="countLabel">Bitácora</div>
