@@ -18,9 +18,9 @@ class CatalogosServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        CatalogoEstado::observe(new EntidadAuditObserver('catalogo_estado'));
-        CatalogoPrioridad::observe(new EntidadAuditObserver('catalogo_prioridad'));
-        CatalogoTipoIncidencia::observe(new EntidadAuditObserver('catalogo_tipo_incidencia'));
-        CatalogoSubtipoIncidencia::observe(new EntidadAuditObserver('catalogo_subtipo_incidencia'));
+        CatalogoEstado::observe(EntidadAuditObserver::class);
+        CatalogoPrioridad::observe(EntidadAuditObserver::class);
+        CatalogoTipoIncidencia::observe(EntidadAuditObserver::class);
+        CatalogoSubtipoIncidencia::observe(EntidadAuditObserver::class);
     }
 }

@@ -15,6 +15,6 @@ class PublicacionesServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        Publicacion::observe(new EntidadAuditObserver('publicacion'));
+        Publicacion::observe(EntidadAuditObserver::class);
     }
 }
