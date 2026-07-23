@@ -24,6 +24,9 @@ Route::middleware(['throttle:api', 'rbac'])->group(function () {
         return $request->user()->load('roles.opciones');
     });
 
+    Route::post('/perfil/avatar', [\App\Http\Controllers\PerfilController::class, 'updateAvatar']);
+    Route::put('/perfil/actualizar', [\App\Http\Controllers\PerfilController::class, 'updateProfile']);
+
 });
 
 require base_path('app/Modules/Publicaciones/Routes/api.php');
