@@ -2,6 +2,8 @@
 
 namespace App\Modules\Incidencias\Providers;
 
+use App\Modules\Incidencias\Entities\Incidencia;
+use App\Modules\Incidencias\Observers\IncidenciaObserver;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -15,6 +17,8 @@ class IncidenciasServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->registerRoutes();
+
+        Incidencia::observe(IncidenciaObserver::class);
     }
 
     protected function registerRoutes(): void

@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
     private const OPCION_CATALOGOS = 'Catálogos';
     private const OPCION_GESTION_ROLES = 'Gestión de Roles';
     private const OPCION_PUBLICACIONES_GESTION = 'Publicaciones - Gestión';
+    private const OPCION_AUDITORIA = 'Auditoría';
 
     private const ENDPOINT_INCIDENCIAS = 'api/incidencias';
     private const ENDPOINT_INCIDENCIAS_ANY = 'api/incidencias/*';
@@ -50,6 +51,7 @@ class DatabaseSeeder extends Seeder
     private const ENDPOINT_ADMIN_ROLES = 'api/admin/roles';
     private const ENDPOINT_ADMIN_ROLES_ANY = 'api/admin/roles/*';
     private const ENDPOINT_ADMIN_OPCIONES = 'api/admin/opciones';
+    private const ENDPOINT_AUDITORIA = 'api/auditoria';
 
     public function run(): void
     {
@@ -148,6 +150,7 @@ class DatabaseSeeder extends Seeder
             ['nombre_opcion' => self::OPCION_CATALOGOS, 'descripcion' => 'Consulta de catálogos del sistema (estados, prioridades, tipos).', 'ruta' => '/catalogos'],
             ['nombre_opcion' => self::OPCION_GESTION_ROLES, 'descripcion' => 'Administración y asignación de menús y permisos a roles.', 'ruta' => '/roles'],
             ['nombre_opcion' => self::OPCION_PUBLICACIONES_GESTION, 'descripcion' => 'Creación y gestión de publicaciones y comunicados oficiales.', 'ruta' => '/publicaciones'],
+            ['nombre_opcion' => self::OPCION_AUDITORIA, 'descripcion' => 'Consulta de la bitácora de auditoría del sistema.', 'ruta' => '/auditoria'],
         ];
 
         foreach ($opciones as $opcion) {
@@ -246,6 +249,7 @@ class DatabaseSeeder extends Seeder
             $this->mapRolOpcion($rolAdmin->id, self::OPCION_CATALOGOS, true, true);
             $this->mapRolOpcion($rolAdmin->id, self::OPCION_GESTION_ROLES, true, true);
             $this->mapRolOpcion($rolAdmin->id, self::OPCION_PUBLICACIONES_GESTION, true, true);
+            $this->mapRolOpcion($rolAdmin->id, self::OPCION_AUDITORIA, true, false);
         }
     }
 
@@ -290,6 +294,7 @@ class DatabaseSeeder extends Seeder
             ['nombre' => 'Actualizar Rol', 'metodo' => 'PUT', 'url' => self::ENDPOINT_ADMIN_ROLES_ANY],
             ['nombre' => 'Eliminar Rol', 'metodo' => 'DELETE', 'url' => self::ENDPOINT_ADMIN_ROLES_ANY],
             ['nombre' => 'Listar Opciones Sistema', 'metodo' => 'GET', 'url' => self::ENDPOINT_ADMIN_OPCIONES],
+            ['nombre' => 'Consultar Auditoría', 'metodo' => 'GET', 'url' => self::ENDPOINT_AUDITORIA],
         ];
 
         foreach ($endpoints as $endpoint) {
@@ -352,6 +357,8 @@ class DatabaseSeeder extends Seeder
         $this->mapOpcionEndpoint(self::OPCION_GESTION_ROLES, 'PUT', self::ENDPOINT_ADMIN_ROLES_ANY);
         $this->mapOpcionEndpoint(self::OPCION_GESTION_ROLES, 'DELETE', self::ENDPOINT_ADMIN_ROLES_ANY);
         $this->mapOpcionEndpoint(self::OPCION_GESTION_ROLES, 'GET', self::ENDPOINT_ADMIN_OPCIONES);
+
+        $this->mapOpcionEndpoint(self::OPCION_AUDITORIA, 'GET', self::ENDPOINT_AUDITORIA);
     }
 
     private function seedCatalogosDominio(): void

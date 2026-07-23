@@ -25,3 +25,4 @@ Thumbs.db
 backend/storage/firebase-credentials.json
 .claude
 docker-compose.override.yml
+nul

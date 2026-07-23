@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Bitácora de auditoría del sistema">
+    <title>Auditoría</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+" crossorigin="anonymous" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css" integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+" crossorigin="anonymous" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" rel="stylesheet">
+    <link href="/css/style.css" rel="stylesheet">
+    <script src="/js/colors.js"></script>
+    <script src="/js/toast.js"></script>
+</head>
+<body>
+<div class="app-container">
+
+    <div class="app-header">
+        <button class="back-btn" onclick="history.back()"><i class="bi bi-chevron-left"></i></button>
+        <h5>Auditoría</h5>
+        <div></div>
+    </div>
+
+    <div class="section">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+            <select class="form-input" id="fEntidad" aria-label="Filtrar por entidad" onchange="cargar()">
+                <option value="">Todas las entidades</option>
+            </select>
+            <select class="form-input" id="fAccion" aria-label="Filtrar por acción" onchange="cargar()">
+                <option value="">Todas las acciones</option>
+                <option value="CREAR">Crear</option>
+                <option value="ACTUALIZAR">Actualizar</option>
+                <option value="ELIMINAR">Eliminar</option>
+            </select>
+            <input class="form-input" id="fUsuario" placeholder="Buscar por usuario…" aria-label="Buscar por usuario" oninput="debounceCargar()">
+            <input type="date" class="form-input" id="fDesde" aria-label="Filtrar desde fecha" onchange="cargar()">
+        </div>
+
+        <div class="section-title" id="countLabel">Bitácora</div>
+
+        <!-- Móvil: tarjetas -->
+        <div id="lista" class="mobile-only"><div class="text-muted-sm text-center py-3">Cargando…</div></div>
+
+        <!-- Escritorio: tabla de datos -->
+        <div class="table-card desktop-only">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Entidad</th>
+                        <th>Acción</th>
+                        <th>Usuario</th>
+                        <th style="text-align:right">Detalle</th>
+                    </tr>
+                </thead>
+                <tbody id="listaTabla">
+                    <tr><td colspan="5" class="text-muted-sm text-center py-3">Cargando…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script src="/js/app.js"></script>
+<script src="/js/auth.js"></script>
+<script>
+    if (!requireRole(['ADMIN'])) throw new Error('Redirigiendo');
+
+    let registros = [];
+    let debounceTimer = null;
+
+    const ACCION_BADGE = { CREAR: 'bg-success', ACTUALIZAR: 'bg-warning text-dark', ELIMINAR: 'bg-danger' };
+
+    function debounceCargar() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(cargar, 400);
+    }
+
+    /** Los observers antiguos guardan los datos como JSON doblemente codificado; esta función normaliza ambos casos. */
+    function parseDatos(valor) {
+        if (typeof valor === 'string') {
+            try { return JSON.parse(valor); } catch { return valor; }
+        }
+        return valor;
+    }
+
+    function actualizarOpcionesEntidad() {
+        const select = document.getElementById('fEntidad');
+        const actual = select.value;
+        const entidades = [...new Set(registros.map(r => r.entidad))].sort();
+        select.innerHTML = '<option value="">Todas las entidades</option>' +
+            entidades.map(e => `<option value="${e}">${e}</option>`).join('');
+        select.value = actual;
+    }
+
+    async function cargar() {
+        const params = new URLSearchParams();
+        const entidad = document.getElementById('fEntidad').value;
+        const accion = document.getElementById('fAccion').value;
+        const usuario = document.getElementById('fUsuario').value.trim();
+        const desde = document.getElementById('fDesde').value;
+        if (entidad) params.set('entidad', entidad);
+        if (accion) params.set('accion', accion);
+        if (usuario) params.set('usuario', usuario);
+        if (desde) params.set('desde', desde);
+
+        try {
+            registros = await apiFetch(`/auditoria?${params.toString()}`);
+            if (!entidad) actualizarOpcionesEntidad();
+            render();
+        } catch (err) {
+            const msg = err.message || 'No se pudo cargar la bitácora de auditoría.';
+            document.getElementById('lista').innerHTML = `<div class="text-danger text-center py-3">${msg}</div>`;
+            document.getElementById('listaTabla').innerHTML = `<tr><td colspan="5" class="text-danger text-center py-3">${msg}</td></tr>`;
+        }
+    }
+
+    function verDetalle(id) {
+        const r = registros.find(x => x.id === id);
+        if (!r) return;
+        const antes = parseDatos(r.datos_anteriores);
+        const despues = parseDatos(r.datos_nuevos);
+        alert(
+            `Antes:\n${antes ? JSON.stringify(antes, null, 2) : '—'}\n\n` +
+            `Después:\n${despues ? JSON.stringify(despues, null, 2) : '—'}`
+        );
+    }
+
+    function render() {
+        document.getElementById('countLabel').textContent = `Bitácora (${registros.length})`;
+
+        document.getElementById('lista').innerHTML = registros.map(r => `
+            <div class="card-white" style="padding:14px 16px">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                    <div style="min-width:0">
+                        <div style="font-size:14px;font-weight:600;color:var(--gray-900)">${r.entidad}</div>
+                        <div class="text-muted-sm">${new Date(r.fecha).toLocaleString()} · ${r.usuario || 'Sistema'}</div>
+                    </div>
+                    <span class="badge ${ACCION_BADGE[r.accion] || 'bg-secondary'}">${r.accion}</span>
+                </div>
+                <button class="toggle-btn" style="margin-top:10px;border-color:var(--gray-400);color:var(--gray-400)"
+                        onclick="verDetalle(${r.id})">Ver detalle</button>
+            </div>`).join('') || '<div class="text-muted-sm text-center py-3">Sin registros de auditoría.</div>';
+
+        document.getElementById('listaTabla').innerHTML = registros.map(r => `
+            <tr>
+                <td>${new Date(r.fecha).toLocaleString()}</td>
+                <td>${r.entidad}</td>
+                <td><span class="badge ${ACCION_BADGE[r.accion] || 'bg-secondary'}">${r.accion}</span></td>
+                <td>${r.usuario || 'Sistema'}</td>
+                <td style="text-align:right">
+                    <button class="toggle-btn" style="border-color:var(--gray-400);color:var(--gray-400)"
+                            onclick="verDetalle(${r.id})">Ver</button>
+                </td>
+            </tr>`).join('') || '<tr><td colspan="5" class="text-muted-sm text-center py-3">Sin registros de auditoría.</td></tr>';
+    }
+
+    cargar();
+</script>
+</body>
+</html>
