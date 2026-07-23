@@ -53,7 +53,7 @@
       }
       .role-desc {
         font-size: 13px;
-        color: var(--gray-500);
+        color: var(--gray-400);
         margin-bottom: 12px;
       }
       .role-permissions-summary {
@@ -93,7 +93,7 @@
       }
       .options-table th {
         font-weight: 600;
-        color: var(--gray-600);
+        color: var(--gray-400);
         padding-bottom: 8px;
         border-bottom: 1px solid var(--gray-200);
       }
@@ -199,7 +199,7 @@
 
         <div style="margin-top: 20px">
           <div
-            style="font-weight: 700; font-size: 14px; color: var(--gray-800); margin-bottom: 6px"
+            style="font-weight: 700; font-size: 14px; color: var(--gray-900); margin-bottom: 6px"
           >
             Menús y Permisos Asignados
           </div>
@@ -309,7 +309,7 @@
                     </div>
                     <div class="role-desc">${rol.descripcion || 'Sin descripción.'}</div>
                     <div class="role-permissions-summary">
-                        <div style="font-weight:700;font-size:11px;color:var(--gray-500);margin-bottom:8px;text-transform:uppercase">Menús asignados</div>
+                        <div style="font-weight:700;font-size:11px;color:var(--gray-400);margin-bottom:8px;text-transform:uppercase">Menús asignados</div>
                         ${permSummary}
                     </div>
                     <div style="display:flex;justify-content:flex-end;margin-top:14px">
@@ -363,7 +363,7 @@
 
             return `
                 <tr>
-                    <td style="text-align:left;font-weight:600;color:var(--gray-800)">${op.nombre_opcion}</td>
+                    <td style="text-align:left;font-weight:600;color:var(--gray-900)">${op.nombre_opcion}</td>
                     <td style="text-align:center">
                         <input type="checkbox" class="form-check-input option-read-chk" data-uuid="${op.uuid}" ${isReadChecked ? 'checked' : ''}>
                     </td>

@@ -146,10 +146,10 @@ function _mostrarModalGlobal2FAReminder(prefix) {
   overlay.id = '_global2faReminderOverlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
   overlay.innerHTML = `
-    <div style="background:var(--bg-card, #ffffff);border-radius:20px;padding:24px;width:100%;max-width:400px;text-align:center;box-shadow:0 10px 25px rgba(0,0,0,0.2)">
+    <div style="background:var(--surface);border-radius:20px;padding:24px;width:100%;max-width:400px;text-align:center;box-shadow:0 10px 25px rgba(0,0,0,0.2)">
         <div class="text-warning mb-2" style="font-size:42px"><i class="bi bi-shield-exclamation"></i></div>
-        <div style="font-size:18px;font-weight:700;margin-bottom:8px;color:var(--gray-900, #1e293b)">Autenticación de 2 Pasos Requerida</div>
-        <div class="text-muted-sm mb-4" style="font-size:13px;color:var(--gray-600, #64748b)">Tu rol de usuario requiere que configures al menos un método de Autenticación de Doble Factor (App Autenticadora o Correo Electrónico) para mayor seguridad.</div>
+        <div style="font-size:18px;font-weight:700;margin-bottom:8px;color:var(--gray-900)">Autenticación de 2 Pasos Requerida</div>
+        <div class="text-muted-sm mb-4" style="font-size:13px;color:var(--gray-400)">Tu rol de usuario requiere que configures al menos un método de Autenticación de Doble Factor (App Autenticadora o Correo Electrónico) para mayor seguridad.</div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
             <button class="btn btn-outline-secondary" style="font-size:13px;border-radius:12px" onclick="document.getElementById('_global2faReminderOverlay').remove()">Luego</button>
