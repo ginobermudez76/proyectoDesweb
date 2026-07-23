@@ -125,10 +125,9 @@ class FirebaseStorageService
     }
 
     /**
-     * Comprime y redimensiona una imagen usando GD
+     * Comprime y redimensiona una imagen usando GD (Soporta JPEG, PNG, WEBP y GIF)
      *
      * @param string $sourcePath
-     * @param string $mimeType
      * @param int $maxWidth
      * @param int $maxHeight
      * @param int $quality
@@ -140,14 +139,31 @@ class FirebaseStorageService
             return null;
         }
 
-        list($origWidth, $origHeight, $imageType) = getimagesize($sourcePath);
+        $imageInfo = @getimagesize($sourcePath);
+        if (!$imageInfo) {
+            return null;
+        }
 
+        list($origWidth, $origHeight, $imageType) = $imageInfo;
+        $webpType = defined('IMAGETYPE_WEBP') ? IMAGETYPE_WEBP : 18;
+
+        $image = null;
         switch ($imageType) {
             case IMAGETYPE_JPEG:
                 $image = @imagecreatefromjpeg($sourcePath);
                 break;
             case IMAGETYPE_PNG:
                 $image = @imagecreatefrompng($sourcePath);
+                break;
+            case $webpType:
+                if (function_exists('imagecreatefromwebp')) {
+                    $image = @imagecreatefromwebp($sourcePath);
+                }
+                break;
+            case IMAGETYPE_GIF:
+                if (function_exists('imagecreatefromgif')) {
+                    $image = @imagecreatefromgif($sourcePath);
+                }
                 break;
             default:
                 return null;
@@ -165,17 +181,17 @@ class FirebaseStorageService
         if ($width > $maxWidth || $height > $maxHeight) {
             if ($width / $maxWidth > $height / $maxHeight) {
                 $width = $maxWidth;
-                $height = round($maxWidth / $ratio);
+                $height = (int) round($maxWidth / $ratio);
             } else {
                 $height = $maxHeight;
-                $width = round($maxHeight * $ratio);
+                $width = (int) round($maxHeight * $ratio);
             }
         }
 
         $newImage = imagecreatetruecolor($width, $height);
 
-        // Preservar canales alfa y transparencia para PNG
-        if ($imageType == IMAGETYPE_PNG) {
+        // Preservar canales alfa y transparencia para PNG, WEBP y GIF
+        if (in_array($imageType, [IMAGETYPE_PNG, $webpType, IMAGETYPE_GIF])) {
             imagealphablending($newImage, false);
             imagesavealpha($newImage, true);
             $transparent = imagecolorallocatealpha($newImage, 255, 255, 255, 127);
@@ -187,13 +203,19 @@ class FirebaseStorageService
         // Crear archivo temporal
         $tempFile = tempnam(sys_get_temp_dir(), 'img_opt_');
 
-        if ($imageType == IMAGETYPE_JPEG) {
+        if ($imageType === IMAGETYPE_JPEG) {
             imagejpeg($newImage, $tempFile, $quality);
+        } elseif ($imageType === $webpType && function_exists('imagewebp')) {
+            imagewebp($newImage, $tempFile, $quality);
+        } elseif ($imageType === IMAGETYPE_GIF && function_exists('imagegif')) {
+            imagegif($newImage, $tempFile);
         } else {
-            // Calidad PNG: Compresión de 0 (ninguna) a 9 (máxima)
-            $pngQuality = round((100 - $quality) / 10);
-            $pngQuality = min(max($pngQuality, 0), 9);
-            imagepng($newImage, $tempFile, $pngQuality);
+            // PNG: utilizar compresión nivel 9 (máxima compresión lossless)
+            imagepng($newImage, $tempFile, 9);
+            // Si tras comprimir como PNG el archivo sigue superando 1MB, exportar como JPG a 75%
+            if (filesize($tempFile) > 1024 * 1024) {
+                imagejpeg($newImage, $tempFile, $quality);
+            }
         }
 
         imagedestroy($image);
