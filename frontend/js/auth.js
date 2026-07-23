@@ -403,6 +403,12 @@ function getNavLinks() {
         links.push({ href: 'pages/catalogos/catalogos.html', icon: 'bi-tags', label: 'Catálogos', group: 'administracion' });
     }
 
+    // Auditoría — solo ADMIN
+    const hasAuditoria = ops.some(o => o.includes('Auditoría'));
+    if (hasAuditoria) {
+        links.push({ href: 'pages/auditoria/auditoria.html', icon: 'bi-clock-history', label: 'Auditoría', group: 'administracion' });
+    }
+
     // Perfil — todos los roles. En móvil es el único acceso a "Cerrar sesión"
     // (el sidebar de escritorio la reemplaza por la tarjeta de usuario al pie).
     const hasPerfil = ops.some(o => o.includes('Perfil de Usuario'));

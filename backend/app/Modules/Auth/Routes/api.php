@@ -2,6 +2,7 @@
 
 use App\Modules\Auth\Controllers\UsuarioController;
 use App\Modules\Auth\Controllers\RolController;
+use App\Modules\Auth\Controllers\AuditoriaController;
 use App\Modules\Auth\Controllers\TwoFactorController;
 use Illuminate\Support\Facades\Route;
 
@@ -43,5 +44,8 @@ Route::middleware(['throttle:api', 'rbac'])->group(function () {
     Route::post('/admin/roles', [RolController::class, 'store']);
     Route::put('/admin/roles/{uuid}', [RolController::class, 'update']);
     Route::delete('/admin/roles/{uuid}', [RolController::class, 'destroy']);
+
+    // Consulta de la bitácora de auditoría (Admin)
+    Route::get('/auditoria', [AuditoriaController::class, 'index']);
 });
 
